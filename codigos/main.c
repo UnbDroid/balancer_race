@@ -47,7 +47,7 @@ PI_THREAD(led)
 	while(1)
 	{
 		light_color(led_color);
-		delay(200);
+		delay(LED_DELAY);
 	}
 }
 

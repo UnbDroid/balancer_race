@@ -10,11 +10,14 @@
 #define LED_G 14
 #define LED_B 13
 
+// Constantes de referência para cores
 #define WHITE 0
 #define RED 1
 #define GREEN 2
 #define BLUE 3
 #define YELLOW 4
+
+#define LED_DELAY 100
 
 int endPCA9685;
 
