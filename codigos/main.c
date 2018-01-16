@@ -6,17 +6,32 @@
 struct joystick js;
 int led_color;
 
+PI_THREAD(main)
+{
+	while(1)
+	{
+		if(js.B)
+			led_color = RED;
+		else if(js.A)
+			led_color = GREEN;
+		else if(js.X)
+			led_color = BLUE;
+		else if(js.Y)
+			led_color = YELLOW;
+		else
+			led_color = WHITE;
+	}
+}
+
 PI_THREAD(joystick)
 {
 	piHiPri(0);
-	init_joystick(&js, devname);
     while(1)
     {
         if(disconnect)
-        	
         	init_joystick(&js, devname);
         
-        update_joystick(&js);
+        disconnect = update_joystick(&js);
         
         if(DEBUG_JOYSTICK && is_updated_js(&js))
 		    update_print_js(js);
@@ -46,6 +61,7 @@ int main()
     	return 0;
 
     wiringPiSetupPhys();
+	piThreadCreate(main);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 	
