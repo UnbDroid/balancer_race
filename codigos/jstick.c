@@ -361,9 +361,9 @@ int update_joystick(struct joystick* js)
 					break;
 			}
 		}
-		return 1;
+		return 0;
 	} else { //erro de leitura, provavelmente controle desconectou do rasp {
 		close(js->device);
-		return 0;
+		return 1;
 	}
 }
