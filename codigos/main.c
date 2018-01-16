@@ -28,10 +28,10 @@ PI_THREAD(joystick)
 	piHiPri(0);
     while(1)
     {
-        if(disconnect)
+        if(js.disconnect)
         	init_joystick(&js, devname);
         
-        disconnect = update_joystick(&js);
+        update_joystick(&js);
         
         if(DEBUG_JOYSTICK && is_updated_js(&js))
 		    update_print_js(js);
@@ -45,7 +45,7 @@ PI_THREAD(led)
 	while(1)
 	{
 		light_color(led_color);
-		delay(100);
+		delay(200);
 	}
 }
 
