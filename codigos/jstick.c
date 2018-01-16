@@ -60,7 +60,7 @@ struct joystick {
 	int start, select;
 	int home;
 	int new_data;
-	int disconnect = 1;
+	int disconnect;
 	struct input_event last_event;
 };
 
@@ -362,7 +362,6 @@ void update_joystick(struct joystick* js)
 					break;
 			}
 		}
-		js->disconnect = 0;
 	} else { //erro de leitura, provavelmente controle desconectou do rasp {
 		close(js->device);
 		js->disconnect = 1;
