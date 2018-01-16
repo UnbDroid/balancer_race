@@ -67,9 +67,9 @@ void light_color(int color)
 void light_channels(int red, int green, int blue)
 {
 	// dutycicle = 0 -> led aceso totalmente
-	int r_dutycicle = 4095 - 4095*red/255; 
-	int g_dutycicle = 4095 - 4095*green/255; 
-	int b_dutycicle = 4095 - 4095*blue/255; 
+	int r_dutycicle = 4095 - 255 * red * red / 4095; 
+	int g_dutycicle = 4095 - 255 * green * green / 4095; 
+	int b_dutycicle = 4095 - 255 * blue * blue / 4095;
 
 	pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
 	pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
