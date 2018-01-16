@@ -14,6 +14,7 @@
 #define RED 1
 #define GREEN 2
 #define BLUE 3
+#define YELLOW 4
 
 int endPCA9685;
 
@@ -50,6 +51,11 @@ void light_color(int color)
 			r_dutycicle = 4095; 
 			g_dutycicle = 4095; 
 			b_dutycicle = 0;
+			break;
+		case YELLOW:
+			r_dutycicle = 0; 
+			g_dutycicle = 0; 
+			b_dutycicle = 4095;
 			break;
 	}
 
