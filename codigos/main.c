@@ -2,11 +2,12 @@
 #include <wiringPi.h>
 #include "jstick.c"
 #include "led.c"
+#include "encoder.c"
 
 struct joystick js;
 int led_color;
 
-PI_THREAD(main)
+PI_THREAD(main_thread)
 {
 	while(1)
 	{
@@ -26,6 +27,7 @@ PI_THREAD(main)
 PI_THREAD(joystick)
 {
 	piHiPri(0);
+    init_joystick(&js, devname);
     while(1)
     {
         if(js.disconnect)
@@ -49,6 +51,13 @@ PI_THREAD(led)
 	}
 }
 
+PI_THREAD(encoder)
+{
+	init_encoders();
+	if(DEBUG_ENCODERS)
+		print_debug_encoders();
+}
+
 int main()
 {
 	char resposta;
@@ -61,7 +70,8 @@ int main()
     	return 0;
 
     wiringPiSetupPhys();
-	piThreadCreate(main);
+	piThreadCreate(main_thread);
+	piThreadCreate(encoder);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 	
