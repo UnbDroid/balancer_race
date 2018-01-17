@@ -1,0 +1,5 @@
+código para gyroscópio e acelerometro usando filtro de kalman:
+https://github.com/TKJElectronics/Example-Sketch-for-IMU-including-Kalman-filter/tree/master/IMU/MPU6050
+##obs: é o código referência para a criação do código mpu6050kalman.c em ~/testes.
+
+ 
