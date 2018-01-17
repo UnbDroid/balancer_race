@@ -40,7 +40,6 @@ __s32 value;
 */
 
 char devname[] = "/dev/input/event0";
-int disconnect = 1;
 
 struct analog {
 	int up, down, left, right;
@@ -61,6 +60,7 @@ struct joystick {
 	int start, select;
 	int home;
 	int new_data;
+	int disconnect;
 	struct input_event last_event;
 };
 
@@ -181,6 +181,7 @@ void init_joystick(struct joystick* js, char devname[])
 	js->select = 0;
 	js->home = 0;
 	js->new_data = 0;
+	js->disconnect = 0;
 	if(DEBUG_JOYSTICK) print_joystick(*js);
 }
 
@@ -209,7 +210,7 @@ int analog_map(int v_max, int v_min, int value)
 	return ((1023*(value - v_min))/(v_max - v_min)); 
 }
 
-int update_joystick(struct joystick* js)
+void update_joystick(struct joystick* js)
 {
 	struct input_event ev;
 	int temp;
@@ -361,9 +362,8 @@ int update_joystick(struct joystick* js)
 					break;
 			}
 		}
-		return 0;
 	} else { //erro de leitura, provavelmente controle desconectou do rasp {
 		close(js->device);
-		return 1;
+		js->disconnect = 1;
 	}
 }
