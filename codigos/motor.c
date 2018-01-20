@@ -7,11 +7,12 @@
 #include <stdlib.h>
 
 #define PWM1 12
+#define M1A 11
+#define M1B 13
+
 #define PWM2 33
-#define M1A 35
-#define M1B 36
-#define M2A 37
-#define M2B 38
+#define M2A 29
+#define M2B 31
 
 #define LMOTOR 0
 #define RMOTOR 1
@@ -25,7 +26,7 @@ void init_motors()
 	pinMode(M2A, OUTPUT);
 	pinMode(M2B, OUTPUT);
 	pwmSetMode(PWM_MODE_MS);
-	pwmSetRange(1023);//range
+	pwmSetRange(1023);
 	pwmSetClock(2);
 }
 

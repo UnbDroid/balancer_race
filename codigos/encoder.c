@@ -7,10 +7,10 @@
 #define DEBUG_ENCODERS 0
 #define DELAY_TIME 200000
 
-#define ENC_PINA 15
-#define DIR_PINA 16
-#define ENC_PINB 31
-#define DIR_PINB 32
+#define ENC_PINA 16
+#define DIR_PINA 18
+#define ENC_PINB 36
+#define DIR_PINB 38
 
 volatile long long int posCounterA = 0, posCounterB = 0;
 volatile unsigned long int tickFreqA = 0, tickFreqB = 0;
@@ -59,5 +59,4 @@ void print_debug_encoders()
 	    printf("\033[%d;%dH%05ld\n", 2, 20, tickFreqB);
 	    delayMicroseconds(DELAY_TIME);		
 	}
-
 }
