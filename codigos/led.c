@@ -21,12 +21,21 @@
 #define LED_DELAY 100
 
 int endPCA9685;
-int current_color;
+int current_color = UNDEFINED_COLOR;
+
+void light_off()
+{
+	current_color = UNDEFINED_COLOR;
+	pwmPCA9685(endPCA9685, LED_R, 4095);
+	pwmPCA9685(endPCA9685, LED_G, 4095);
+	pwmPCA9685(endPCA9685, LED_B, 4095);
+}
 
 void init_led()
 {
 	endPCA9685 = wiringPiI2CSetup(0x40);
 	initPCA9685(endPCA9685);
+	light_off();
 }
 
 void light_color(int color)
@@ -85,12 +94,4 @@ void light_channels(int red, int green, int blue)
 	pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
 	pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
 	pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
-}
-
-void light_off()
-{
-	current_color = UNDEFINED_COLOR;
-	pwmPCA9685(endPCA9685, LED_R, 4095);
-	pwmPCA9685(endPCA9685, LED_G, 4095);
-	pwmPCA9685(endPCA9685, LED_B, 4095);
 }

@@ -6,7 +6,7 @@
 #include "motor.c"
 
 struct joystick js;
-int led_color;
+int led_color = UNDEFINED_COLOR;
 
 PI_THREAD(main_thread)
 {
