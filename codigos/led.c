@@ -11,15 +11,17 @@
 #define LED_B 13
 
 // Constantes de referência para cores
-#define WHITE 0
-#define RED 1
-#define GREEN 2
-#define BLUE 3
-#define YELLOW 4
+#define UNDEFINED_COLOR 0
+#define WHITE 1
+#define RED 2
+#define GREEN 3
+#define BLUE 4
+#define YELLOW 5
 
 #define LED_DELAY 100
 
 int endPCA9685;
+int current_color;
 
 void init_led()
 {
@@ -29,42 +31,46 @@ void init_led()
 
 void light_color(int color)
 {
-	int r_dutycicle; 
-	int g_dutycicle;
-	int b_dutycicle;
+	if(color != current_color)
+	{		
+		int r_dutycicle; 
+		int g_dutycicle;
+		int b_dutycicle;
 
-	switch(color)
-	{
-		case WHITE:
-			r_dutycicle = 0; 
-			g_dutycicle = 0; 
-			b_dutycicle = 0;
-			break;
-		case RED:
-			r_dutycicle = 0; 
-			g_dutycicle = 4095; 
-			b_dutycicle = 4095;
-			break;
-		case GREEN:
-			r_dutycicle = 4095; 
-			g_dutycicle = 0; 
-			b_dutycicle = 4095;
-			break;
-		case BLUE:
-			r_dutycicle = 4095; 
-			g_dutycicle = 4095; 
-			b_dutycicle = 0;
-			break;
-		case YELLOW:
-			r_dutycicle = 0; 
-			g_dutycicle = 0; 
-			b_dutycicle = 4095;
-			break;
+		current_color = color;
+
+		switch(color)
+		{
+			case WHITE:
+				r_dutycicle = 0; 
+				g_dutycicle = 0; 
+				b_dutycicle = 0;
+				break;
+			case RED:
+				r_dutycicle = 0; 
+				g_dutycicle = 4095; 
+				b_dutycicle = 4095;
+				break;
+			case GREEN:
+				r_dutycicle = 4095; 
+				g_dutycicle = 0; 
+				b_dutycicle = 4095;
+				break;
+			case BLUE:
+				r_dutycicle = 4095; 
+				g_dutycicle = 4095; 
+				b_dutycicle = 0;
+				break;
+			case YELLOW:
+				r_dutycicle = 0; 
+				g_dutycicle = 0; 
+				b_dutycicle = 4095;
+				break;
+		}
+		pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
+		pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
+		pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
 	}
-
-	pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
-	pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
-	pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
 }
 
 void light_channels(int red, int green, int blue)
@@ -74,6 +80,8 @@ void light_channels(int red, int green, int blue)
 	int g_dutycicle = 4095 - 255 * green * green / 4095; 
 	int b_dutycicle = 4095 - 255 * blue * blue / 4095;
 
+	current_color = UNDEFINED_COLOR;
+
 	pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
 	pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
 	pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
@@ -81,6 +89,7 @@ void light_channels(int red, int green, int blue)
 
 void light_off()
 {
+	current_color = UNDEFINED_COLOR;
 	pwmPCA9685(endPCA9685, LED_R, 4095);
 	pwmPCA9685(endPCA9685, LED_G, 4095);
 	pwmPCA9685(endPCA9685, LED_B, 4095);
