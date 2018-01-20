@@ -1,11 +1,10 @@
 #!/bin/sh
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
 	echo "ERROR: Falta argumentos, parça!"
 	echo "Arg1 = Nome do Arquivo C"
-	echo "Arg2 = Nome do Arquivo Objeto de Saída"
 else
 	nome_codigo=${1}
-	nome_binario=${2}
+	nome_binario=compilation_test
 
 	arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so
 
