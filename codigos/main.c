@@ -2,7 +2,6 @@
 #include <wiringPi.h>
 #include "jstick.c"
 #include "led.c"
-#include "encoder.c"
 #include "motor.c"
 
 struct joystick js;
@@ -56,8 +55,7 @@ PI_THREAD(led)
 PI_THREAD(encoder)
 {
 	piHiPri(0);
-	init_encoders();
-	if(DEBUG_ENCODERS)
+	if(DEBUG_MOTORS)
 		print_debug_encoders();
 }
 
