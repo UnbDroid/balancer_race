@@ -146,14 +146,10 @@ void print_joystick(struct joystick js)
 
 void init_joystick(struct joystick* js, char devname[])
 {
-	if(!exists(devname))
-	{
-		print_error();
-	}
-	while(!exists(devname));
-	{
-		sleep(0.5);
-	}
+	if(DEBUG_JOYSTICK) print_error();
+	
+	while(!exists(devname)) sleep(0.5);
+	
 	js->device = open(devname, O_RDONLY);
 	js->B = 0;
 	js->Y = 0;
@@ -182,6 +178,7 @@ void init_joystick(struct joystick* js, char devname[])
 	js->home = 0;
 	js->new_data = 0;
 	js->disconnect = 0;
+	
 	if(DEBUG_JOYSTICK) print_joystick(*js);
 }
 
