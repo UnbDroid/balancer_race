@@ -109,6 +109,7 @@ void update_print_js(struct joystick js)
 	printf("\033[%d;%dH%04d\n", 15, 46, js.ranalog.left);
 	printf("\033[%d;%dH%04d\n", 15, 55, js.ranalog.right);
 	printf("\033[%d;%dHType:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", 28, 1,js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
+	usleep(20000);
 }
 
 void print_joystick(struct joystick js)
