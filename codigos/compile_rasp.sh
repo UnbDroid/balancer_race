@@ -25,6 +25,6 @@ else
 	# encrypted_password="$(perl -e 'printf("%s\n", crypt($ARGV[0], "password"))' "${password}")"
 
 	scp ./${nome_binario} ${login_rasp}@${ip_rasp}:${dst_folder_rasp}
-	
+	rm ${nome_binario}
 fi
 
