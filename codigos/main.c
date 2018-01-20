@@ -3,12 +3,14 @@
 #include "jstick.c"
 #include "led.c"
 #include "encoder.c"
+#include "motor.c"
 
 struct joystick js;
 int led_color;
 
 PI_THREAD(main_thread)
 {
+	piHiPri(0);
 	while(1)
 	{
 		if(js.B)
@@ -53,6 +55,7 @@ PI_THREAD(led)
 
 PI_THREAD(encoder)
 {
+	piHiPri(0);
 	init_encoders();
 	if(DEBUG_ENCODERS)
 		print_debug_encoders();
@@ -70,6 +73,8 @@ int main()
     	return 0;
 
     wiringPiSetupPhys();
+	init_motors();
+	
 	piThreadCreate(main_thread);
 	piThreadCreate(encoder);
 	piThreadCreate(joystick);
