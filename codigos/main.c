@@ -33,11 +33,7 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         	init_joystick(&js, devname);
-        
         update_joystick(&js);
-        
-        if(DEBUG_JOYSTICK && is_updated_js(&js))
-		    update_print_js(js);
 	}
 }
 
@@ -52,11 +48,16 @@ PI_THREAD(led)
 	}
 }
 
-PI_THREAD(encoder)
+PI_THREAD(debug)
 {
-	piHiPri(0);
-	if(DEBUG_MOTORS)
-		print_debug_encoders();
+	if(DEBUG_MOTORS || DEBUG_JOYSTICK)
+	{
+		piHiPri(0);
+		if(DEBUG_MOTORS)
+			print_debug_encoders();
+		else if(DEBUG_JOYSTICK)
+		    update_print_js(js);	
+	}
 }
 
 int main()
@@ -74,9 +75,9 @@ int main()
 	init_motors();
 	
 	piThreadCreate(main_thread);
-	piThreadCreate(encoder);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
+	piThreadCreate(debug);
 	
 	while(getchar() != 'q');
 
