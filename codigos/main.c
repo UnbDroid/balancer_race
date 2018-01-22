@@ -6,11 +6,12 @@
 
 struct joystick js;
 int led_color = UNDEFINED_COLOR;
+int keep_running = 1;
 
 PI_THREAD(main_thread)
 {
 	piHiPri(0);
-	while(1)
+	while(keep_running)
 	{
 		if(js.B)
 			led_color = RED;
@@ -20,8 +21,10 @@ PI_THREAD(main_thread)
 			led_color = BLUE;
 		else if(js.Y)
 			led_color = YELLOW;
-		else
+		else if(js.start)
 			led_color = WHITE;
+		else
+			light_off();
 	}
 }
 
@@ -29,7 +32,7 @@ PI_THREAD(joystick)
 {
 	piHiPri(0);
     init_joystick(&js, devname);
-    while(1)
+    while(keep_running)
     {
         if(js.disconnect)
         	init_joystick(&js, devname);
@@ -41,7 +44,7 @@ PI_THREAD(led)
 {
 	piHiPri(0);
 	init_led();
-	while(1)
+	while(keep_running)
 	{
 		light_color(led_color);
 		delay(LED_DELAY);
@@ -80,6 +83,10 @@ int main()
 	piThreadCreate(debug);
 	
 	while(getchar() != 'q');
+
+	keep_running = 0;
+	light_color(RED);
+	delay(1000);
 
 	return 0;
 }

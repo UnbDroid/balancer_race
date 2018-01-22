@@ -9,6 +9,7 @@
 #define LED_R 15
 #define LED_G 14
 #define LED_B 13
+#define CATHODE 12
 
 // Constantes de referência para cores
 #define UNDEFINED_COLOR 0
@@ -20,27 +21,30 @@
 
 #define LED_DELAY 100
 
+#define LED_RANGE 3072
+
 int endPCA9685;
 int current_color = UNDEFINED_COLOR;
 
 void light_off()
 {
 	current_color = UNDEFINED_COLOR;
-	pwmPCA9685(endPCA9685, LED_R, 4095);
-	pwmPCA9685(endPCA9685, LED_G, 4095);
-	pwmPCA9685(endPCA9685, LED_B, 4095);
+	pwmPCA9685(endPCA9685, LED_R, LED_RANGE);
+	pwmPCA9685(endPCA9685, LED_G, LED_RANGE);
+	pwmPCA9685(endPCA9685, LED_B, LED_RANGE);
 }
 
 void init_led()
 {
 	endPCA9685 = wiringPiI2CSetup(0x40);
 	initPCA9685(endPCA9685);
+	pwmPCA9685(endPCA9685, CATHODE, LED_RANGE);
 	light_off();
 }
 
 void light_color(int color)
 {
-	if(color != current_color)
+	if(color != current_color && color != UNDEFINED_COLOR)
 	{		
 		int r_dutycicle; 
 		int g_dutycicle;
@@ -57,23 +61,23 @@ void light_color(int color)
 				break;
 			case RED:
 				r_dutycicle = 0; 
-				g_dutycicle = 4095; 
-				b_dutycicle = 4095;
+				g_dutycicle = LED_RANGE; 
+				b_dutycicle = LED_RANGE;
 				break;
 			case GREEN:
-				r_dutycicle = 4095; 
+				r_dutycicle = LED_RANGE; 
 				g_dutycicle = 0; 
-				b_dutycicle = 4095;
+				b_dutycicle = LED_RANGE;
 				break;
 			case BLUE:
-				r_dutycicle = 4095; 
-				g_dutycicle = 4095; 
+				r_dutycicle = LED_RANGE;
+				g_dutycicle = LED_RANGE;
 				b_dutycicle = 0;
 				break;
 			case YELLOW:
 				r_dutycicle = 0; 
 				g_dutycicle = 0; 
-				b_dutycicle = 4095;
+				b_dutycicle = LED_RANGE;
 				break;
 		}
 		pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
@@ -85,9 +89,9 @@ void light_color(int color)
 void light_channels(int red, int green, int blue)
 {
 	// dutycicle = 0 -> led aceso totalmente
-	int r_dutycicle = 4095 - 255 * red * red / 4095; 
-	int g_dutycicle = 4095 - 255 * green * green / 4095; 
-	int b_dutycicle = 4095 - 255 * blue * blue / 4095;
+	int r_dutycicle = LED_RANGE - 255 * red * red / LED_RANGE; 
+	int g_dutycicle = LED_RANGE - 255 * green * green / LED_RANGE; 
+	int b_dutycicle = LED_RANGE - 255 * blue * blue / LED_RANGE;
 
 	current_color = UNDEFINED_COLOR;
 
