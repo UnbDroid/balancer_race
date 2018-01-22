@@ -5,7 +5,7 @@ used in the construction of DROID's robot.
 
 ### Cross-Compiling
 
-Available at /ccdir, the compile_rasp.sh file contains a script for
+Available at ```/ccdir```, the ```compile_rasp.sh``` file contains a script for
 cross-compiling C code for the Raspberry Pi. It is a much faster process
 than compiling code directly at the Raspberry.
 
@@ -16,6 +16,6 @@ we put them all in the same directory as the main code.
 
 ### Main Code and Threading
 
-The main code, available at the main.c file under /codigos, uses the pthread
+The main code, available at the ```main.c``` file under ```/codigos```, uses the ```pthread```
 wrapper provided by the WiringPi library to parallelize the execution of the
-code modules. Reference and documentation available at wiringpi.com.
+code modules. Reference and documentation available at [WiringPi website](wiringpi.com).
