@@ -12,6 +12,7 @@
 #define CATHODE 12
 
 // Constantes de referência para cores
+#define OFF_COLOR -1
 #define UNDEFINED_COLOR 0
 #define WHITE 1
 #define RED 2
@@ -21,17 +22,20 @@
 
 #define LED_DELAY 100
 
-#define LED_RANGE 3072
+#define LED_RANGE 4095
 
 int endPCA9685;
 int current_color = UNDEFINED_COLOR;
 
 void light_off()
 {
-	current_color = UNDEFINED_COLOR;
-	pwmPCA9685(endPCA9685, LED_R, LED_RANGE);
-	pwmPCA9685(endPCA9685, LED_G, LED_RANGE);
-	pwmPCA9685(endPCA9685, LED_B, LED_RANGE);
+	if(current_color != OFF_COLOR)
+	{
+		current_color = OFF_COLOR;
+		pwmPCA9685(endPCA9685, LED_R, LED_RANGE);
+		pwmPCA9685(endPCA9685, LED_G, LED_RANGE);
+		pwmPCA9685(endPCA9685, LED_B, LED_RANGE);
+	}
 }
 
 void init_led()
@@ -44,7 +48,7 @@ void init_led()
 
 void light_color(int color)
 {
-	if(color != current_color && color != UNDEFINED_COLOR)
+	if(color != current_color)
 	{		
 		int r_dutycicle; 
 		int g_dutycicle;
@@ -77,6 +81,11 @@ void light_color(int color)
 			case YELLOW:
 				r_dutycicle = 0; 
 				g_dutycicle = 0; 
+				b_dutycicle = LED_RANGE;
+				break;
+			case OFF_COLOR:
+				r_dutycicle = LED_RANGE;
+				g_dutycicle = LED_RANGE;
 				b_dutycicle = LED_RANGE;
 				break;
 		}

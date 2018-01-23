@@ -72,8 +72,9 @@ void pwmPCA9685(int end, int porta, int dutycicle)
 		valH = dutycicle >> 8;
 	}
 
-	wiringPiI2CWriteReg8(end, ledxOFF_L, valL);
-	wiringPiI2CWriteReg8(end, ledxOFF_H, valH);
-	wiringPiI2CWriteReg8(end, ledxON_L, 0x00);
 	wiringPiI2CWriteReg8(end, ledxON_H, 0x00);
+	wiringPiI2CWriteReg8(end, ledxON_L, 0x00);
+	wiringPiI2CWriteReg8(end, ledxOFF_H, valH);
+	wiringPiI2CWriteReg8(end, ledxOFF_L, valL);
+	//printf("%x\t%x\t%x\t%x\n%x\t%x\t%x\t%x\n\n", ledxON_L, ledxON_H, ledxOFF_L, ledxOFF_H, 0x00, 0x00, valL, valH);
 }

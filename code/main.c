@@ -5,7 +5,7 @@
 #include "motor.c"
 
 struct joystick js;
-int led_color = UNDEFINED_COLOR;
+int led_color = OFF_COLOR;
 int keep_running = 1;
 
 PI_THREAD(main_thread)
@@ -24,7 +24,7 @@ PI_THREAD(main_thread)
 		else if(js.start)
 			led_color = WHITE;
 		else
-			light_off();
+			led_color = OFF_COLOR;
 	}
 }
 
