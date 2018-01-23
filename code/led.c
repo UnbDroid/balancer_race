@@ -18,7 +18,9 @@
 #define RED 2
 #define GREEN 3
 #define BLUE 4
-#define YELLOW 5
+#define CYAN 5
+#define MAGENTA 6
+#define YELLOW 7
 
 #define LED_DELAY 100
 
@@ -59,8 +61,8 @@ void light_color(int color)
 		switch(color)
 		{
 			case WHITE:
-				r_dutycicle = 0; 
-				g_dutycicle = 0; 
+				r_dutycicle = 0;
+				g_dutycicle = 0;
 				b_dutycicle = 0;
 				break;
 			case RED:
@@ -75,6 +77,16 @@ void light_color(int color)
 				break;
 			case BLUE:
 				r_dutycicle = LED_RANGE;
+				g_dutycicle = LED_RANGE;
+				b_dutycicle = 0;
+				break;
+			case CYAN:
+				r_dutycicle = LED_RANGE;
+				g_dutycicle = 0;
+				b_dutycicle = 0;
+				break;
+			case MAGENTA:
+				r_dutycicle = 0;
 				g_dutycicle = LED_RANGE;
 				b_dutycicle = 0;
 				break;
