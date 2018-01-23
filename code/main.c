@@ -87,10 +87,15 @@ PI_THREAD(debug)
 	if(DEBUG_MOTORS || DEBUG_JOYSTICK)
 	{
 		piHiPri(0);
-		if(DEBUG_MOTORS)
-			print_debug_encoders();
-		else if(DEBUG_JOYSTICK)
-		    update_print_js(js);	
+		printf("\e[2J\e[H");
+		printf("\033[%d;%dH### DEBUG MODE ###", 0, 0);
+		while(keep_running)
+		{
+			if(DEBUG_MOTORS)
+				update_debug_encoders();
+			if(DEBUG_JOYSTICK)
+			    update_print_js(js);	
+		}
 	}
 	debug_finished = 1;
 }
@@ -106,13 +111,14 @@ int main()
     if(resposta!='y')
     	return 0;
 
+    piThreadCreate(debug);
+
     wiringPiSetupPhys();
 	init_motors();
-	
 	piThreadCreate(main_thread);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
-	piThreadCreate(debug);
+	
 	
 	while(keep_running) delay(100);
 	light_color(RED);
@@ -121,6 +127,6 @@ int main()
 
 	if(shutdown) system("sudo shutdown now&");
 	if(reboot) system("sudo shutdown -r now&");
-	
+
 	return 0;
 }

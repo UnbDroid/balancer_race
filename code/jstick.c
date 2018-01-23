@@ -109,13 +109,12 @@ void update_print_js(struct joystick js)
 	printf("\033[%d;%dH%04d\n", 15, 46, js.ranalog.left);
 	printf("\033[%d;%dH%04d\n", 15, 55, js.ranalog.right);
 	printf("\033[%d;%dHType:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", 28, 1,js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
-	usleep(20000);
+	usleep(50000);
 }
 
 void print_joystick(struct joystick js)
 {
-	printf("\e[2J\e[H");
-	printf("                 ``%04d.....``                    ``.....%04d``                 \n", js.LT, js.RT);
+	printf("\n\n                 ``%04d.....``                    ``.....%04d``                 \n", js.LT, js.RT);
 	printf("             ```%d`````````  ..`````````..`````````..  ````````%d````             \n", js.LB, js.RB);
 	printf("            .``````       `.`         \\ /          `.`       ``````.            \n");
 	printf("          `.`              ``          %d           ``              `.`          \n", js.home);
@@ -142,7 +141,7 @@ void print_joystick(struct joystick js)
 	printf(" .           ``                                                  ``           . \n");
 	printf("  ``       ``                                                      ``       ``  \n");
 	printf("    ```````                                                          ```````    \n");
-	printf("Type:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
+	//printf("Type:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
 }
 
 void init_joystick(struct joystick* js, char devname[])
