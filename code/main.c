@@ -7,9 +7,11 @@
 struct joystick js;
 int led_color = OFF_COLOR;
 int keep_running = 1;
+int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
 
 PI_THREAD(main_thread)
 {
+	main_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{
@@ -25,11 +27,29 @@ PI_THREAD(main_thread)
 			led_color = WHITE;
 		else
 			led_color = OFF_COLOR;
+		
+		if(js.lanalog.up > 0)
+			OnFwd(LMOTOR, js.lanalog.up);
+		else if(js.lanalog.down > 0)
+			OnRev(LMOTOR, js.lanalog.down);
+		else
+			Coast(LMOTOR);
+
+		if(js.ranalog.up > 0)
+			OnFwd(RMOTOR, js.ranalog.up);
+		else if(js.ranalog.down > 0)
+			OnRev(RMOTOR, js.ranalog.down);
+		else
+			Coast(RMOTOR);
 	}
+	Coast(LMOTOR);
+	Coast(RMOTOR);
+	main_finished = 1;
 }
 
 PI_THREAD(joystick)
 {
+    joystick_finished = 0;
 	piHiPri(0);
     init_joystick(&js, devname);
     while(keep_running)
@@ -38,10 +58,12 @@ PI_THREAD(joystick)
         	init_joystick(&js, devname);
         update_joystick(&js);
 	}
+	joystick_finished = 1;
 }
 
 PI_THREAD(led)
 {
+	led_finished = 0;
 	piHiPri(0);
 	init_led();
 	while(keep_running)
@@ -49,10 +71,12 @@ PI_THREAD(led)
 		light_color(led_color);
 		delay(LED_DELAY);
 	}
+	led_finished = 1;
 }
 
 PI_THREAD(debug)
 {
+	debug_finished = 0;
 	if(DEBUG_MOTORS || DEBUG_JOYSTICK)
 	{
 		piHiPri(0);
@@ -61,6 +85,7 @@ PI_THREAD(debug)
 		else if(DEBUG_JOYSTICK)
 		    update_print_js(js);	
 	}
+	debug_finished = 1;
 }
 
 int main()
@@ -86,7 +111,8 @@ int main()
 
 	keep_running = 0;
 	light_color(RED);
-	delay(1000);
+	while(!(main_finished && joystick_finished && led_finished && debug_finished));
+	light_off();
 
 	return 0;
 }

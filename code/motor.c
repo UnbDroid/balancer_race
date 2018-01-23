@@ -165,6 +165,7 @@ void print_debug_encoders()
 {
 	while(1)
 	{
+		printf("\e[2J\e[H");
 		printf("\033[%d;%dH%'010lld\n", 1, 0, posCounterA);
 	    printf("\033[%d;%dH%05ld\n", 2, 0, tickFreqA);
 	    printf("\033[%d;%dH%'010lld\n", 1, 20, posCounterB);
