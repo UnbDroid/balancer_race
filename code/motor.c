@@ -170,6 +170,32 @@ void print_debug_encoders()
 	    printf("\033[%d;%dH%05ld\n", 2, 0, tickFreqA);
 	    printf("\033[%d;%dH%'010lld\n", 1, 20, posCounterB);
 	    printf("\033[%d;%dH%05ld\n", 2, 20, tickFreqB);
-	    delayMicroseconds(MOTOR_DEBUG_DELAY_TIME);		
+	    delayMicroseconds(MOTOR_DEBUG_DELAY_TIME);
 	}
+}
+
+int TachoCount(int motor)
+{
+	if(motor == LMOTOR)
+	{
+		return posCounterA;
+	} else if(motor == RMOTOR)
+	{
+		return posCounterB;
+	} else {
+		return 0;
+	}
+}
+
+int TachoSpeed(int motor)
+{
+	if(motor == LMOTOR)
+	{
+		return tickFreqA;
+	} else if(motor == RMOTOR)
+	{
+		return tickFreqB;
+	} else {
+		return 0;
+	}	
 }
