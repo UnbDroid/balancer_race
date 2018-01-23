@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <wiringPi.h>
 #include "jstick.c"
 #include "led.c"
@@ -8,6 +9,7 @@ struct joystick js;
 int led_color = OFF_COLOR;
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
+int shutdown = 0, reboot = 0;
 
 PI_THREAD(main_thread)
 {
@@ -41,6 +43,8 @@ PI_THREAD(main_thread)
 			OnRev(RMOTOR, js.ranalog.down);
 		else
 			Coast(RMOTOR);
+
+		delay(100);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
@@ -52,12 +56,15 @@ PI_THREAD(joystick)
     joystick_finished = 0;
 	piHiPri(0);
     init_joystick(&js, devname);
-    while(keep_running)
+    while(!(js.select && js.start))
     {
         if(js.disconnect)
         	init_joystick(&js, devname);
         update_joystick(&js);
 	}
+	if(js.dpad.down) shutdown = 1;
+	if(js.dpad.up) reboot = 1;
+	keep_running = 0;
 	joystick_finished = 1;
 }
 
@@ -107,12 +114,13 @@ int main()
 	piThreadCreate(led);
 	piThreadCreate(debug);
 	
-	while(getchar() != 'q');
-
-	keep_running = 0;
+	while(keep_running) delay(100);
 	light_color(RED);
 	while(!(main_finished && joystick_finished && led_finished && debug_finished));
-	light_off();
+	light_color(WHITE);
 
+	if(shutdown) system("sudo shutdown now&");
+	if(reboot) system("sudo shutdown -r now&");
+	
 	return 0;
 }
