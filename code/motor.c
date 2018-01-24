@@ -17,10 +17,6 @@
 #define LMOTOR 0
 #define RMOTOR 1
 
-#define DEBUG_MOTORS 0
-#define MOTOR_DEBUG_DELAY_TIME 200
-#define DEBUG_PRINT_FIRST_LINE 32
-
 #define ENC_PINA 18
 #define DIR_PINA 16
 #define ENC_PINB 38
@@ -70,10 +66,6 @@ void init_motors()
 	pwmSetMode(PWM_MODE_MS);
 	pwmSetRange(1023);
 	pwmSetClock(2);
-	if(DEBUG_MOTORS)
-	{
-		printf("\033[%d;%dHLeft Motor\nPos:            Freq:\nRight Motor\nPos:            Freq:", DEBUG_PRINT_FIRST_LINE, 0);
-	}
 }
 
 void OnFwd(int motor, int power)
@@ -164,15 +156,6 @@ void Coast(int motor)
 		digitalWrite(M2B, LOW);
 		pwmWrite(PWM2, 0);
 	}
-}
-
-void update_debug_encoders()
-{
-		printf("\033[%d;%dH%'010lld\n", DEBUG_PRINT_FIRST_LINE+1, 6, posCounterA);
-	    printf("\033[%d;%dH%05ld\n", DEBUG_PRINT_FIRST_LINE+1, 22, tickFreqA);
-	    printf("\033[%d;%dH%'010lld\n", DEBUG_PRINT_FIRST_LINE+3, 6, posCounterB);
-	    printf("\033[%d;%dH%05ld\n", DEBUG_PRINT_FIRST_LINE+3, 22, tickFreqB);
-	    delay(MOTOR_DEBUG_DELAY_TIME);
 }
 
 int TachoCount(int motor)

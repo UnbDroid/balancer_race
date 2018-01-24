@@ -28,6 +28,7 @@
 
 int endPCA9685;
 int current_color = UNDEFINED_COLOR;
+int led_color = OFF_COLOR;
 
 void light_off()
 {
@@ -46,6 +47,11 @@ void init_led()
 	initPCA9685(endPCA9685);
 	pwmPCA9685(endPCA9685, CATHODE, LED_RANGE);
 	light_off();
+}
+
+void set_color(int color)
+{
+	led_color = color;
 }
 
 void light_color(int color)

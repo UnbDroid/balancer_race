@@ -6,7 +6,6 @@
 #include "motor.c"
 
 struct joystick js;
-int led_color = OFF_COLOR;
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
 int shutdown = 0, reboot = 0;
@@ -18,17 +17,17 @@ PI_THREAD(main_thread)
 	while(keep_running)
 	{
 		if(js.B)
-			led_color = RED;
+			set_color(RED);
 		else if(js.A)
-			led_color = GREEN;
+			set_color(GREEN);
 		else if(js.X)
-			led_color = BLUE;
+			set_color(BLUE);
 		else if(js.Y)
-			led_color = YELLOW;
+			set_color(YELLOW);
 		else if(js.start)
-			led_color = WHITE;
+			set_color(WHITE);
 		else
-			led_color = OFF_COLOR;
+			set_color(OFF_COLOR);
 		
 		if(js.lanalog.up > 0)
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -84,17 +83,12 @@ PI_THREAD(led)
 PI_THREAD(debug)
 {
 	debug_finished = 0;
-	if(DEBUG_MOTORS || DEBUG_JOYSTICK)
+	if(0)
 	{
 		piHiPri(0);
-		printf("\e[2J\e[H");
-		printf("\033[%d;%dH### DEBUG MODE ###", 0, 0);
 		while(keep_running)
 		{
-			if(DEBUG_MOTORS)
-				update_debug_encoders();
-			if(DEBUG_JOYSTICK)
-			    update_print_js(js);	
+				
 		}
 	}
 	debug_finished = 1;

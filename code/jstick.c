@@ -5,8 +5,6 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#define DEBUG_JOYSTICK 0
-
 #define	DEAD_ZONE 3500
 #define ZERO_VAL 32768
 
@@ -81,73 +79,8 @@ void print_error()
 	printf("       ________  _______   _______    ______   _______   __               \n      |        \\|       \\ |       \\  /      \\ |       \\ |  \\              \n      | $$$$$$$$| $$$$$$$\\| $$$$$$$\\|  $$$$$$\\| $$$$$$$\\| $$              \n      | $$__    | $$__| $$| $$__| $$| $$  | $$| $$__| $$| $$              \n      | $$  \\   | $$    $$| $$    $$| $$  | $$| $$    $$| $$              \n      | $$$$$   | $$$$$$$\\| $$$$$$$\\| $$  | $$| $$$$$$$\\ \\$$              \n      | $$_____ | $$  | $$| $$  | $$| $$__/ $$| $$  | $$ __               \n      | $$     \\| $$  | $$| $$  | $$ \\$$    $$| $$  | $$|  \\              \n       \\$$$$$$$$ \\$$   \\$$ \\$$   \\$$  \\$$$$$$  \\$$   \\$$ \\$$              \n                                                                          \n                                                                          \n                                                                          \n  ______                                                       __         \n /      \\                                                     |  \\        \n|  $$$$$$\\  ______   _______   _______    ______    _______  _| $$_       \n| $$   \\$$ /      \\ |       \\ |       \\  /      \\  /       \\|   $$ \\      \n| $$      |  $$$$$$\\| $$$$$$$\\| $$$$$$$\\|  $$$$$$\\|  $$$$$$$ \\$$$$$$      \n| $$   __ | $$  | $$| $$  | $$| $$  | $$| $$    $$| $$        | $$ __     \n| $$__/  \\| $$__/ $$| $$  | $$| $$  | $$| $$$$$$$$| $$_____   | $$|  \\    \n \\$$    $$ \\$$    $$| $$  | $$| $$  | $$ \\$$     \\ \\$$     \\   \\$$  $$    \n  \\$$$$$$   \\$$$$$$  \\$$   \\$$ \\$$   \\$$  \\$$$$$$$  \\$$$$$$$    \\$$$$     \n                                                                          \n                                                                          \n                                                                          \n    _____                                  __      __            __       \n   |     \\                                |  \\    |  \\          |  \\      \n    \\$$$$$  ______   __    __   _______  _| $$_    \\$$  _______ | $$   __ \n      | $$ /      \\ |  \\  |  \\ /       \\|   $$ \\  |  \\ /       \\| $$  /  \\\n __   | $$|  $$$$$$\\| $$  | $$|  $$$$$$$ \\$$$$$$  | $$|  $$$$$$$| $$_/  $$\n|  \\  | $$| $$  | $$| $$  | $$ \\$$    \\   | $$ __ | $$| $$      | $$   $$ \n| $$__| $$| $$__/ $$| $$__/ $$ _\\$$$$$$\\  | $$|  \\| $$| $$_____ | $$$$$$\\ \n \\$$    $$ \\$$    $$ \\$$    $$|       $$   \\$$  $$| $$ \\$$     \\| $$  \\$$\\\n  \\$$$$$$   \\$$$$$$  _\\$$$$$$$ \\$$$$$$$     \\$$$$  \\$$  \\$$$$$$$ \\$$   \\$$\n                    |  \\__| $$                                            \n                     \\$$    $$                                            \n                      \\$$$$$$\n");
 }
 
-void update_print_js(struct joystick js)
-{
-	printf("\033[%d;%dH%d\n", 9, 66, js.B);
-	printf("\033[%d;%dH%d\n", 7, 61, js.Y);
-	printf("\033[%d;%dH%d\n", 9, 56, js.X);
-	printf("\033[%d;%dH%d\n", 11, 61, js.A);
-	printf("\033[%d;%dH%d\n", 2, 17, js.LB);
-	printf("\033[%d;%dH%d\n", 2, 63, js.RB);
-	printf("\033[%d;%dH%04d\n", 1, 20, js.LT);
-	printf("\033[%d;%dH%04d\n", 1, 58, js.RT);
-	printf("\033[%d;%dH%d\n", 9, 47, js.start);
-	printf("\033[%d;%dH%d\n", 9, 35, js.select);
-	printf("\033[%d;%dH%d\n", 4, 40, js.home);
-	printf("\033[%d;%dH%d\n", 8, 19, js.lanalog.press);
-	printf("\033[%d;%dH%d\n", 15, 52, js.ranalog.press);
-	printf("\033[%d;%dH%d\n", 13, 30, js.dpad.up);
-	printf("\033[%d;%dH%d\n", 17, 30, js.dpad.down);
-	printf("\033[%d;%dH%d\n", 15, 26, js.dpad.left);
-	printf("\033[%d;%dH%d\n", 15, 34, js.dpad.right);
-	printf("\033[%d;%dH%04d\n", 6, 17, js.lanalog.up);
-	printf("\033[%d;%dH%04d\n", 10, 17, js.lanalog.down);
-	printf("\033[%d;%dH%04d\n", 8, 13, js.lanalog.left);
-	printf("\033[%d;%dH%04d\n", 8, 22, js.lanalog.right);
-	printf("\033[%d;%dH%04d\n", 13, 50, js.ranalog.up);
-	printf("\033[%d;%dH%04d\n", 17, 50, js.ranalog.down);
-	printf("\033[%d;%dH%04d\n", 15, 46, js.ranalog.left);
-	printf("\033[%d;%dH%04d\n", 15, 55, js.ranalog.right);
-	printf("\033[%d;%dHType:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", 28, 1,js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
-	usleep(50000);
-}
-
-void print_joystick(struct joystick js)
-{
-	printf("\n\n                 ``%04d.....``                    ``.....%04d``                 \n", js.LT, js.RT);
-	printf("             ```%d`````````  ..`````````..`````````..  ````````%d````             \n", js.LB, js.RB);
-	printf("            .``````       `.`         \\ /          `.`       ``````.            \n");
-	printf("          `.`              ``          %d           ``              `.`          \n", js.home);
-	printf("         .                   ``       / \\        ``                   .         \n");
-	printf("        .       %04d           ``````````````````         .-`-.        .        \n", js.lanalog.up);
-	printf("       `         .`.                                     .``%d``.        `       \n",js.Y);
-	printf("      ``    %04d`.%d.`%04d       ....        ....     `````.`-`.`````    ``      \n", js.lanalog.left, js.lanalog.press, js.lanalog.right);
-	printf("      .           `             ..%d.`      `. %d.   `.` %d`.     .`%d `-    .      \n", js.select, js.start, js.X, js.B);
-	printf("     .          %04d             ``          ``     `....```-```....`     .     \n", js.lanalog.down);
-	printf("    ``                       .                           .`.%d.`.          ``    \n",js.A);
-	printf("    .                      .` `.                          .:.:.`           .    \n");
-	printf("   .                       . %d .                 %04d                       .   \n", js.dpad.up, js.ranalog.up);
-	printf("  ``                   .````   ````.              .`.                       ``  \n");
-	printf("  .                   `. %d       %d .`        %04d`.%d.`%04d                   .  \n", js.dpad.left, js.dpad.right, js.ranalog.left, js.ranalog.press, js.ranalog.right);
-	printf(" `                      ````   ````                `                          . \n");
-	printf(" .                         . %d .                 %04d                         . \n", js.dpad.down, js.ranalog.down);
-	printf("``                          `.`                                                `\n");
-	printf(".                                                                              .\n");
-	printf(".                                                                              .\n");
-	printf(".                     ````````````````````````````````````                     .\n");
-	printf(".                  ```                                    ```                  .\n");
-	printf(".                ``                                          ``                .\n");
-	printf(".              ``                                              ``              .\n");
-	printf(" .           ``                                                  ``           . \n");
-	printf("  ``       ``                                                      ``       ``  \n");
-	printf("    ```````                                                          ```````    \n");
-	//printf("Type:%4i Code:%4i Value:%5i Time_sec:%12li Time_usec:%7li\n", js.last_event.type, js.last_event.code, js.last_event.value, js.last_event.time.tv_sec, js.last_event.time.tv_usec);
-}
-
 void init_joystick(struct joystick* js, char devname[])
 {
-	if(DEBUG_JOYSTICK) print_error();
-	
 	while(!exists(devname)) sleep(0.5);
 	
 	js->device = open(devname, O_RDONLY);
@@ -178,8 +111,6 @@ void init_joystick(struct joystick* js, char devname[])
 	js->home = 0;
 	js->new_data = 0;
 	js->disconnect = 0;
-	
-	if(DEBUG_JOYSTICK) print_joystick(*js);
 }
 
 int is_updated_js(struct joystick* js)
