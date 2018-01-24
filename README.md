@@ -18,4 +18,4 @@ we put them all in the same directory as the main code.
 
 The main code, available at the ```main.c``` file under ```/code```, uses the ```pthread```
 wrapper provided by the WiringPi library to parallelize the execution of the
-code modules. Reference and documentation available at [WiringPi website](wiringpi.com).
+code modules. Reference and documentation available at [WiringPi website](http://www.wiringpi.com).
