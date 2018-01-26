@@ -76,7 +76,7 @@ PI_THREAD(led)
 	while(keep_running)
 	{
 		update_led();
-		delay(LED_DELAY);
+		delay(50);
 	}
 	led_finished = 1;
 }
