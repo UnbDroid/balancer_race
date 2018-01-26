@@ -6,7 +6,7 @@
 
 struct joystick js;
 int keep_running = 1;
-int led_finished = 1, joystick_finished = 1, observador_finished = 1;
+int led_finished = 1, joystick_finished = 1, watch_finished = 1;
 int shutdown = 0, reboot = 0, fechar=0;
 
 PI_THREAD(joystick)
@@ -40,9 +40,11 @@ PI_THREAD(led)
 	led_finished = 1;
 }
 
-PI_THREAD(observador)
+PI_THREAD(watch
+)
 {
-	observador_finished = 0;
+	watch
+_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{
@@ -51,7 +53,8 @@ PI_THREAD(observador)
 		set_color(YELLOW);
 		delay(1000);
 	}
-	observador_finished = 1;
+	watch
+_finished = 1;
 }
 
 int main()
@@ -68,11 +71,13 @@ int main()
     wiringPiSetupPhys();
 	piThreadCreate(joystick);
 	piThreadCreate(led);
-	piThreadCreate(observador);
+	piThreadCreate(watch
+	);
 	
 	while(keep_running) delay(100);
 	light_color(RED);
-	while(!(joystick_finished && led_finished && observador_finished));
+	while(!(joystick_finished && led_finished && watch
+	_finished));
 	light_color(WHITE);
 
 	if(shutdown) system("sudo shutdown now&");
