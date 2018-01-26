@@ -97,13 +97,13 @@ PI_THREAD(debug)
 
 int main()
 {
-	char resposta;
+	char ans;
     do
     {
     	printf("Are you su?(y/n)\n");
-   		scanf("%c", &resposta);
-    } while(resposta != 'y' && resposta != 'n');
-    if(resposta!='y')
+   		scanf("%c", &ans);
+    } while(ans != 'y' && ans != 'n');
+    if(ans!='y')
     	return 0;
 
     piThreadCreate(debug);
