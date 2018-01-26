@@ -1,17 +1,22 @@
 #include <stdio.h>
+#include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <pca9685pwmcontrol.c>
 
-// Portas usadas pelo LED no PCA9685
+// Ports used by the RBG LED on the PCA9685 board
 #define LED_R 15
 #define LED_G 14
 #define LED_B 13
-#define CATHODE 12
 
-// Constantes de referência para cores
+// LED state constant values
+#define NO_STATE -1
+#define STANDBY 0
+#define BLUETOOTH 1
+
+// Color constant values
 #define OFF_COLOR -1
 #define UNDEFINED_COLOR 0
 #define WHITE 1
@@ -27,8 +32,11 @@
 #define LED_RANGE 4095
 
 int endPCA9685;
+int current_state = NO_STATE;
 int current_color = UNDEFINED_COLOR;
+int led_state = NO_STATE;
 int led_color = OFF_COLOR;
+int last_update = 0;
 
 void light_off()
 {
@@ -45,8 +53,12 @@ void init_led()
 {
 	endPCA9685 = wiringPiI2CSetup(0x40);
 	initPCA9685(endPCA9685);
-	pwmPCA9685(endPCA9685, CATHODE, LED_RANGE);
 	light_off();
+}
+
+void set_led_state(int state)
+{
+	led_state = state;
 }
 
 void set_color(int color)
@@ -54,17 +66,17 @@ void set_color(int color)
 	led_color = color;
 }
 
-void light_color(int color)
+void update_led()
 {
-	if(color != current_color)
+	if(led_color != current_color)
 	{		
 		int r_dutycicle; 
 		int g_dutycicle;
 		int b_dutycicle;
 
-		current_color = color;
+		current_color = led_color;
 
-		switch(color)
+		switch(led_color)
 		{
 			case WHITE:
 				r_dutycicle = 0;

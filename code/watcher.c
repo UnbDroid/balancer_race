@@ -7,7 +7,7 @@
 struct joystick js;
 int keep_running = 1;
 int led_finished = 1, joystick_finished = 1, watch_finished = 1;
-int shutdown = 0, reboot = 0, fechar=0;
+int shutdown = 0, reboot = 0, close_program=0;
 
 PI_THREAD(joystick)
 {
@@ -22,7 +22,7 @@ PI_THREAD(joystick)
 	}
 	if(js.dpad.down) shutdown = 1;
 	if(js.dpad.up) reboot = 1;
-	if(js.dpad.left) fechar = 1;
+	if(js.dpad.left) close_program = 1;
 	keep_running = 0;
 	joystick_finished = 1;
 }
@@ -34,17 +34,15 @@ PI_THREAD(led)
 	init_led();
 	while(keep_running)
 	{
-		light_color(led_color);
+		update_led(led_color);
 		delay(LED_DELAY);
 	}
 	led_finished = 1;
 }
 
-PI_THREAD(watch
-)
+PI_THREAD(watch)
 {
-	watch
-_finished = 0;
+	watch_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{
@@ -53,35 +51,34 @@ _finished = 0;
 		set_color(YELLOW);
 		delay(1000);
 	}
-	watch
-_finished = 1;
+	watch_finished = 1;
 }
 
 int main()
 {
-	char resposta;
+	char ans;
     do
     {
     	printf("Are you su?(y/n)\n");
-   		scanf("%c", &resposta);
-    } while(resposta != 'y' && resposta != 'n');
-    if(resposta!='y')
+   		scanf("%c", &ans);
+    } while(ans != 'y' && ans != 'n');
+    if(ans!='y')
     	return 0;
 
     wiringPiSetupPhys();
 	piThreadCreate(joystick);
 	piThreadCreate(led);
-	piThreadCreate(watch
-	);
+	piThreadCreate(watch);
 	
 	while(keep_running) delay(100);
-	light_color(RED);
-	while(!(joystick_finished && led_finished && watch
-	_finished));
-	light_color(WHITE);
+	set_color(RED);
+	update_led();
+	while(!(joystick_finished && led_finished && watch_finished));
+	set_color(WHITE);
+	update_led();
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!fechar) system("sudo /home/pi/ccdir/main >> /home/pi/log/mainlog.txt < /home/pi/log/input.txt");
+	else if (!close_program) system("sudo /home/pi/ccdir/main >> /home/pi/log/mainlog.txt < /home/pi/log/input.txt");
 	return 0;
 }

@@ -75,7 +75,7 @@ PI_THREAD(led)
 	init_led();
 	while(keep_running)
 	{
-		light_color(led_color);
+		update_led();
 		delay(LED_DELAY);
 	}
 	led_finished = 1;
@@ -116,9 +116,11 @@ int main()
 	
 	
 	while(keep_running) delay(100);
-	light_color(RED);
+	set_color(RED);
+	update_led();
 	while(!(main_finished && joystick_finished && led_finished && debug_finished));
-	light_color(WHITE);
+	set_color(WHITE);
+	update_led();
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
