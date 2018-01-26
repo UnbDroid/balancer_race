@@ -8,7 +8,7 @@
 struct joystick js;
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
-int shutdown = 0, reboot = 0, fechar=0;;
+int shutdown = 0, reboot = 0, close_program=0;;
 
 PI_THREAD(main_thread)
 {
@@ -63,7 +63,7 @@ PI_THREAD(joystick)
 	}
 	if(js.dpad.down) shutdown = 1;
 	if(js.dpad.up) reboot = 1;
-	if(js.dpad.left) fechar = 1;
+	if(js.dpad.left) close_program = 1;
 	keep_running = 0;
 	joystick_finished = 1;
 }
@@ -122,7 +122,7 @@ int main()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!fechar) system("sudo /home/pi/ccdir/observador >> /home/pi/log/mainlog.txt < /home/pi/log/input.txt");
+	else if (!close_program) system("sudo /home/pi/ccdir/observador >> /home/pi/log/mainlog.txt < /home/pi/log/input.txt");
 
 	return 0;
 }
