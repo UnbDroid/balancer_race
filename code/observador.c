@@ -72,7 +72,7 @@ int main()
 	
 	while(keep_running) delay(100);
 	light_color(RED);
-	while(!(joystick_finished && led_finished));
+	while(!(joystick_finished && led_finished && observador_finished));
 	light_color(WHITE);
 
 	if(shutdown) system("sudo shutdown now&");
