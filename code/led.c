@@ -1,19 +1,24 @@
 #include <stdio.h>
+#include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <pca9685pwmcontrol.c>
 
-// Portas usadas pelo LED no PCA9685
+// Ports used by the RBG LED on the PCA9685 board
 #define LED_R 15
 #define LED_G 14
 #define LED_B 13
-#define CATHODE 12
 
-// Constantes de referência para cores
+// LED state constant values
+#define NO_STATE -1
+#define STANDBY 0
+#define BLUETOOTH 1
+
+// Color constant values
 #define OFF_COLOR -1
-#define UNDEFINED_COLOR 0
+#define NO_COLOR 0
 #define WHITE 1
 #define RED 2
 #define GREEN 3
@@ -22,107 +27,152 @@
 #define MAGENTA 6
 #define YELLOW 7
 
-#define LED_DELAY 100
-
 #define LED_RANGE 4095
 
 int endPCA9685;
-int current_color = UNDEFINED_COLOR;
-int led_color = OFF_COLOR;
 
-void light_off()
-{
-	if(current_color != OFF_COLOR)
-	{
-		current_color = OFF_COLOR;
-		pwmPCA9685(endPCA9685, LED_R, LED_RANGE);
-		pwmPCA9685(endPCA9685, LED_G, LED_RANGE);
-		pwmPCA9685(endPCA9685, LED_B, LED_RANGE);
-	}
-}
+int last_color = NO_COLOR;
+int led_state = NO_STATE;
+int led_color = OFF_COLOR;
+int last_update = 0;
+int led_state_flag = 0;
+unsigned int led_delay = 100;
+
+int r_dutycycle; 
+int g_dutycycle;
+int b_dutycycle;
 
 void init_led()
 {
 	endPCA9685 = wiringPiI2CSetup(0x40);
 	initPCA9685(endPCA9685);
-	pwmPCA9685(endPCA9685, CATHODE, LED_RANGE);
-	light_off();
+	led_state = NO_STATE;
+	led_color = OFF_COLOR;
+}
+
+void set_led_state(int state)
+{
+	led_state = state;
+	led_color = NO_COLOR;
 }
 
 void set_color(int color)
 {
 	led_color = color;
+	led_state = NO_STATE;
 }
 
-void light_color(int color)
+void force_led()
 {
-	if(color != current_color)
-	{		
-		int r_dutycicle; 
-		int g_dutycicle;
-		int b_dutycicle;
-
-		current_color = color;
-
-		switch(color)
+	last_update = millis();
+	if(led_state != NO_STATE)
+	{
+		switch(led_state)
 		{
-			case WHITE:
-				r_dutycicle = 0;
-				g_dutycicle = 0;
-				b_dutycicle = 0;
+			case STANDBY:
+				led_delay = 600;
+				if(led_state_flag)
+				{
+					led_state_flag = 0;
+					r_dutycycle = 0;
+					g_dutycycle = LED_RANGE;
+					b_dutycycle = LED_RANGE;
+				} else {
+					led_state_flag = 1;
+					r_dutycycle = 0;
+					g_dutycycle = 0;
+					b_dutycycle = LED_RANGE;
+				}
 				break;
-			case RED:
-				r_dutycicle = 0; 
-				g_dutycicle = LED_RANGE; 
-				b_dutycicle = LED_RANGE;
-				break;
-			case GREEN:
-				r_dutycicle = LED_RANGE; 
-				g_dutycicle = 0; 
-				b_dutycicle = LED_RANGE;
-				break;
-			case BLUE:
-				r_dutycicle = LED_RANGE;
-				g_dutycicle = LED_RANGE;
-				b_dutycicle = 0;
-				break;
-			case CYAN:
-				r_dutycicle = LED_RANGE;
-				g_dutycicle = 0;
-				b_dutycicle = 0;
-				break;
-			case MAGENTA:
-				r_dutycicle = 0;
-				g_dutycicle = LED_RANGE;
-				b_dutycicle = 0;
-				break;
-			case YELLOW:
-				r_dutycicle = 0; 
-				g_dutycicle = 0; 
-				b_dutycicle = LED_RANGE;
-				break;
-			case OFF_COLOR:
-				r_dutycicle = LED_RANGE;
-				g_dutycicle = LED_RANGE;
-				b_dutycicle = LED_RANGE;
+			case BLUETOOTH:
+				led_delay = 10;
+				r_dutycycle = 0;
+				if(led_state_flag)
+				{
+					b_dutycycle += 3;
+					if(b_dutycycle >= 4095) led_state_flag = 0;
+				} else {
+					b_dutycycle -= 3;
+					if(b_dutycycle <= 4095) led_state_flag = 1;
+				}
+				if(b_dutycycle < 3600)
+				{
+					g_dutycycle = 3600;
+				} else {
+					g_dutycycle = b_dutycycle;
+				}
 				break;
 		}
-		pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
-		pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
-		pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
 	}
+	if(led_color != NO_COLOR && led_color != last_color)
+	{		
+		last_color = led_color;
+		led_delay = 100;
+		switch(led_color)
+		{
+			case WHITE:
+				r_dutycycle = 0;
+				g_dutycycle = 0;
+				b_dutycycle = 0;
+				break;
+			case RED:
+				r_dutycycle = 0; 
+				g_dutycycle = LED_RANGE; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case GREEN:
+				r_dutycycle = LED_RANGE; 
+				g_dutycycle = 0; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case BLUE:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = 0;
+				break;
+			case CYAN:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = 0;
+				b_dutycycle = 0;
+				break;
+			case MAGENTA:
+				r_dutycycle = 0;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = 0;
+				break;
+			case YELLOW:
+				r_dutycycle = 0; 
+				g_dutycycle = 0; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case OFF_COLOR:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = LED_RANGE;
+				break;
+		}
+	}
+	pwmPCA9685(endPCA9685, LED_R, r_dutycycle);
+	pwmPCA9685(endPCA9685, LED_G, g_dutycycle);
+	pwmPCA9685(endPCA9685, LED_B, b_dutycycle);
+}
+
+void update_led()
+{
+	if(millis() - last_update > led_delay) force_led();
 }
 
 void light_channels(int red, int green, int blue)
 {
-	// dutycicle = 0 -> led aceso totalmente
-	int r_dutycicle = LED_RANGE - 255 * red * red / LED_RANGE; 
-	int g_dutycicle = LED_RANGE - 255 * green * green / LED_RANGE; 
-	int b_dutycicle = LED_RANGE - 255 * blue * blue / LED_RANGE;
+	// dutycycle = 0 -> led aceso totalmente
+	int r_dutycycle = LED_RANGE - 255 * red * red / LED_RANGE; 
+	int g_dutycycle = LED_RANGE - 255 * green * green / LED_RANGE; 
+	int b_dutycycle = LED_RANGE - 255 * blue * blue / LED_RANGE;
 
-	current_color = UNDEFINED_COLOR;
+	led_color = NO_COLOR;
+	led_state = NO_STATE;
 
-	pwmPCA9685(endPCA9685, LED_R, r_dutycicle);
-	pwmPCA9685(endPCA9685, LED_G, g_dutycicle);
-	pwmPCA9685(endPCA9685, LED_B, b_dutycicle);
+	pwmPCA9685(endPCA9685, LED_R, r_dutycycle);
+	pwmPCA9685(endPCA9685, LED_G, g_dutycycle);
+	pwmPCA9685(endPCA9685, LED_B, b_dutycycle);
 }
