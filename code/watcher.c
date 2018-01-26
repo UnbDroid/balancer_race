@@ -35,23 +35,9 @@ PI_THREAD(led)
 	while(keep_running)
 	{
 		update_led(led_color);
-		delay(LED_DELAY);
+		delay(50);
 	}
 	led_finished = 1;
-}
-
-PI_THREAD(watch)
-{
-	watch_finished = 0;
-	piHiPri(0);
-	while(keep_running)
-	{
-		set_color(RED);
-		delay(1000);
-		set_color(YELLOW);
-		delay(1000);
-	}
-	watch_finished = 1;
 }
 
 int main()
@@ -68,14 +54,14 @@ int main()
     wiringPiSetupPhys();
 	piThreadCreate(joystick);
 	piThreadCreate(led);
-	piThreadCreate(watch);
-	
+	set_led_state(STANDBY);
+
 	while(keep_running) delay(100);
 	set_color(RED);
-	update_led();
+	force_led();
 	while(!(joystick_finished && led_finished && watch_finished));
 	set_color(WHITE);
-	update_led();
+	force_led();
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");

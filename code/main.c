@@ -114,13 +114,12 @@ int main()
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 	
-	
 	while(keep_running) delay(100);
 	set_color(RED);
-	update_led();
+	force_led();
 	while(!(main_finished && joystick_finished && led_finished && debug_finished));
 	set_color(WHITE);
-	update_led();
+	force_led();
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");

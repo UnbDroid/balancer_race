@@ -62,102 +62,104 @@ void set_color(int color)
 	led_state = NO_STATE;
 }
 
+void force_led()
+{
+	last_update = millis();
+	if(led_state != NO_STATE)
+	{
+		switch(led_state)
+		{
+			case STANDBY:
+				led_delay = 600;
+				if(led_state_flag)
+				{
+					led_state_flag = 0;
+					r_dutycycle = 0;
+					g_dutycycle = LED_RANGE;
+					b_dutycycle = LED_RANGE;
+				} else {
+					led_state_flag = 1;
+					r_dutycycle = 0;
+					g_dutycycle = 0;
+					b_dutycycle = LED_RANGE;
+				}
+				break;
+			case BLUETOOTH:
+				led_delay = 10;
+				r_dutycycle = 0;
+				if(led_state_flag)
+				{
+					b_dutycycle += 3;
+					if(b_dutycycle >= 4095) led_state_flag = 0;
+				} else {
+					b_dutycycle -= 3;
+					if(b_dutycycle <= 4095) led_state_flag = 1;
+				}
+				if(b_dutycycle < 3600)
+				{
+					g_dutycycle = 3600;
+				} else {
+					g_dutycycle = b_dutycycle;
+				}
+				break;
+		}
+	}
+	if(led_color != NO_COLOR && led_color != last_color)
+	{		
+		last_color = led_color;
+		led_delay = 100;
+		switch(led_color)
+		{
+			case WHITE:
+				r_dutycycle = 0;
+				g_dutycycle = 0;
+				b_dutycycle = 0;
+				break;
+			case RED:
+				r_dutycycle = 0; 
+				g_dutycycle = LED_RANGE; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case GREEN:
+				r_dutycycle = LED_RANGE; 
+				g_dutycycle = 0; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case BLUE:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = 0;
+				break;
+			case CYAN:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = 0;
+				b_dutycycle = 0;
+				break;
+			case MAGENTA:
+				r_dutycycle = 0;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = 0;
+				break;
+			case YELLOW:
+				r_dutycycle = 0; 
+				g_dutycycle = 0; 
+				b_dutycycle = LED_RANGE;
+				break;
+			case OFF_COLOR:
+				r_dutycycle = LED_RANGE;
+				g_dutycycle = LED_RANGE;
+				b_dutycycle = LED_RANGE;
+				break;
+		}
+	}
+	pwmPCA9685(endPCA9685, LED_R, r_dutycycle);
+	pwmPCA9685(endPCA9685, LED_G, g_dutycycle);
+	pwmPCA9685(endPCA9685, LED_B, b_dutycycle);
+}
+
 void update_led()
 {
-	if(millis() - last_update > led_delay)
-	{
-		last_update = millis();
-		if(led_state != NO_STATE)
-		{
-			switch(led_state)
-			{
-				case STANDBY:
-					led_delay = 600;
-					if(led_state_flag)
-					{
-						led_state_flag = 0;
-						r_dutycycle = 0;
-						g_dutycycle = LED_RANGE;
-						b_dutycycle = LED_RANGE;
-					} else {
-						led_state_flag = 1;
-						r_dutycycle = 0;
-						g_dutycycle = 0;
-						b_dutycycle = LED_RANGE;
-					}
-					break;
-				case BLUETOOTH:
-					led_delay = 10;
-					r_dutycycle = 0;
-					if(led_state_flag)
-					{
-						b_dutycycle += 3;
-						if(b_dutycycle >= 4095) led_state_flag = 0;
-					} else {
-						b_dutycycle -= 3;
-						if(b_dutycycle <= 4095) led_state_flag = 1;
-					}
-					if(b_dutycycle < 3600)
-					{
-						g_dutycycle = 3600;
-					} else {
-						g_dutycycle = b_dutycycle;
-					}
-					break;
-			}
-		}
-		if(led_color != NO_COLOR && led_color != last_color)
-		{		
-			last_color = led_color;
-			led_delay = 100;
-			switch(led_color)
-			{
-				case WHITE:
-					r_dutycycle = 0;
-					g_dutycycle = 0;
-					b_dutycycle = 0;
-					break;
-				case RED:
-					r_dutycycle = 0; 
-					g_dutycycle = LED_RANGE; 
-					b_dutycycle = LED_RANGE;
-					break;
-				case GREEN:
-					r_dutycycle = LED_RANGE; 
-					g_dutycycle = 0; 
-					b_dutycycle = LED_RANGE;
-					break;
-				case BLUE:
-					r_dutycycle = LED_RANGE;
-					g_dutycycle = LED_RANGE;
-					b_dutycycle = 0;
-					break;
-				case CYAN:
-					r_dutycycle = LED_RANGE;
-					g_dutycycle = 0;
-					b_dutycycle = 0;
-					break;
-				case MAGENTA:
-					r_dutycycle = 0;
-					g_dutycycle = LED_RANGE;
-					b_dutycycle = 0;
-					break;
-				case YELLOW:
-					r_dutycycle = 0; 
-					g_dutycycle = 0; 
-					b_dutycycle = LED_RANGE;
-					break;
-				case OFF_COLOR:
-					r_dutycycle = LED_RANGE;
-					g_dutycycle = LED_RANGE;
-					b_dutycycle = LED_RANGE;
-					break;
-			}
-		}
-		pwmPCA9685(endPCA9685, LED_R, r_dutycycle);
-		pwmPCA9685(endPCA9685, LED_G, g_dutycycle);
-		pwmPCA9685(endPCA9685, LED_B, b_dutycycle);
-	}
+	if(millis() - last_update > led_delay) force_led();
 }
 
 void light_channels(int red, int green, int blue)
