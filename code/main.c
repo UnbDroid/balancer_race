@@ -124,7 +124,7 @@ int main()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/observador >> /home/pi/log/mainlog.txt < /home/pi/log/input.txt");
+	else if (!close_program) system("sudo /home/pi/ccdir/watcher >> /home/pi/log/watcherlog.txt < /home/pi/log/input.txt");
 
 	return 0;
 }
