@@ -55,7 +55,6 @@ int main()
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 	set_led_state(STANDBY);
-
 	while(keep_running) delay(100);
 	set_color(RED);
 	force_led();

@@ -17,8 +17,8 @@
 #define BLUETOOTH 1
 
 // Color constant values
-#define OFF_COLOR -1
-#define NO_COLOR 0
+#define NO_COLOR -1
+#define OFF_COLOR 0
 #define WHITE 1
 #define RED 2
 #define GREEN 3
@@ -46,8 +46,6 @@ void init_led()
 {
 	endPCA9685 = wiringPiI2CSetup(0x40);
 	initPCA9685(endPCA9685);
-	led_state = NO_STATE;
-	led_color = OFF_COLOR;
 }
 
 void set_led_state(int state)
@@ -80,7 +78,7 @@ void force_led()
 				} else {
 					led_state_flag = 1;
 					r_dutycycle = 0;
-					g_dutycycle = 0;
+					g_dutycycle = 1260;
 					b_dutycycle = LED_RANGE;
 				}
 				break;
@@ -159,16 +157,21 @@ void force_led()
 
 void update_led()
 {
-	if(millis() - last_update > led_delay) force_led();
+	
+	if(millis() - last_update > led_delay)
+	{
+		force_led();
+	}
 }
 
 void light_channels(int red, int green, int blue)
 {
 	// dutycycle = 0 -> led aceso totalmente
-	int r_dutycycle = LED_RANGE - 255 * red * red / LED_RANGE; 
-	int g_dutycycle = LED_RANGE - 255 * green * green / LED_RANGE; 
-	int b_dutycycle = LED_RANGE - 255 * blue * blue / LED_RANGE;
+	r_dutycycle = LED_RANGE - 255 * red * red / LED_RANGE; 
+	g_dutycycle = LED_RANGE - 255 * green * green / LED_RANGE; 
+	b_dutycycle = LED_RANGE - 255 * blue * blue / LED_RANGE;
 
+	led_delay = 500;
 	led_color = NO_COLOR;
 	led_state = NO_STATE;
 
