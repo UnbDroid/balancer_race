@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
+#include <unistd.h>
 #include "jstick.c"
 #include "led.c"
 #include "motor.c"
@@ -15,20 +16,7 @@ PI_THREAD(main_thread)
 	main_finished = 0;
 	piHiPri(0);
 	while(keep_running)
-	{
-		if(js.B)
-			set_color(RED);
-		else if(js.A)
-			set_color(GREEN);
-		else if(js.X)
-			set_color(BLUE);
-		else if(js.Y)
-			set_color(YELLOW);
-		else if(js.start)
-			set_color(WHITE);
-		else
-			set_color(OFF_COLOR);
-		
+	{		
 		if(js.lanalog.up > 0)
 			OnFwd(LMOTOR, js.lanalog.up);
 		else if(js.lanalog.down > 0)
@@ -54,11 +42,19 @@ PI_THREAD(joystick)
 {
     joystick_finished = 0;
 	piHiPri(0);
+    
+    set_led_state(BLUETOOTH, ON);
     init_joystick(&js, devname);
+    set_led_state(BLUETOOTH, OFF);
+
     while(!(js.select && js.start))
     {
         if(js.disconnect)
-        	init_joystick(&js, devname);
+        {
+        	set_led_state(BLUETOOTH, ON);
+		    init_joystick(&js, devname);
+		    set_led_state(BLUETOOTH, OFF);
+		}
         update_joystick(&js);
 	}
 	if(js.dpad.down) shutdown = 1;
@@ -95,16 +91,37 @@ PI_THREAD(debug)
 	debug_finished = 1;
 }
 
-int main()
+int am_i_su()
 {
-	char ans;
-    do
-    {
-    	printf("Are you su?(y/n)\n");
-   		scanf("%c", &ans);
-    } while(ans != 'y' && ans != 'n');
-    if(ans!='y')
+    if(geteuid())
     	return 0;
+    return 1;
+}
+
+void clean_up()
+{
+	set_color(RED, 255);
+	light_rgb();
+	while(!led_finished);
+	set_color(RED, 255);
+	light_rgb();
+	while(!(main_finished && joystick_finished && debug_finished));
+	set_color(WHITE, 255);
+	light_rgb();
+
+	if(shutdown) system("sudo shutdown now&");
+	else if(reboot) system("sudo shutdown -r now&");
+	else if (!close_program) system("sudo /home/pi/ccdir/watcher");
+}
+
+int main(int argc, char* argv)
+{
+	printf("main\n");
+	if(!am_i_su()) 
+	{
+		printf("Restricted area. Super users only.\n");
+		return 0;
+	}
 
     piThreadCreate(debug);
 
@@ -115,15 +132,7 @@ int main()
 	piThreadCreate(led);
 	
 	while(keep_running) delay(100);
-	set_color(RED);
-	force_led();
-	while(!(main_finished && joystick_finished && led_finished && debug_finished));
-	set_color(WHITE);
-	force_led();
-
-	if(shutdown) system("sudo shutdown now&");
-	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/watcher >> /home/pi/log/watcherlog.txt < /home/pi/log/input.txt");
+	clean_up();
 
 	return 0;
 }
