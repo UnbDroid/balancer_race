@@ -20,7 +20,6 @@
 #define NUM_STATES 2
 
 // Color constant values
-#define NO_COLOR -1
 #define OFF_COLOR 0
 #define WHITE 1
 #define RED 2

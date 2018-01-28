@@ -62,6 +62,8 @@ struct joystick {
 	struct input_event last_event;
 };
 
+struct joystick js;
+
 int exists(const char *fname)
 {
 	FILE *file;

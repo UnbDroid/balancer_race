@@ -5,8 +5,10 @@
 #include "jstick.c"
 #include "led.c"
 #include "motor.c"
+//#include "debug.c"
 
-struct joystick js;
+//struct debug_data debug;
+
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
 int shutdown = 0, reboot = 0, close_program=0;;
@@ -77,7 +79,7 @@ PI_THREAD(led)
 	led_finished = 1;
 }
 
-PI_THREAD(debug)
+PI_THREAD(debug_thread)
 {
 	debug_finished = 0;
 	if(0)
@@ -123,7 +125,7 @@ int main(int argc, char* argv)
 		return 0;
 	}
 
-    piThreadCreate(debug);
+    piThreadCreate(debug_thread);
 
     wiringPiSetupPhys();
 	init_motors();

@@ -22,11 +22,15 @@
 #define ENC_PIN_RIGHT 38
 #define DIR_PIN_RIGHT 36
 
+#define WHEEL_RADIUS 0.05
+#define TICKS2METERS WHEEL_RADIUS*3.141592654/200
+
 struct motor {
 	volatile long long int posCounter;
 	volatile unsigned long int tickFreq;
 	volatile unsigned long int lastTick;
 	volatile unsigned long int currTick;
+	double displacement, speed;
 };
 
 struct motor left_motor, right_motor;
@@ -185,5 +189,13 @@ int TachoSpeed(int motor)
 		return right_motor.tickFreq;
 	} else {
 		return 0;
-	}	
+	}
+}
+
+void update_motors()
+{
+	left_motor.displacement = left_motor.posCounter*TICKS2METERS;
+	left_motor.speed = left_motor.tickFreq*TICKS2METERS;
+	right_motor.displacement = right_motor.posCounter*TICKS2METERS;
+	right_motor.speed = right_motor.tickFreq*TICKS2METERS;
 }
