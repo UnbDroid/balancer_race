@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <wiringPi.h>
 #include <unistd.h>
+#include <string.h>
 #include "jstick.c"
 #include "led.c"
 #include "motor.c"
-//#include "debug.c"
+#include "sensors.c"
+#include "debug.c"
 
-//struct debug_data debug;
+struct debug_data debug;
 
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
@@ -32,7 +34,7 @@ PI_THREAD(main_thread)
 			OnRev(RMOTOR, js.ranalog.down);
 		else
 			Coast(RMOTOR);
-
+		
 		delay(100);
 	}
 	Coast(LMOTOR);
@@ -82,13 +84,18 @@ PI_THREAD(led)
 PI_THREAD(debug_thread)
 {
 	debug_finished = 0;
-	if(0)
+	piHiPri(0);
+	init_debug();
+	while(keep_running)
 	{
-		piHiPri(0);
-		while(keep_running)
-		{
-				
-		}
+		update_motors();
+		debug.js = js;
+		debug.left_motor = left_motor;
+		debug.right_motor = right_motor;
+		debug.ir = ir;
+		debug.led_state = led_state;
+		update_debug(&debug);
+		delay(100);
 	}
 	debug_finished = 1;
 }
@@ -113,19 +120,32 @@ void clean_up()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/watcher");
+	else if (!close_program) system("sudo /home/pi/ccdir/watcher&");
 }
 
-int main(int argc, char* argv)
+int main(int argc, char* argv[])
 {
-	printf("main\n");
+	debug.debug_flag = 0;
+	if(argc > 1)
+	{
+		for(i = 1; i < argc; ++i)
+		{
+			if(	strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0 )
+			{
+				debug.debug_flag = 1;
+			}
+		}
+		if(debug.debug_flag)
+		{
+			piThreadCreate(debug_thread);
+		}
+	}
+
 	if(!am_i_su()) 
 	{
 		printf("Restricted area. Super users only.\n");
 		return 0;
 	}
-
-    piThreadCreate(debug_thread);
 
     wiringPiSetupPhys();
 	init_motors();

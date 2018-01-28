@@ -23,9 +23,11 @@
 #define DIR_PIN_RIGHT 36
 
 #define WHEEL_RADIUS 0.05
-#define TICKS2METERS WHEEL_RADIUS*3.141592654/200
+#define TICKS2METERS WHEEL_RADIUS*3.14159265358979323846/200
 
 struct motor {
+	int a_port, b_port;
+	int pwm;
 	volatile long long int posCounter;
 	volatile unsigned long int tickFreq;
 	volatile unsigned long int lastTick;
@@ -83,26 +85,38 @@ void OnFwd(int motor, int power)
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
 		{
-	    	digitalWrite(M_LEFT_A, HIGH);
-			digitalWrite(M_LEFT_B, LOW);
+	    	digitalWrite(M_LEFT_A, LOW);
+			digitalWrite(M_LEFT_B, HIGH);
 	    	pwmWrite(PWM_LEFT, power);
+	    	left_motor.a_port = 0;
+	    	left_motor.b_port = 1;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, LOW);
         	digitalWrite(M_RIGHT_B, HIGH);
         	pwmWrite(PWM_RIGHT, power);
+        	right_motor.a_port = 0;
+	    	right_motor.b_port = 1;
+	    	right_motor.pwm = power;
 		}
 	} else {
 		power = -power;
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
 		{
-	    	digitalWrite(M_LEFT_A, LOW);
-			digitalWrite(M_LEFT_B, HIGH);
+	    	digitalWrite(M_LEFT_A, HIGH);
+			digitalWrite(M_LEFT_B, LOW);
 	    	pwmWrite(PWM_LEFT, power);
+	    	left_motor.a_port = 1;
+	    	left_motor.b_port = 0;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, HIGH);
         	digitalWrite(M_RIGHT_B, LOW);
         	pwmWrite(PWM_RIGHT, power);
+        	right_motor.a_port = 1;
+	    	right_motor.b_port = 0;
+	    	right_motor.pwm = power;
 		}
 	}
 }
@@ -114,26 +128,38 @@ void OnRev(int motor, int power)
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
 		{
-	    	digitalWrite(M_LEFT_A, LOW);
-			digitalWrite(M_LEFT_B, HIGH);
+	    	digitalWrite(M_LEFT_A, HIGH);
+			digitalWrite(M_LEFT_B, LOW);
 	    	pwmWrite(PWM_LEFT, power);
+	    	left_motor.a_port = 1;
+	    	left_motor.b_port = 0;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, HIGH);
         	digitalWrite(M_RIGHT_B, LOW);
         	pwmWrite(PWM_RIGHT, power);
+        	right_motor.a_port = 1;
+	    	right_motor.b_port = 0;
+	    	right_motor.pwm = power;
 		}
 	} else {
 		power = -power;
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
 		{
-	    	digitalWrite(M_LEFT_A, HIGH);
-			digitalWrite(M_LEFT_B, LOW);
+	    	digitalWrite(M_LEFT_A, LOW);
+			digitalWrite(M_LEFT_B, HIGH);
 	    	pwmWrite(PWM_LEFT, power);
+	    	left_motor.a_port = 0;
+	    	left_motor.b_port = 1;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, LOW);
         	digitalWrite(M_RIGHT_B, HIGH);
         	pwmWrite(PWM_RIGHT, power);
+        	right_motor.a_port = 0;
+	    	right_motor.b_port = 1;
+	    	right_motor.pwm = power;
 		}
 	}
 }
