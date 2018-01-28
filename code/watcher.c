@@ -69,12 +69,11 @@ void clean_up()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/main");
+	else if (!close_program) system("sudo /home/pi/ccdir/main&");
 }
 
 int main()
 {
-	printf("watcher\n");
 	if(!am_i_su()) 
 	{
 		printf("Restricted area. Super users only.\n");
