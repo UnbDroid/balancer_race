@@ -52,9 +52,9 @@ void encoderInterruptLeft(void) {
 void encoderInterruptRight(void) {
   if(digitalRead(DIR_PIN_RIGHT))
   {
-    right_motor.posCounter += 1;
-  } else {
     right_motor.posCounter -= 1;
+  } else {
+    right_motor.posCounter += 1;
   }
   right_motor.currTick = micros();
   right_motor.tickFreq = 1000000/(right_motor.currTick-right_motor.lastTick);
