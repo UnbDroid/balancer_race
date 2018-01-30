@@ -88,16 +88,16 @@ void OnFwd(int motor, int power)
 	    	digitalWrite(M_LEFT_A, LOW);
 			digitalWrite(M_LEFT_B, HIGH);
 	    	pwmWrite(PWM_LEFT, power);
-	    	//left_motor.a_port = 0;
-	    	//left_motor.b_port = 1;
-	    	//left_motor.pwm = power;
+	    	left_motor.a_port = 0;
+	    	left_motor.b_port = 1;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, LOW);
         	digitalWrite(M_RIGHT_B, HIGH);
         	pwmWrite(PWM_RIGHT, power);
-        	//right_motor.a_port = 0;
-	    	//right_motor.b_port = 1;
-	    	//right_motor.pwm = power;
+        	right_motor.a_port = 0;
+	    	right_motor.b_port = 1;
+	    	right_motor.pwm = power;
 		}
 	} else {
 		power = -power;
@@ -107,16 +107,16 @@ void OnFwd(int motor, int power)
 	    	digitalWrite(M_LEFT_A, HIGH);
 			digitalWrite(M_LEFT_B, LOW);
 	    	pwmWrite(PWM_LEFT, power);
-	    	//left_motor.a_port = 1;
-	    	//left_motor.b_port = 0;
-	    	//left_motor.pwm = power;
+	    	left_motor.a_port = 1;
+	    	left_motor.b_port = 0;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, HIGH);
         	digitalWrite(M_RIGHT_B, LOW);
         	pwmWrite(PWM_RIGHT, power);
-        	//right_motor.a_port = 1;
-	    	//right_motor.b_port = 0;
-	    	//right_motor.pwm = power;
+        	right_motor.a_port = 1;
+	    	right_motor.b_port = 0;
+	    	right_motor.pwm = power;
 		}
 	}
 }
@@ -131,16 +131,16 @@ void OnRev(int motor, int power)
 	    	digitalWrite(M_LEFT_A, HIGH);
 			digitalWrite(M_LEFT_B, LOW);
 	    	pwmWrite(PWM_LEFT, power);
-	    	//left_motor.a_port = 1;
-	    	//left_motor.b_port = 0;
-	    	//left_motor.pwm = power;
+	    	left_motor.a_port = 1;
+	    	left_motor.b_port = 0;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, HIGH);
         	digitalWrite(M_RIGHT_B, LOW);
         	pwmWrite(PWM_RIGHT, power);
-        	//right_motor.a_port = 1;
-	    	//right_motor.b_port = 0;
-	    	//right_motor.pwm = power;
+        	right_motor.a_port = 1;
+	    	right_motor.b_port = 0;
+	    	right_motor.pwm = power;
 		}
 	} else {
 		power = -power;
@@ -150,16 +150,16 @@ void OnRev(int motor, int power)
 	    	digitalWrite(M_LEFT_A, LOW);
 			digitalWrite(M_LEFT_B, HIGH);
 	    	pwmWrite(PWM_LEFT, power);
-	    	//left_motor.a_port = 0;
-	    	//left_motor.b_port = 1;
-	    	//left_motor.pwm = power;
+	    	left_motor.a_port = 0;
+	    	left_motor.b_port = 1;
+	    	left_motor.pwm = power;
 		} else if(motor == RMOTOR) {
 			digitalWrite(M_RIGHT_A, LOW);
         	digitalWrite(M_RIGHT_B, HIGH);
         	pwmWrite(PWM_RIGHT, power);
-        	//right_motor.a_port = 0;
-	    	//right_motor.b_port = 1;
-	    	//right_motor.pwm = power;
+        	right_motor.a_port = 0;
+	    	right_motor.b_port = 1;
+	    	right_motor.pwm = power;
 		}
 	}
 }
@@ -171,10 +171,16 @@ void Brake(int motor)
 		digitalWrite(M_LEFT_A, HIGH);
 		digitalWrite(M_LEFT_B, HIGH);
 		pwmWrite(PWM_LEFT, 0);
+		left_motor.a_port = 1;
+    	left_motor.b_port = 1;
+    	left_motor.pwm = 0;
 	} else if (motor == RMOTOR) {
 		digitalWrite(M_RIGHT_A, HIGH);
 		digitalWrite(M_RIGHT_B, HIGH);
 		pwmWrite(PWM_RIGHT, 0);
+		right_motor.a_port = 1;
+    	right_motor.b_port = 1;
+    	right_motor.pwm = 0;
 	}
 }
 
@@ -185,10 +191,16 @@ void Coast(int motor)
 		digitalWrite(M_LEFT_A, LOW);
 		digitalWrite(M_LEFT_B, LOW);
 		pwmWrite(PWM_LEFT, 0);
+		left_motor.a_port = 0;
+    	left_motor.b_port = 0;
+    	left_motor.pwm = 0;
 	} else if (motor == RMOTOR) {
 		digitalWrite(M_RIGHT_A, LOW);
 		digitalWrite(M_RIGHT_B, LOW);
 		pwmWrite(PWM_RIGHT, 0);
+		right_motor.a_port = 0;
+    	right_motor.b_port = 0;
+    	right_motor.pwm = 0;
 	}
 }
 
