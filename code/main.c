@@ -12,7 +12,7 @@
 struct debug_data debug;
 
 int keep_running = 1;
-int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1;
+int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1;
 int shutdown = 0, reboot = 0, close_program=0;;
 
 PI_THREAD(main_thread)
@@ -85,6 +85,17 @@ PI_THREAD(led)
 	led_finished = 1;
 }
 
+PI_THREAD(sensors)
+{
+	sensors_finished = 0;
+	while(keep_running)
+	{
+		update_imu();
+		delay(50);
+	}
+	sensors_finished = 1;
+}
+
 PI_THREAD(debug_thread)
 {
 	debug_finished = 0;
@@ -97,6 +108,7 @@ PI_THREAD(debug_thread)
 		debug.left_motor = left_motor;
 		debug.right_motor = right_motor;
 		debug.ir = ir;
+		debug.imu = imu;
 		debug.led_state = led_state;
 		update_debug(&debug);
 		delay(100);
@@ -118,7 +130,7 @@ void clean_up()
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished));
+	while(!(main_finished && joystick_finished && debug_finished && sensors_finished));
 	set_color(WHITE, 255);
 	light_rgb();
 
@@ -153,7 +165,9 @@ int main(int argc, char* argv[])
 
     wiringPiSetupPhys();
 	init_motors();
+	init_sensors();
 	piThreadCreate(main_thread);
+	piThreadCreate(sensors);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 	
