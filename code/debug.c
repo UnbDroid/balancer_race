@@ -1,8 +1,4 @@
 #include <stdio.h>
-//#include "led.c"
-//#include "motor.c"
-//#include "jstick.c"
-//#include "sensors.c"
 
 struct debug_data {
 	struct joystick js;
