@@ -164,32 +164,24 @@ void OnRev(int motor, int power)
 	}
 }
 
-void Brake(int motor)
+void Brake()
 {
-	if(motor == LMOTOR)
-	{
-		digitalWrite(M_LEFT_A, HIGH);
-		digitalWrite(M_LEFT_B, HIGH);
-		pwmWrite(PWM_LEFT, 0);
-	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, HIGH);
-		digitalWrite(M_RIGHT_B, HIGH);
-		pwmWrite(PWM_RIGHT, 0);
-	}
+	digitalWrite(M_LEFT_A, HIGH);
+	digitalWrite(M_LEFT_B, HIGH);
+	pwmWrite(PWM_LEFT, 0);
+	digitalWrite(M_RIGHT_A, HIGH);
+	digitalWrite(M_RIGHT_B, HIGH);
+	pwmWrite(PWM_RIGHT, 0);
 }
 
-void Coast(int motor)
+void Coast()
 {
-	if(motor == LMOTOR)
-	{
-		digitalWrite(M_LEFT_A, LOW);
-		digitalWrite(M_LEFT_B, LOW);
-		pwmWrite(PWM_LEFT, 0);
-	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, LOW);
-		digitalWrite(M_RIGHT_B, LOW);
-		pwmWrite(PWM_RIGHT, 0);
-	}
+	digitalWrite(M_LEFT_A, LOW);
+	digitalWrite(M_LEFT_B, LOW);
+	pwmWrite(PWM_LEFT, 0);
+	digitalWrite(M_RIGHT_A, LOW);
+	digitalWrite(M_RIGHT_B, LOW);
+	pwmWrite(PWM_RIGHT, 0);
 }
 
 int TachoCount(int motor)

@@ -37,8 +37,7 @@ PI_THREAD(main_thread)
 		
 		delay(100);
 	}
-	Coast(LMOTOR);
-	Coast(RMOTOR);
+	Coast();
 	main_finished = 1;
 }
 
@@ -55,6 +54,7 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
+        	Coast();
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
