@@ -43,6 +43,10 @@ void init_debug()
 	printf(" .           ``        Freq: **********  Freq: **********        ``           . \n");
 	printf("  ``       `` Left IR  Speed: *********  Speed: ********* Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
+	printf("    Gyro   Accel  Magnet                                                        \n");
+	printf("  X ****  X ****  X ****                                                        \n");
+	printf("  Y ****  Y ****  Y ****                                                        \n");
+	printf("  Z ****  Z ****  Z ****                                                        \n");
 }
 
 void update_debug(struct debug_data* debug)
