@@ -43,10 +43,33 @@ void init_debug()
 	printf(" .           ``        Freq: **********  Freq: **********        ``           . \n");
 	printf("  ``       `` Left IR  Speed: *********  Speed: ********* Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
-	printf("    Gyro   Accel  Magnet                                                        \n");
-	printf("  X ****  X ****  X ****                                                        \n");
-	printf("  Y ****  Y ****  Y ****                                                        \n");
-	printf("  Z ****  Z ****  Z ****                                                        \n");
+	printf("    Gyro   Accel  Magnet  1:                                                    \n");
+	printf("  X ****  X ****  X ****  2:                                                    \n");
+	printf("  Y ****  Y ****  Y ****  3:                                                    \n");
+	printf("  Z ****  Z ****  Z ****  4:                                                    \n");
+}
+
+void print_message(char mess[], int num)
+{
+	switch(num)
+	{
+		case 1:
+			printf("\033[%d;%dH                                                   \n", 28, 30);
+			printf("\033[%d;%dH%s\n", 28, 30, mess);
+			break;
+		case 2:
+			printf("\033[%d;%dH                                                   \n", 29, 30);
+			printf("\033[%d;%dH%s\n", 29, 30, mess);
+			break;
+		case 3:
+			printf("\033[%d;%dH                                                   \n", 30, 30);
+			printf("\033[%d;%dH%s\n", 30, 30, mess);
+			break;
+		case 4:
+			printf("\033[%d;%dH                                                   \n", 31, 30);
+			printf("\033[%d;%dH%s\n", 31, 30, mess);
+			break;
+	}
 }
 
 void update_debug(struct debug_data* debug)
