@@ -91,7 +91,7 @@ PI_THREAD(sensors)
 	while(keep_running)
 	{
 		update_imu();
-		delay(50);
+		delay(100);
 	}
 	sensors_finished = 1;
 }

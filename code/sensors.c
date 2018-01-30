@@ -7,6 +7,13 @@
 #define ACCEL_GAIN (1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 1.0
 
+#define GYRO_X_OFFSET_HI 0x00
+#define GYRO_X_OFFSET_LO 0x08
+#define GYRO_Y_OFFSET_HI 0xff
+#define GYRO_Y_OFFSET_LO 0xf9
+#define GYRO_Z_OFFSET_HI 0x00
+#define GYRO_Z_OFFSET_LO 0x05
+
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
 #define GYRO_CONFIG 0x1b
@@ -16,6 +23,18 @@
 #define ACCEL_CONFIG2 0x1d
 #define INT_PIN_CFG 0x37
 #define INT_ENABLE 0x38
+#define FIFO_EN 0x23
+#define I2C_MST_CTRL 0x24
+#define USER_CTRL 0x6a
+#define FIFO_COUNTH 0x72
+#define FIFO_COUNTL 0x73
+#define FIFO_R_W 0x74
+#define XG_OFFSET_H 0X13
+#define XG_OFFSET_L 0X14
+#define YG_OFFSET_H 0X15
+#define YG_OFFSET_L 0X16
+#define ZG_OFFSET_H 0X17
+#define ZG_OFFSET_L 0X18
 
 #define IR_LEFT 40
 #define IR_RIGHT 22
@@ -49,6 +68,7 @@ struct imu {
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
+	double dt;
 };
 
 struct infrared ir;
@@ -96,12 +116,47 @@ void initMPU9250()
 	// [1:0] - Setting to bypass DLPF(Differential Low Pass Filter). Disable with 00.
 	wiringPiI2CWriteReg8(endeMPU9250, GYRO_CONFIG, 0x08);
 
+	// set gyro offset registers (0x13 to 0x18) to values obtained by the calibGyro.c program
+	wiringPiI2CWriteReg8(endeMPU9250, XG_OFFSET_H, GYRO_X_OFFSET_HI);
+	wiringPiI2CWriteReg8(endeMPU9250, XG_OFFSET_L, GYRO_X_OFFSET_LO);
+	wiringPiI2CWriteReg8(endeMPU9250, YG_OFFSET_H, GYRO_Y_OFFSET_HI);
+	wiringPiI2CWriteReg8(endeMPU9250, YG_OFFSET_L, GYRO_Y_OFFSET_LO);
+	wiringPiI2CWriteReg8(endeMPU9250, ZG_OFFSET_H, GYRO_Z_OFFSET_HI);
+	wiringPiI2CWriteReg8(endeMPU9250, ZG_OFFSET_L, GYRO_Z_OFFSET_LO);
+
 	// set accel max range to 2 g
 	// ACCEL_CONFIG
 	// [7, 6, 5] - Accel self-test for [X, Y, Z] axis
 	// [4:3] - Accel full scale value (2, 4, 8, 16 g)
 	// [2:0] - Reserved
 	wiringPiI2CWriteReg8(endeMPU9250, ACCEL_CONFIG, 0x00);
+
+	/*
+	int i;
+	int32_t gyro_bias[3] = {0, 0, 0};
+	for(i = 0; i < 1000; ++i)
+	{
+		int16_t gyro_temp[3] = {0, 0, 0};
+		int8_t data[6];
+		data[0] = wiringPiI2CReadReg8(endeMPU9250, 0x43);
+		data[1] = wiringPiI2CReadReg8(endeMPU9250, 0x44);
+		data[2] = wiringPiI2CReadReg8(endeMPU9250, 0x45);
+		data[3] = wiringPiI2CReadReg8(endeMPU9250, 0x46);;
+		data[4] = wiringPiI2CReadReg8(endeMPU9250, 0x47);
+		data[5] = wiringPiI2CReadReg8(endeMPU9250, 0x48);
+		gyro_temp[0] = (int16_t)(((int16_t)data[0] << 8) | data[1]);
+		gyro_temp[1] = (int16_t)(((int16_t)data[2] << 8) | data[3]);
+		gyro_temp[2] = (int16_t)(((int16_t)data[4] << 8) | data[5]);
+		gyro_bias[0] += (int32_t) gyro_temp[0];
+		gyro_bias[1] += (int32_t) gyro_temp[1];
+		gyro_bias[2] += (int32_t) gyro_temp[2];
+	}
+	gyro_bias[0] /= (int32_t) 1000;
+	gyro_bias[1] /= (int32_t) 1000;
+	gyro_bias[2] /= (int32_t) 1000;
+	
+	printf("%d, %d, %d\n", gyro_bias[0], gyro_bias[1], gyro_bias[2]);
+	*/
 
 	imu.gyro.posX = 0;
 	imu.gyro.posY = 0;
@@ -153,8 +208,8 @@ void update_imu()
 	uint8_t magZhi, magZlo;
 	int16_t magZhilo;
 
-	unsigned long long now_time = micros();
-	double dt = (double)(last_update - now_time)/1000000.0;
+	unsigned long long int now_time = micros();
+	imu.dt = (double)(now_time - last_update)/1000000.0;
 	last_update = now_time;
 
 	gyrXhi = wiringPiI2CReadReg8(endeMPU9250, 0x43);
@@ -193,13 +248,13 @@ void update_imu()
 	magZhi = wiringPiI2CReadReg8(endeMPU9250, 0x08);
 	magZhilo = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
-	imu.gyro.velX = GYRO_GAIN*gyrXhilo;
-	imu.gyro.velY = GYRO_GAIN*gyrYhilo;
-	imu.gyro.velZ = GYRO_GAIN*gyrZhilo;
+	imu.gyro.velX = GYRO_GAIN*(double)gyrXhilo;
+	imu.gyro.velY = GYRO_GAIN*(double)gyrYhilo;
+	imu.gyro.velZ = -GYRO_GAIN*(double)gyrZhilo;
 
-	imu.gyro.posX += imu.gyro.velX*dt;
-	imu.gyro.posY += imu.gyro.velY*dt;
-	imu.gyro.posZ += imu.gyro.velZ*dt;
+	imu.gyro.posX += imu.gyro.velX*imu.dt;
+	imu.gyro.posY += imu.gyro.velY*imu.dt;
+	imu.gyro.posZ += imu.gyro.velZ*imu.dt;
 
 	imu.accel.posX = ACCEL_GAIN*accXhilo;
 	imu.accel.posY = ACCEL_GAIN*accYhilo;

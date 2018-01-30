@@ -44,6 +44,7 @@ void init_debug()
 	printf("  X ******  X ******  X ******  2:                                              \n");
 	printf("  Y ******  Y ******  Y ******  3:                                              \n");
 	printf("  Z ******  Z ******  Z ******  4:                                              \n");
+	printf("  IMU Time: ******************  5:                                              \n");
 }
 
 
@@ -109,14 +110,15 @@ void update_debug(struct debug_data* debug)
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
 	printf("\033[%d;%dH%06.1f\n", 29, 5, debug->imu.gyro.posX);
-	printf("\033[%d;%dH%06.1f\n", 29, 15, debug->imu.accel.posX);
-	printf("\033[%d;%dH%06.1f\n", 29, 25, debug->imu.magnet.posX);
+	//printf("\033[%d;%dH%06.1f\n", 29, 15, debug->imu.accel.posX);
+	//printf("\033[%d;%dH%06.1f\n", 29, 25, debug->imu.magnet.posX);
 	printf("\033[%d;%dH%06.1f\n", 30, 5, debug->imu.gyro.posY);
-	printf("\033[%d;%dH%06.1f\n", 30, 15, debug->imu.accel.posY);
-	printf("\033[%d;%dH%06.1f\n", 30, 25, debug->imu.magnet.posY);
+	//printf("\033[%d;%dH%06.1f\n", 30, 15, debug->imu.accel.posY);
+	//printf("\033[%d;%dH%06.1f\n", 30, 25, debug->imu.magnet.posY);
 	printf("\033[%d;%dH%06.1f\n", 31, 5, debug->imu.gyro.posZ);
-	printf("\033[%d;%dH%06.1f\n", 31, 15, debug->imu.accel.posZ);
-	printf("\033[%d;%dH%06.1f\n", 31, 25, debug->imu.magnet.posZ);
+	//printf("\033[%d;%dH%06.1f\n", 31, 15, debug->imu.accel.posZ);
+	//printf("\033[%d;%dH%06.1f\n", 31, 25, debug->imu.magnet.posZ);
+	printf("\033[%d;%dH%018.6f\n", 32, 13, debug->imu.dt);
 }
 
 void print_message(char mess[], int num)
@@ -138,6 +140,10 @@ void print_message(char mess[], int num)
 		case 4:
 			printf("\033[%d;%dH                                             \n", 31, 36);
 			printf("\033[%d;%dH%s\n", 31, 36, mess);
+			break;
+		case 5:
+			printf("\033[%d;%dH                                             \n", 32, 36);
+			printf("\033[%d;%dH%s\n", 32, 36, mess);
 			break;
 	}
 }
