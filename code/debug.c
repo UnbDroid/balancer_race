@@ -5,6 +5,7 @@ struct debug_data {
 	struct motor left_motor;
 	struct motor right_motor;
 	struct infrared ir;
+	struct imu imu;
 	int led_state;
 	int debug_flag;
 };
@@ -39,34 +40,12 @@ void init_debug()
 	printf(" .           ``        Freq: **********  Freq: **********        ``           . \n");
 	printf("  ``       `` Left IR  Speed: *********  Speed: ********* Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
-	printf("    Gyro   Accel  Magnet  1:                                                    \n");
-	printf("  X ****  X ****  X ****  2:                                                    \n");
-	printf("  Y ****  Y ****  Y ****  3:                                                    \n");
-	printf("  Z ****  Z ****  Z ****  4:                                                    \n");
+	printf("    Gyro      Accel     Magnet  1:                                              \n");
+	printf("  X ******  X ******  X ******  2:                                              \n");
+	printf("  Y ******  Y ******  Y ******  3:                                              \n");
+	printf("  Z ******  Z ******  Z ******  4:                                              \n");
 }
 
-void print_message(char mess[], int num)
-{
-	switch(num)
-	{
-		case 1:
-			printf("\033[%d;%dH                                                   \n", 28, 30);
-			printf("\033[%d;%dH%s\n", 28, 30, mess);
-			break;
-		case 2:
-			printf("\033[%d;%dH                                                   \n", 29, 30);
-			printf("\033[%d;%dH%s\n", 29, 30, mess);
-			break;
-		case 3:
-			printf("\033[%d;%dH                                                   \n", 30, 30);
-			printf("\033[%d;%dH%s\n", 30, 30, mess);
-			break;
-		case 4:
-			printf("\033[%d;%dH                                                   \n", 31, 30);
-			printf("\033[%d;%dH%s\n", 31, 30, mess);
-			break;
-	}
-}
 
 void update_debug(struct debug_data* debug)
 {
@@ -129,4 +108,36 @@ void update_debug(struct debug_data* debug)
 		printf("\033[%d;%dHOn \n", 27, 62);
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
+	printf("\033[%d;%dH%06.1f\n", 29, 5, debug->imu.gyro.posX);
+	printf("\033[%d;%dH%06.1f\n", 29, 15, debug->imu.accel.posX);
+	printf("\033[%d;%dH%06.1f\n", 29, 25, debug->imu.magnet.posX);
+	printf("\033[%d;%dH%06.1f\n", 30, 5, debug->imu.gyro.posY);
+	printf("\033[%d;%dH%06.1f\n", 30, 15, debug->imu.accel.posY);
+	printf("\033[%d;%dH%06.1f\n", 30, 25, debug->imu.magnet.posY);
+	printf("\033[%d;%dH%06.1f\n", 31, 5, debug->imu.gyro.posZ);
+	printf("\033[%d;%dH%06.1f\n", 31, 15, debug->imu.accel.posZ);
+	printf("\033[%d;%dH%06.1f\n", 31, 25, debug->imu.magnet.posZ);
+}
+
+void print_message(char mess[], int num)
+{
+	switch(num)
+	{
+		case 1:
+			printf("\033[%d;%dH                                             \n", 28, 36);
+			printf("\033[%d;%dH%s\n", 28, 36, mess);
+			break;
+		case 2:
+			printf("\033[%d;%dH                                             \n", 29, 36);
+			printf("\033[%d;%dH%s\n", 29, 36, mess);
+			break;
+		case 3:
+			printf("\033[%d;%dH                                             \n", 30, 36);
+			printf("\033[%d;%dH%s\n", 30, 36, mess);
+			break;
+		case 4:
+			printf("\033[%d;%dH                                             \n", 31, 36);
+			printf("\033[%d;%dH%s\n", 31, 36, mess);
+			break;
+	}
 }
