@@ -37,7 +37,7 @@ int endPCA9685;
 int state_flags[NUM_STATES] = {0};
 int led_state = -1;
 
-int last_update = 0;
+int last_led_update = 0;
 int led_state_flag = 0;
 unsigned int led_delay = 100;
 
@@ -136,9 +136,9 @@ void light_rgb()
 
 void update_led()
 {
-	if(millis() - last_update > led_delay)
+	if(millis() - last_led_update > led_delay)
 	{
-		last_update = millis();
+		last_led_update = millis();
 		switch(led_state)
 		{
 			case STANDBY:
