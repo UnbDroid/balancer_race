@@ -69,10 +69,10 @@
 
 #define PWM1 12
 #define PWM2 33
-#define M1A 35
-#define M1B 36
-#define M2A 37
-#define M2B 38
+#define M1A 11
+#define M1B 13
+#define M2A 29
+#define M2B 31
 
 #define	DEAD_ZONE 3500
 #define ZERO_VAL 32768
@@ -250,7 +250,8 @@ void init_joystick(struct joystick* js, char devname[])
 	js->select = 0;
 	js->home = 0;
 	js->new_data = 0;
-	print_joystick(*js);
+	if(DEBUG)
+		print_joystick(*js);
 }
 
 int is_updated_js(struct joystick* js)
@@ -527,10 +528,8 @@ int main()
         	pwmWrite(PWM2, 0);
         	//printf("to aqui 6\n");
         }
-    	
-    	//update_print_js(js);
-	        
-		
+    	if(DEBUG)
+    		update_print_js(js);
 	}
 	return 0;
 }
