@@ -22,11 +22,13 @@ PI_THREAD(main_thread)
 	while(keep_running)
 	{		
 		if(js.lanalog.up > 0)
+		{
 			OnFwd(LMOTOR, js.lanalog.up);
-		else if(js.lanalog.down > 0)
+		} else if(js.lanalog.down > 0) {
 			OnRev(LMOTOR, js.lanalog.down);
-		else
+		} else {
 			Coast(LMOTOR);
+		}
 
 		if(js.ranalog.up > 0)
 			OnFwd(RMOTOR, js.ranalog.up);
@@ -37,7 +39,8 @@ PI_THREAD(main_thread)
 		
 		delay(100);
 	}
-	Coast();
+	Coast(LMOTOR);
+	Coast(RMOTOR);
 	main_finished = 1;
 }
 
@@ -54,7 +57,8 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
-        	Coast();
+        	Coast(RMOTOR);
+        	Coast(LMOTOR);
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
