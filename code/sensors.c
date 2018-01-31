@@ -9,11 +9,11 @@
 #define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
-#define GYRO_X_OFFSET_LO 0x09
+#define GYRO_X_OFFSET_LO 0x0b
 #define GYRO_Y_OFFSET_HI 0xff
 #define GYRO_Y_OFFSET_LO 0xf8
 #define GYRO_Z_OFFSET_HI 0x00
-#define GYRO_Z_OFFSET_LO 0x06
+#define GYRO_Z_OFFSET_LO 0x04
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -37,8 +37,8 @@
 #define ZG_OFFSET_H 0X17
 #define ZG_OFFSET_L 0X18
 
-#define IR_LEFT 40
-#define IR_RIGHT 22
+#define IR_LEFT 22
+#define IR_RIGHT 40
 
 struct infrared {
 	int left, right;
@@ -279,9 +279,9 @@ void update_imu()
 	imu.gyro.accY = (imu.gyro.velY-tempY)/dt;
 	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/dt;
 
-	imu.gyro.posX += imu.gyro.velX*imu.dt;
-	imu.gyro.posY += imu.gyro.velY*imu.dt;
-	imu.gyro.posZ += imu.gyro.velZ*imu.dt;
+	imu.gyro.posX += imu.gyro.velX*dt;
+	imu.gyro.posY += imu.gyro.velY*dt;
+	imu.gyro.posZ += imu.gyro.velZ*dt;
 
 	if(imu.accel.rawY != 0)
 	{
@@ -320,6 +320,6 @@ void update_imu()
 
 void update_ir()
 {
-	ir.left = digitalRead(IR_LEFT);
-	ir.right = digitalRead(IR_RIGHT);
+	ir.left = !digitalRead(IR_LEFT);
+	ir.right = !digitalRead(IR_RIGHT);
 }
