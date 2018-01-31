@@ -99,11 +99,11 @@ int main()
 	data[5] = (-gyro_bias[2]/4)       & 0xFF;
 
 	printf("#define GYRO_X_OFFSET_HI 0x%02x\n", data[0]);
-	printf("#define GYXO_X_OFFSET_LO 0x%02x\n", data[1]);
+	printf("#define GYRO_X_OFFSET_LO 0x%02x\n", data[1]);
 	printf("#define GYRO_Y_OFFSET_HI 0x%02x\n", data[2]);
-	printf("#define GYXO_Y_OFFSET_LO 0x%02x\n", data[3]);
+	printf("#define GYRO_Y_OFFSET_LO 0x%02x\n", data[3]);
 	printf("#define GYRO_Z_OFFSET_HI 0x%02x\n", data[4]);
-	printf("#define GYXO_Z_OFFSET_LO 0x%02x\n\n", data[5]);
+	printf("#define GYRO_Z_OFFSET_LO 0x%02x\n\n", data[5]);
 
 	printf("X offset: %f\n", (float)gyro_bias[0] / (float)gyrosensitivity);
 	printf("Y offset: %f\n", (float)gyro_bias[1] / (float)gyrosensitivity);

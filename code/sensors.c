@@ -8,11 +8,12 @@
 #define MAGNET_GAIN 1.0
 
 #define GYRO_X_OFFSET_HI 0x00
-#define GYRO_X_OFFSET_LO 0x08
+#define GYRO_X_OFFSET_LO 0x09
 #define GYRO_Y_OFFSET_HI 0xff
-#define GYRO_Y_OFFSET_LO 0xf9
+#define GYRO_Y_OFFSET_LO 0xf8
 #define GYRO_Z_OFFSET_HI 0x00
-#define GYRO_Z_OFFSET_LO 0x05
+#define GYRO_Z_OFFSET_LO 0x06
+
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -248,8 +249,8 @@ void update_imu()
 	magZhi = wiringPiI2CReadReg8(endeMPU9250, 0x08);
 	magZhilo = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
-	imu.gyro.velX = GYRO_GAIN*(double)gyrXhilo;
-	imu.gyro.velY = GYRO_GAIN*(double)gyrYhilo;
+	imu.gyro.velX = -GYRO_GAIN*(double)gyrXhilo;
+	imu.gyro.velY = -GYRO_GAIN*(double)gyrYhilo;
 	imu.gyro.velZ = -GYRO_GAIN*(double)gyrZhilo;
 
 	imu.gyro.posX += imu.gyro.velX*imu.dt;

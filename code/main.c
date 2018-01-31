@@ -17,27 +17,17 @@ int shutdown = 0, reboot = 0, close_program=0;;
 
 PI_THREAD(main_thread)
 {
+	int kp = 50;
+	int err;
+
 	main_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{		
-		if(js.lanalog.up > 0)
-		{
-			OnFwd(LMOTOR, js.lanalog.up);
-		} else if(js.lanalog.down > 0) {
-			OnRev(LMOTOR, js.lanalog.down);
-		} else {
-			Coast(LMOTOR);
-		}
-
-		if(js.ranalog.up > 0)
-			OnFwd(RMOTOR, js.ranalog.up);
-		else if(js.ranalog.down > 0)
-			OnRev(RMOTOR, js.ranalog.down);
-		else
-			Coast(RMOTOR);
-		
-		delay(100);
+		int err = imu.gyro.velY;
+		OnFwd(LMOTOR, kp*err);
+		OnFwd(RMOTOR, kp*err);
+		delay(50);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
@@ -91,7 +81,7 @@ PI_THREAD(sensors)
 	while(keep_running)
 	{
 		update_imu();
-		delay(100);
+		delay(10);
 	}
 	sensors_finished = 1;
 }
