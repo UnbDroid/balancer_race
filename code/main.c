@@ -17,17 +17,11 @@ int shutdown = 0, reboot = 0, close_program=0;;
 
 PI_THREAD(main_thread)
 {
-	int kp = 50;
-	int err;
-
 	main_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{		
-		int err = imu.gyro.velY;
-		OnFwd(LMOTOR, kp*err);
-		OnFwd(RMOTOR, kp*err);
-		delay(50);
+
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
@@ -80,6 +74,7 @@ PI_THREAD(sensors)
 	sensors_finished = 0;
 	while(keep_running)
 	{
+		update_ir();
 		update_imu();
 		delay(10);
 	}

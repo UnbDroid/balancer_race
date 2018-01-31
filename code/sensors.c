@@ -6,6 +6,7 @@
 #define GYRO_GAIN (1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN (1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 1.0
+#define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
 #define GYRO_X_OFFSET_LO 0x09
@@ -13,7 +14,6 @@
 #define GYRO_Y_OFFSET_LO 0xf8
 #define GYRO_Z_OFFSET_HI 0x00
 #define GYRO_Z_OFFSET_LO 0x06
-
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -45,6 +45,9 @@ struct infrared {
 };
 
 struct gyro {
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
 	double posX;
 	double posY;
 	double posZ;
@@ -57,22 +60,40 @@ struct gyro {
 };
 
 struct accel {
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
 	double posX;
 	double posY;
 	double posZ;
+	double velX;
+	double velY;
+	double velZ;
+	double accX;
+	double accY;
+	double accZ;
 };
 
 struct magnet {
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
 	double posX;
 	double posY;
 	double posZ;
+	double velX;
+	double velY;
+	double velZ;
+	double accX;
+	double accY;
+	double accZ;
 };
 
 struct imu {
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
-	double dt;
+	long int dt;
 };
 
 struct infrared ir;
@@ -192,65 +213,57 @@ void init_sensors()
 void update_imu()
 {
 	uint8_t gyrXhi, gyrXlo;
-	int16_t gyrXhilo;
 	uint8_t gyrYhi, gyrYlo;
-	int16_t gyrYhilo;
 	uint8_t gyrZhi, gyrZlo;
-	int16_t gyrZhilo;
 
 	uint8_t accXhi, accXlo;
-	int16_t accXhilo;
 	uint8_t accYhi, accYlo;
-	int16_t accYhilo;
 	uint8_t accZhi, accZlo;
-	int16_t accZhilo;
 
 	uint8_t magXhi, magXlo;
-	int16_t magXhilo;
 	uint8_t magYhi, magYlo;
-	int16_t magYhilo;
 	uint8_t magZhi, magZlo;
-	int16_t magZhilo;
 
 	unsigned long long int now_time = micros();
-	imu.dt = (double)(now_time - last_update)/1000000.0;
+	imu.dt = now_time - last_update;
+	double dt = (double)imu.dt/1000000.0;
 	last_update = now_time;
 
 	gyrXhi = wiringPiI2CReadReg8(endeMPU9250, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(endeMPU9250, 0x44);
-	gyrXhilo = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
+	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
 
 	gyrYhi = wiringPiI2CReadReg8(endeMPU9250, 0x45);
     gyrYlo = wiringPiI2CReadReg8(endeMPU9250, 0x46);
-	gyrYhilo = (int16_t)((int16_t)gyrYhi<<8 | gyrYlo);
+	imu.gyro.rawY = (int16_t)((int16_t)gyrYhi<<8 | gyrYlo);
 
 	gyrZhi = wiringPiI2CReadReg8(endeMPU9250, 0x47);
     gyrZlo = wiringPiI2CReadReg8(endeMPU9250, 0x48);
-	gyrZhilo = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
+	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
 	accXhi = wiringPiI2CReadReg8(endeMPU9250, 0x3b);
     accXlo = wiringPiI2CReadReg8(endeMPU9250, 0x3c);
-    accXhilo = (int16_t)((int16_t)accXhi<<8 | accXlo);
+    imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
 
 	accYhi = wiringPiI2CReadReg8(endeMPU9250, 0x3d);
     accYlo = wiringPiI2CReadReg8(endeMPU9250, 0x3e);
-	accYhilo = (int16_t)((int16_t)accYhi<<8 | accYlo);
+	imu.accel.rawY = (int16_t)((int16_t)accYhi<<8 | accYlo);
 
 	accZhi = wiringPiI2CReadReg8(endeMPU9250, 0x3f);
     accZlo = wiringPiI2CReadReg8(endeMPU9250, 0x40);
-    accZhilo = (int16_t)((int16_t)accZhi<<8 | accZlo);
+    imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
 	magXlo = wiringPiI2CReadReg8(endeMPU9250, 0x03);
     magXhi = wiringPiI2CReadReg8(endeMPU9250, 0x04);
-    magXhilo = (int16_t)((int16_t)magXhi<<8 | magXlo);
+    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
 
     magYlo = wiringPiI2CReadReg8(endeMPU9250, 0x05);
 	magYhi = wiringPiI2CReadReg8(endeMPU9250, 0x06);
-	magYhilo = (int16_t)((int16_t)magYhi<<8 | magYlo);
+	imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
 
     magZlo = wiringPiI2CReadReg8(endeMPU9250, 0x07);
 	magZhi = wiringPiI2CReadReg8(endeMPU9250, 0x08);
-	magZhilo = (int16_t)((int16_t)magZhi<<8 | magZlo);
+	imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
 	double tempX, tempY, tempZ;
 
@@ -258,27 +271,51 @@ void update_imu()
 	tempY = imu.gyro.velY;
 	tempZ = imu.gyro.velZ;
 
-	imu.gyro.velX = -GYRO_GAIN*(double)gyrXhilo;
-	imu.gyro.velY = -GYRO_GAIN*(double)gyrYhilo;
-	imu.gyro.velZ = -GYRO_GAIN*(double)gyrZhilo;
+	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawX;
+	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawY;
+	imu.gyro.velZ = -GYRO_GAIN*(double)imu.gyro.rawZ;
 
-	imu.gyro.accX = (imu.gyro.velX-tempX)/imu.dt;
-	imu.gyro.accY = (imu.gyro.velY-tempY)/imu.dt;
-	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/imu.dt;
+	imu.gyro.accX = (imu.gyro.velX-tempX)/dt;
+	imu.gyro.accY = (imu.gyro.velY-tempY)/dt;
+	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/dt;
 
 	imu.gyro.posX += imu.gyro.velX*imu.dt;
 	imu.gyro.posY += imu.gyro.velY*imu.dt;
 	imu.gyro.posZ += imu.gyro.velZ*imu.dt;
 
-	imu.gyro.accX = 
-
-	imu.accel.posX = ACCEL_GAIN*accXhilo;
-	imu.accel.posY = ACCEL_GAIN*accYhilo;
-	imu.accel.posZ = ACCEL_GAIN*accZhilo;
-
-	imu.magnet.posX = MAGNET_GAIN*magXhilo;
-	imu.magnet.posY = MAGNET_GAIN*magYhilo;
-	imu.magnet.posZ = MAGNET_GAIN*magZhilo;
+	if(imu.accel.rawY != 0)
+	{
+		imu.accel.posX = RAD2DEG*atan((double)imu.accel.rawZ/imu.accel.rawY);
+	} else {
+		if(imu.accel.rawZ >= 0)
+		{
+			imu.accel.posX = 90;
+		} else {
+			imu.accel.posX = -90;
+		}
+	}
+	if(imu.accel.rawZ != 0)
+	{
+		imu.accel.posY = RAD2DEG*atan((double)imu.accel.rawX/imu.accel.rawZ);
+	} else {
+		if(imu.accel.rawX >= 0)
+		{
+			imu.accel.posY = 90;
+		} else {
+			imu.accel.posY = -90;
+		}
+	}
+	if(imu.accel.rawX != 0)
+	{
+		imu.accel.posZ = RAD2DEG*atan((double)imu.accel.rawY/imu.accel.rawX);
+	} else {
+		if(imu.accel.rawY >= 0)
+		{
+			imu.accel.posZ = 90;
+		} else {
+			imu.accel.posZ = -90;
+		}
+	}
 }
 
 void update_ir()
