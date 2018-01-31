@@ -110,13 +110,13 @@ void update_debug(struct debug_data* debug)
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
 	printf("\033[%d;%dH%06.1f\n", 29, 5, debug->imu.gyro.posX);
-	//printf("\033[%d;%dH%06.1f\n", 29, 15, debug->imu.accel.posX);
+	printf("\033[%d;%dH%06.3f\n", 29, 15, debug->imu.accel.posX);
 	//printf("\033[%d;%dH%06.1f\n", 29, 25, debug->imu.magnet.posX);
 	printf("\033[%d;%dH%06.1f\n", 30, 5, debug->imu.gyro.posY);
-	//printf("\033[%d;%dH%06.1f\n", 30, 15, debug->imu.accel.posY);
+	printf("\033[%d;%dH%06.3f\n", 30, 15, debug->imu.accel.posY);
 	//printf("\033[%d;%dH%06.1f\n", 30, 25, debug->imu.magnet.posY);
 	printf("\033[%d;%dH%06.1f\n", 31, 5, debug->imu.gyro.posZ);
-	//printf("\033[%d;%dH%06.1f\n", 31, 15, debug->imu.accel.posZ);
+	printf("\033[%d;%dH%06.3f\n", 31, 15, debug->imu.accel.posZ);
 	//printf("\033[%d;%dH%06.1f\n", 31, 25, debug->imu.magnet.posZ);
 	printf("\033[%d;%dH%018.6f\n", 32, 13, debug->imu.dt);
 }
