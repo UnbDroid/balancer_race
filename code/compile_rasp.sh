@@ -11,16 +11,16 @@ else
 	else
 		ip_rasp=${3}
 	fi
-	
+
 	nome_codigo=${1}
 	nome_binario=${2}
 
-	
+
 	login_rasp="pi"
 	#password="godroidgo"
 	dst_folder_rasp="/home/pi/ccdir"
 
-	arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so
+	arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so -lm
 
 	# encrypted_password="$(perl -e 'printf("%s\n", crypt($ARGV[0], "password"))' "${password}")"
 
