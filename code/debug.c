@@ -40,11 +40,20 @@ void init_debug()
 	printf(" .           ``        Freq: **********  Freq: **********        ``           . \n");
 	printf("  ``       `` Left IR  Speed: *********  Speed: ********* Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
-	printf("    Gyro      Accel     Magnet  1:                                              \n");
-	printf("  X ******  X ******  X ******  2:                                              \n");
-	printf("  Y ******  Y ******  Y ******  3:                                              \n");
-	printf("  Z ******  Z ******  Z ******  4:                                              \n");
-	printf("  IMU Time: ******************  5:                                              \n");
+	printf("     Gyro         Accel       Magnet    1:                                      \n");
+	printf("  X   *******  X   ******* X   *******  2:                                      \n");
+	printf("  Y   *******  Y   ******* Y   *******  3:                                      \n");
+	printf("  Z   *******  Z   ******* Z   *******  4:                                      \n");
+	printf("  X'  *******  X'  ******* X'  *******  5:                                      \n");
+	printf("  Y'  *******  Y'  ******* Y'  *******                                          \n");
+	printf("  Z'  *******  Z'  ******* Z'  *******                                          \n");
+	printf("  X'' *******  X'' ******* X'' *******                                          \n");
+	printf("  Y'' *******  Y'' ******* Y'' *******                                          \n");
+	printf("  Z'' *******  Z'' ******* Z'' *******                                          \n");
+	printf("  rawX ******  rawX ****** rawX ******                                          \n");
+	printf("  rawY ******  rawY ****** rawY ******                                          \n");
+	printf("  rawZ ******  rawZ ****** rawZ ******                                          \n");
+	printf("  IMU Time: ******us                                                            \n");
 }
 
 
@@ -109,16 +118,55 @@ void update_debug(struct debug_data* debug)
 		printf("\033[%d;%dHOn \n", 27, 62);
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
-	printf("\033[%d;%dH%06.1f\n", 29, 5, debug->imu.gyro.posX);
-	printf("\033[%d;%dH%06.3f\n", 29, 15, debug->imu.accel.posX);
-	//printf("\033[%d;%dH%06.1f\n", 29, 25, debug->imu.magnet.posX);
-	printf("\033[%d;%dH%06.1f\n", 30, 5, debug->imu.gyro.posY);
-	printf("\033[%d;%dH%06.3f\n", 30, 15, debug->imu.accel.posY);
-	//printf("\033[%d;%dH%06.1f\n", 30, 25, debug->imu.magnet.posY);
-	printf("\033[%d;%dH%06.1f\n", 31, 5, debug->imu.gyro.posZ);
-	printf("\033[%d;%dH%06.3f\n", 31, 15, debug->imu.accel.posZ);
-	//printf("\033[%d;%dH%06.1f\n", 31, 25, debug->imu.magnet.posZ);
-	printf("\033[%d;%dH%018.6f\n", 32, 13, debug->imu.dt);
+	printf("\033[%d;%dH%07.2f\n", 29, 7, debug->imu.gyro.posX);
+	printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.accel.posX);
+	printf("\033[%d;%dH%07.2f\n", 29, 32, debug->imu.magnet.posX);
+	
+	printf("\033[%d;%dH%07.2f\n", 30, 5, debug->imu.gyro.posY);
+	printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.accel.posY);
+	printf("\033[%d;%dH%07.2f\n", 30, 32, debug->imu.magnet.posY);
+
+	printf("\033[%d;%dH%07.2f\n", 31, 5, debug->imu.gyro.posZ);
+	printf("\033[%d;%dH%07.2f\n", 31, 20, debug->imu.accel.posZ);
+	printf("\033[%d;%dH%07.2f\n", 31, 32, debug->imu.magnet.posZ);
+
+	printf("\033[%d;%dH%07.2f\n", 32, 5, debug->imu.gyro.velX);
+	printf("\033[%d;%dH%07.2f\n", 32, 20, debug->imu.accel.velX);
+	printf("\033[%d;%dH%07.2f\n", 32, 32, debug->imu.magnet.velX);
+
+	printf("\033[%d;%dH%07.2f\n", 33, 5, debug->imu.gyro.velY);
+	printf("\033[%d;%dH%07.2f\n", 33, 20, debug->imu.accel.velY);
+	printf("\033[%d;%dH%07.2f\n", 33, 32, debug->imu.magnet.velY);
+
+	printf("\033[%d;%dH%07.2f\n", 34, 5, debug->imu.gyro.velZ);
+	printf("\033[%d;%dH%07.2f\n", 34, 20, debug->imu.accel.velZ);
+	printf("\033[%d;%dH%07.2f\n", 34, 32, debug->imu.magnet.velZ);
+
+	printf("\033[%d;%dH%07.2f\n", 35, 5, debug->imu.gyro.accX);
+	printf("\033[%d;%dH%07.2f\n", 35, 20, debug->imu.accel.accX);
+	printf("\033[%d;%dH%07.2f\n", 35, 32, debug->imu.magnet.accX);
+
+	printf("\033[%d;%dH%07.2f\n", 36, 5, debug->imu.gyro.accY);
+	printf("\033[%d;%dH%07.2f\n", 36, 20, debug->imu.accel.accY);
+	printf("\033[%d;%dH%07.2f\n", 36, 32, debug->imu.magnet.accY);
+
+	printf("\033[%d;%dH%07.2f\n", 37, 5, debug->imu.gyro.accZ);
+	printf("\033[%d;%dH%07.2f\n", 37, 20, debug->imu.accel.accZ);
+	printf("\033[%d;%dH%07.2f\n", 37, 32, debug->imu.magnet.accZ);
+
+	printf("\033[%d;%dH%06d\n", 38, 5, debug->imu.gyro.rawX);
+	printf("\033[%d;%dH%06d\n", 38, 20, debug->imu.accel.rawX);
+	printf("\033[%d;%dH%06d\n", 38, 32, debug->imu.magnet.rawX);
+
+	printf("\033[%d;%dH%06d\n", 39, 5, debug->imu.gyro.rawY);
+	printf("\033[%d;%dH%06d\n", 39, 20, debug->imu.accel.rawY);
+	printf("\033[%d;%dH%06d\n", 39, 32, debug->imu.magnet.rawY);
+
+	printf("\033[%d;%dH%06d\n", 40, 5, debug->imu.gyro.rawZ);
+	printf("\033[%d;%dH%06d\n", 40, 20, debug->imu.accel.rawZ);
+	printf("\033[%d;%dH%06d\n", 40, 32, debug->imu.magnet.rawZ);
+
+	printf("\033[%d;%dH%06ld\n", 41, 13, debug->imu.dt);
 }
 
 void print_message(char mess[], int num)
@@ -127,23 +175,23 @@ void print_message(char mess[], int num)
 	{
 		case 1:
 			printf("\033[%d;%dH                                             \n", 28, 36);
-			printf("\033[%d;%dH%s\n", 28, 36, mess);
+			printf("\033[%d;%dH%s\n", 28, 44, mess);
 			break;
 		case 2:
 			printf("\033[%d;%dH                                             \n", 29, 36);
-			printf("\033[%d;%dH%s\n", 29, 36, mess);
+			printf("\033[%d;%dH%s\n", 29, 44, mess);
 			break;
 		case 3:
 			printf("\033[%d;%dH                                             \n", 30, 36);
-			printf("\033[%d;%dH%s\n", 30, 36, mess);
+			printf("\033[%d;%dH%s\n", 30, 44, mess);
 			break;
 		case 4:
 			printf("\033[%d;%dH                                             \n", 31, 36);
-			printf("\033[%d;%dH%s\n", 31, 36, mess);
+			printf("\033[%d;%dH%s\n", 31, 44, mess);
 			break;
 		case 5:
 			printf("\033[%d;%dH                                             \n", 32, 36);
-			printf("\033[%d;%dH%s\n", 32, 36, mess);
+			printf("\033[%d;%dH%s\n", 32, 44, mess);
 			break;
 	}
 }
