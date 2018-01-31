@@ -229,6 +229,7 @@ void update_imu()
 	double dt = (double)imu.dt/1000000.0;
 	last_update = now_time;
 
+	//bit magic
 	gyrXhi = wiringPiI2CReadReg8(endeMPU9250, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(endeMPU9250, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
@@ -279,9 +280,9 @@ void update_imu()
 	imu.gyro.accY = (imu.gyro.velY-tempY)/dt;
 	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/dt;
 
-	imu.gyro.posX += imu.gyro.velX*imu.dt;
-	imu.gyro.posY += imu.gyro.velY*imu.dt;
-	imu.gyro.posZ += imu.gyro.velZ*imu.dt;
+	imu.gyro.posX += imu.gyro.velX*dt; //imu.dt;
+	imu.gyro.posY += imu.gyro.velY*dt; //imu.dt;
+	imu.gyro.posZ += imu.gyro.velZ*dt; //imu.dt;
 
 	if(imu.accel.rawY != 0)
 	{
