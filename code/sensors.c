@@ -51,6 +51,9 @@ struct gyro {
 	double velX;
 	double velY;
 	double velZ;
+	double accX;
+	double accY;
+	double accZ;
 };
 
 struct accel {
@@ -249,13 +252,25 @@ void update_imu()
 	magZhi = wiringPiI2CReadReg8(endeMPU9250, 0x08);
 	magZhilo = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
+	double tempX, tempY, tempZ;
+
+	tempX = imu.gyro.velX;
+	tempY = imu.gyro.velY;
+	tempZ = imu.gyro.velZ;
+
 	imu.gyro.velX = -GYRO_GAIN*(double)gyrXhilo;
 	imu.gyro.velY = -GYRO_GAIN*(double)gyrYhilo;
 	imu.gyro.velZ = -GYRO_GAIN*(double)gyrZhilo;
 
+	imu.gyro.accX = (imu.gyro.velX-tempX)/imu.dt;
+	imu.gyro.accY = (imu.gyro.velY-tempY)/imu.dt;
+	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/imu.dt;
+
 	imu.gyro.posX += imu.gyro.velX*imu.dt;
 	imu.gyro.posY += imu.gyro.velY*imu.dt;
 	imu.gyro.posZ += imu.gyro.velZ*imu.dt;
+
+	imu.gyro.accX = 
 
 	imu.accel.posX = ACCEL_GAIN*accXhilo;
 	imu.accel.posY = ACCEL_GAIN*accYhilo;
