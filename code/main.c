@@ -72,6 +72,7 @@ PI_THREAD(led)
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
+	//piHiPri(0); //escolher prioridade
 	while(keep_running)
 	{
 		update_ir();
@@ -144,7 +145,7 @@ int main(int argc, char* argv[])
 
 	if(!am_i_su()) 
 	{
-		printf("Restricted area. Super users only.\n");
+		if(debug.debug_flag) printf("Restricted area. Super users only.\n");
 		return 0;
 	}
 
