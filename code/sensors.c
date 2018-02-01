@@ -284,9 +284,9 @@ void update_imu()
 	imu.gyro.posY += imu.gyro.velY*dt;
 	imu.gyro.posZ += imu.gyro.velZ*dt;
 
-	imu.accel.posX = atan((double)imu.accel.rawZ/(double)imu.accel.rawY);
-	imu.accel.posY = atan((double)imu.accel.rawX/(double)imu.accel.rawZ);
-	imu.accel.posZ = atan((double)imu.accel.rawY/(double)imu.accel.rawX);
+	imu.accel.posX = RAD2DEG*atan((double)imu.accel.rawZ/(double)imu.accel.rawY);
+	imu.accel.posY = RAD2DEG*atan((double)imu.accel.rawX/(double)imu.accel.rawZ);
+	imu.accel.posZ = RAD2DEG*atan((double)imu.accel.rawY/(double)imu.accel.rawX);
 
 	//imu.accel.posX = RAD2DEG*atan2((double)imu.accel.rawZ, (double)imu.accel.rawY);
 	//imu.accel.posY = RAD2DEG*atan2((double)imu.accel.rawX, (double)imu.accel.rawZ);
