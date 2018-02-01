@@ -38,6 +38,7 @@ PI_THREAD(main_thread)
 		} else {
 			Brake(RMOTOR);
 		}
+		print_message("Testing Accel", 1);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
