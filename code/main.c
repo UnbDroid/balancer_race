@@ -124,6 +124,7 @@ PI_THREAD(debug_thread)
 		update_debug(&debug);
 		delay(100);
 	}
+	printf("\033[%d;%dH\n", 45, 1);
 	debug_finished = 1;
 }
 
