@@ -119,15 +119,15 @@ void update_debug(struct debug_data* debug)
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
 	printf("\033[%d;%dH%07.2f\n", 29, 7, debug->imu.gyro.posX);
-	printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.accel.posX);
+	if(debug->imu.accel.posX < 9999 && debug->imu.accel.posX > -9999) printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.accel.posX);
 	printf("\033[%d;%dH%07.2f\n", 29, 33, debug->imu.magnet.posX);
 	
 	printf("\033[%d;%dH%07.2f\n", 30, 7, debug->imu.gyro.posY);
-	printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.accel.posY);
+	if(debug->imu.accel.posY < 9999 && debug->imu.accel.posY > -9999) printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.accel.posY);
 	printf("\033[%d;%dH%07.2f\n", 30, 33, debug->imu.magnet.posY);
 
 	printf("\033[%d;%dH%07.2f\n", 31, 7, debug->imu.gyro.posZ);
-	printf("\033[%d;%dH%07.2f\n", 31, 20, debug->imu.accel.posZ);
+	if(debug->imu.accel.posZ < 9999 && debug->imu.accel.posZ > -9999) printf("\033[%d;%dH%07.2f\n", 31, 20, debug->imu.accel.posZ);
 	printf("\033[%d;%dH%07.2f\n", 31, 33, debug->imu.magnet.posZ);
 
 	printf("\033[%d;%dH%07.2f\n", 32, 7, debug->imu.gyro.velX);
@@ -174,24 +174,24 @@ void print_message(char mess[], int num)
 	switch(num)
 	{
 		case 1:
-			printf("\033[%d;%dH                                    \n", 28, 45);
-			printf("\033[%d;%dH%s\n", 28, 45, mess);
+			//printf("\033[%d;%dH                                    \n", 28, 45);
+			printf("\033[%d;%dH%-36s\n", 28, 45, mess);
 			break;
 		case 2:
-			printf("\033[%d;%dH                                    \n", 29, 45);
-			printf("\033[%d;%dH%s\n", 29, 45, mess);
+			//printf("\033[%d;%dH                                    \n", 29, 45);
+			printf("\033[%d;%dH%-36s\n", 29, 45, mess);
 			break;
 		case 3:
-			printf("\033[%d;%dH                                    \n", 30, 45);
-			printf("\033[%d;%dH%s\n", 30, 45, mess);
+			//printf("\033[%d;%dH                                    \n", 30, 45);
+			printf("\033[%d;%dH%-36s\n", 30, 45, mess);
 			break;
 		case 4:
-			printf("\033[%d;%dH                                    \n", 31, 45);
-			printf("\033[%d;%dH%s\n", 31, 45, mess);
+			//printf("\033[%d;%dH                                    \n", 31, 45);
+			printf("\033[%d;%dH%-36s\n", 31, 45, mess);
 			break;
 		case 5:
-			printf("\033[%d;%dH                                    \n", 32, 45);
-			printf("\033[%d;%dH%s\n", 32, 45, mess);
+			//printf("\033[%d;%dH                                    \n", 32, 45);
+			printf("\033[%d;%dH%-36s\n", 32, 45, mess);
 			break;
 	}
 }
