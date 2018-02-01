@@ -38,7 +38,15 @@ PI_THREAD(main_thread)
 		} else {
 			Brake(RMOTOR);
 		}
-		print_message("Testing Accel", 1);
+		char mess[36];
+		sprintf(mess, "Accel X: %07.3f", imu.accel.posX);
+		print_message(mess, 1);
+
+		sprintf(mess, "Accel Y: %07.3f", imu.accel.posY);
+		print_message(mess, 2);
+
+		sprintf(mess, "Accel Z: %07.3f", imu.accel.posZ);
+		print_message(mess, 3);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
