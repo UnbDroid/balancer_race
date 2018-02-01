@@ -27,7 +27,7 @@ PI_THREAD(main_thread)
 		} else if (js.lanalog.down > 0) {
 			OnRev(LMOTOR, js.lanalog.down);
 		} else {
-			Coast(LMOTOR);
+			Brake(LMOTOR);
 		}
 
 		if(js.ranalog.up > 0)
@@ -36,7 +36,7 @@ PI_THREAD(main_thread)
 		} else if (js.ranalog.down > 0) {
 			OnRev(RMOTOR, js.ranalog.down);
 		} else {
-			Coast(RMOTOR);
+			Brake(RMOTOR);
 		}
 	}
 	Coast(LMOTOR);
