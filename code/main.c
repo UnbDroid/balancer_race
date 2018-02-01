@@ -21,7 +21,23 @@ PI_THREAD(main_thread)
 	piHiPri(0);
 	while(keep_running)
 	{		
+		if(js.lanalog.up > 0)
+		{
+			OnFwd(LMOTOR, js.lanalog.up);
+		} else if (js.lanalog.down > 0) {
+			OnFwd(LMOTOR, js.lanalog.down);
+		} else {
+			Coast(LMOTOR);
+		}
 
+		if(js.ranalog.up > 0)
+		{
+			OnFwd(RMOTOR, js.ranalog.up);
+		} else if (js.ranalog.down > 0) {
+			OnFwd(RMOTOR, js.ranalog.down);
+		} else {
+			Coast(RMOTOR);
+		}
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
