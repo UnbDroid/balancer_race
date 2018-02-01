@@ -45,15 +45,15 @@ void init_debug()
 	printf("  Y   *******  Y   *******  Y   *******  3:                                     \n");
 	printf("  Z   *******  Z   *******  Z   *******  4:                                     \n");
 	printf("  X'  *******  X'  *******  X'  *******  5:                                     \n");
-	printf("  Y'  *******  Y'  *******  Y'  *******                                         \n");
-	printf("  Z'  *******  Z'  *******  Z'  *******                                         \n");
-	printf("  X'' *******  X'' *******  X'' *******                                         \n");
-	printf("  Y'' *******  Y'' *******  Y'' *******                                         \n");
-	printf("  Z'' *******  Z'' *******  Z'' *******                                         \n");
-	printf("  rawX ******  rawX ******  rawX ******                                         \n");
-	printf("  rawY ******  rawY ******  rawY ******                                         \n");
-	printf("  rawZ ******  rawZ ******  rawZ ******                                         \n");
-	printf("  IMU Time: ******us                                                            \n");
+	printf("  Y'  *******  Y'  *******  Y'  *******  6:                                     \n");
+	printf("  Z'  *******  Z'  *******  Z'  *******  7:                                     \n");
+	printf("  X'' *******  X'' *******  X'' *******  8:                                     \n");
+	printf("  Y'' *******  Y'' *******  Y'' *******  9:                                     \n");
+	printf("  Z'' *******  Z'' *******  Z'' ******* 10:                                     \n");
+	printf("  rawX ******  rawX ******  rawX ****** 11:                                     \n");
+	printf("  rawY ******  rawY ******  rawY ****** 12:                                     \n");
+	printf("  rawZ ******  rawZ ******  rawZ ****** 13:                                     \n");
+	printf("  IMU Time: ******us                    14:                                     \n");
 }
 
 
@@ -171,6 +171,9 @@ void update_debug(struct debug_data* debug)
 
 void print_message(char mess[], int num)
 {
+	if(num > 0 && num <= 15)
+		printf("\033[%d;%dH%-36s\n", 27+num, 45, mess);
+	/*
 	switch(num)
 	{
 		case 1:
@@ -194,4 +197,5 @@ void print_message(char mess[], int num)
 			printf("\033[%d;%dH%-36s\n", 32, 45, mess);
 			break;
 	}
+	*/
 }
