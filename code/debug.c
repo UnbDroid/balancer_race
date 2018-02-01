@@ -119,15 +119,15 @@ void update_debug(struct debug_data* debug)
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
 	printf("\033[%d;%dH%07.2f\n", 29, 7, debug->imu.gyro.posX);
-	if(debug->imu.accel.posX < 9999 && debug->imu.accel.posX > -9999) printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.accel.posX);
+	printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.accel.posX);
 	printf("\033[%d;%dH%07.2f\n", 29, 33, debug->imu.magnet.posX);
 	
 	printf("\033[%d;%dH%07.2f\n", 30, 7, debug->imu.gyro.posY);
-	if(debug->imu.accel.posY < 9999 && debug->imu.accel.posY > -9999) printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.accel.posY);
+	printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.accel.posY);
 	printf("\033[%d;%dH%07.2f\n", 30, 33, debug->imu.magnet.posY);
 
 	printf("\033[%d;%dH%07.2f\n", 31, 7, debug->imu.gyro.posZ);
-	if(debug->imu.accel.posZ < 9999 && debug->imu.accel.posZ > -9999) printf("\033[%d;%dH%07.2f\n", 31, 20, debug->imu.accel.posZ);
+	printf("\033[%d;%dH%07.2f\n", 31, 20, debug->imu.accel.posZ);
 	printf("\033[%d;%dH%07.2f\n", 31, 33, debug->imu.magnet.posZ);
 
 	printf("\033[%d;%dH%07.2f\n", 32, 7, debug->imu.gyro.velX);
