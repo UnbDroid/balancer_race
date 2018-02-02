@@ -38,6 +38,7 @@ PI_THREAD(main_thread)
 		} else {
 			Brake(RMOTOR);
 		}
+		delay(20);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
