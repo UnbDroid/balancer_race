@@ -50,7 +50,7 @@ PI_THREAD(main_thread)
 		print_message(mess, 3);
 		
 		snprintf(mess, 36, "Accel X atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawZ/(double)imu.accel.rawY));
-		//print_message(mess, 4);
+		print_message(mess, 4);
 
 		snprintf(mess, 36, "Accel Y Tan: %07.3f", (double)imu.accel.rawX/(double)imu.accel.rawZ);
 		print_message(mess, 5);
@@ -62,7 +62,7 @@ PI_THREAD(main_thread)
 		print_message(mess, 7);
 		
 		snprintf(mess, 36, "Accel Y atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawX/(double)imu.accel.rawZ));
-		//print_message(mess, 8);
+		print_message(mess, 8);
 
 		snprintf(mess, 36, "Accel Z Tan: %07.3f", (double)imu.accel.rawY/(double)imu.accel.rawX);
 		print_message(mess, 9);
@@ -74,7 +74,7 @@ PI_THREAD(main_thread)
 		print_message(mess, 11);
 		
 		snprintf(mess, 36, "Accel Z atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawY/(double)imu.accel.rawX));
-		//print_message(mess, 12);
+		print_message(mess, 12);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);
