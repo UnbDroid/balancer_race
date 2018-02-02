@@ -20,7 +20,7 @@ else
 	#password="godroidgo"
 	dst_folder_rasp="/home/pi/ccdir"
 
-	arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so -lm
+	arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so ./libm.so.6
 
 	# encrypted_password="$(perl -e 'printf("%s\n", crypt($ARGV[0], "password"))' "${password}")"
 

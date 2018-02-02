@@ -206,6 +206,7 @@ int main(int argc, char* argv[])
     wiringPiSetupPhys();
 	init_motors();
 	init_sensors();
+
 	piThreadCreate(main_thread);
 	piThreadCreate(sensors);
 	piThreadCreate(joystick);
