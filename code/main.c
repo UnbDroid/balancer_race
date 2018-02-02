@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 
 	if(!am_i_su()) 
 	{
-		if(debug.debug_flag) printf("Restricted area. Super users only.\n");
+		printf("Restricted area. Super users only.\n");
 		return 0;
 	}
 
