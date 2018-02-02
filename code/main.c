@@ -40,40 +40,40 @@ PI_THREAD(main_thread)
 		}
 		char mess[36];
 		
-		snprintf(mess, 36, "Accel X Tan: %07.3f", (double)imu.accel.rawZ/(double)imu.accel.rawY);
+		snprintf(mess, 36, "Accel X Tan: %07.2f", (double)imu.accel.rawZ/(double)imu.accel.rawY);
 		print_message(mess, 1);
 
-		snprintf(mess, 36, "Accel X atan(Tan) rad: %07.3f", atan((double)imu.accel.rawZ/(double)imu.accel.rawY));
+		snprintf(mess, 36, "Accel X atan(Tan) rad: %07.2f", atan((double)imu.accel.rawZ/(double)imu.accel.rawY));
 		print_message(mess, 2);
 
-		snprintf(mess, 36, "Accel X atan2(Tan) rad: %07.3f", atan2((double)imu.accel.rawZ, (double)imu.accel.rawY));
+		snprintf(mess, 36, "Accel X atan2(Tan) rad: %07.2f", atan2((double)imu.accel.rawZ, (double)imu.accel.rawY));
 		print_message(mess, 3);
 		
-		snprintf(mess, 36, "Accel X atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawZ/(double)imu.accel.rawY));
+		snprintf(mess, 36, "Accel X atan(Tan) deg: %07.2f", RAD2DEG*atan((double)imu.accel.rawZ/(double)imu.accel.rawY));
 		print_message(mess, 4);
 
-		snprintf(mess, 36, "Accel Y Tan: %07.3f", (double)imu.accel.rawX/(double)imu.accel.rawZ);
+		snprintf(mess, 36, "Accel Y Tan: %07.2f", (double)imu.accel.rawX/(double)imu.accel.rawZ);
 		print_message(mess, 5);
 
-		snprintf(mess, 36, "Accel Y atan(Tan) rad: %07.3f", atan((double)imu.accel.rawX/(double)imu.accel.rawZ));
+		snprintf(mess, 36, "Accel Y atan(Tan) rad: %07.2f", atan((double)imu.accel.rawX/(double)imu.accel.rawZ));
 		print_message(mess, 6);
 
-		snprintf(mess, 36, "Accel Y atan2(Tan) rad: %07.3f", atan2((double)imu.accel.rawX, (double)imu.accel.rawZ));
+		snprintf(mess, 36, "Accel Y atan2(Tan) rad: %07.2f", atan2((double)imu.accel.rawX, (double)imu.accel.rawZ));
 		print_message(mess, 7);
 		
-		snprintf(mess, 36, "Accel Y atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawX/(double)imu.accel.rawZ));
+		snprintf(mess, 36, "Accel Y atan(Tan) deg: %07.2f", RAD2DEG*atan((double)imu.accel.rawX/(double)imu.accel.rawZ));
 		print_message(mess, 8);
 
-		snprintf(mess, 36, "Accel Z Tan: %07.3f", (double)imu.accel.rawY/(double)imu.accel.rawX);
+		snprintf(mess, 36, "Accel Z Tan: %07.2f", (double)imu.accel.rawY/(double)imu.accel.rawX);
 		print_message(mess, 9);
 
-		snprintf(mess, 36, "Accel Z atan(Tan) rad: %07.3f", atan((double)imu.accel.rawY/(double)imu.accel.rawX));
+		snprintf(mess, 36, "Accel Z atan(Tan) rad: %07.2f", atan((double)imu.accel.rawY/(double)imu.accel.rawX));
 		print_message(mess, 10);
 
-		snprintf(mess, 36, "Accel Z atan2(Tan) rad: %07.3f", atan2((double)imu.accel.rawY, (double)imu.accel.rawX));
+		snprintf(mess, 36, "Accel Z atan2(Tan) rad: %07.2f", atan2((double)imu.accel.rawY, (double)imu.accel.rawX));
 		print_message(mess, 11);
 		
-		snprintf(mess, 36, "Accel Z atan(Tan) deg: %07.3f", RAD2DEG*atan((double)imu.accel.rawY/(double)imu.accel.rawX));
+		snprintf(mess, 36, "Accel Z atan(Tan) deg: %07.2f", RAD2DEG*atan((double)imu.accel.rawY/(double)imu.accel.rawX));
 		print_message(mess, 12);
 	}
 	Coast(LMOTOR);
