@@ -275,56 +275,21 @@ void update_imu()
 		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
     }
 
-	/*
-
-	double tempX, tempY, tempZ;
-	double temp2X, temp2Y, temp2Z;
-
-	tempX = imu.gyro.velX;
-	tempY = imu.gyro.velY;
-	tempZ = imu.gyro.velZ;
-
-	*/
-
 	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawX;
 	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawY;
 	imu.gyro.velZ = -GYRO_GAIN*(double)imu.gyro.rawZ;
-
-	/*
-
-	imu.gyro.accX = (imu.gyro.velX-tempX)/dt;
-	imu.gyro.accY = (imu.gyro.velY-tempY)/dt;
-	imu.gyro.accZ = (imu.gyro.velZ-tempZ)/dt;
-
-	*/
 
 	imu.gyro.posX += imu.gyro.velX*dt;
 	imu.gyro.posY += imu.gyro.velY*dt;
 	imu.gyro.posZ += imu.gyro.velZ*dt;	
 
-	/*
-	tempX = imu.accel.posX;
-	tempY = imu.accel.posY;
-	tempZ = imu.accel.posZ;
-
-	temp2X = imu.accel.velX;
-	temp2Y = imu.accel.velY;
-	temp2Z = imu.accel.velZ;
-	*/
-
 	imu.accel.posX = RAD2DEG*atan2(-(double)imu.accel.rawZ, -(double)imu.accel.rawY);
 	imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
 	imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
 
-	/*
-	imu.accel.velX = (imu.gyro.posX-tempX)/dt;
-	imu.accel.velY = (imu.gyro.posY-tempY)/dt;
-	imu.accel.velZ = (imu.gyro.posZ-tempZ)/dt;
-
-	imu.accel.accX = (imu.accel.velX-temp2X)/dt;
-	imu.accel.accY = (imu.accel.velY-temp2Y)/dt;
-	imu.accel.accZ = (imu.accel.velZ-temp2Z)/dt;
-	*/
+	imu.magnet.posX = RAD2DEG*atan2(-(double)imu.magnet.rawZ*magsensZ, -(double)imu.magnet.rawY*magsensY);
+	imu.magnet.posY = RAD2DEG*atan2(-(double)imu.magnet.rawX*magsensX, -(double)imu.magnet.rawZ*magsensZ);
+	imu.magnet.posZ = RAD2DEG*atan2(-(double)imu.magnet.rawY*magsensY, -(double)imu.magnet.rawX*magsensX);
 }
 
 void update_ir()
