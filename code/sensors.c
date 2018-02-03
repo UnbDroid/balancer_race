@@ -15,6 +15,10 @@
 #define GYRO_Z_OFFSET_HI 0x00
 #define GYRO_Z_OFFSET_LO 0x04
 
+#define MAGX_BIAS 18
+#define MAGY_BIAS 73
+#define MAGZ_BIAS -246.5
+
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
 #define GYRO_CONFIG 0x1b
@@ -295,13 +299,9 @@ void update_imu()
 	imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
 	imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
 
-	imu.magnet.posX = RAD2DEG*atan2(-(double)imu.magnet.rawZ*magsensZ, -(double)imu.magnet.rawY*magsensY);
-	imu.magnet.posY = RAD2DEG*atan2(-(double)imu.magnet.rawX*magsensX, -(double)imu.magnet.rawZ*magsensZ);
-	imu.magnet.posZ = RAD2DEG*atan2(-(double)imu.magnet.rawY*magsensY, -(double)imu.magnet.rawX*magsensX);
-
-	imu.magnet.velX = imu.magnet.rawX*magsensX;
-	imu.magnet.velY = imu.magnet.rawY*magsensY;
-	imu.magnet.velZ = imu.magnet.rawZ*magsensZ;
+	imu.magnet.posX = RAD2DEG*atan2((double)imu.magnet.rawZ*magsensZ-MAGZ_BIAS, (double)imu.magnet.rawY*magsensY-MAGY_BIAS);
+	imu.magnet.posY = RAD2DEG*atan2((double)imu.magnet.rawX*magsensX-MAGX_BIAS, (double)imu.magnet.rawZ*magsensZ-MAGZ_BIAS);
+	imu.magnet.posZ = RAD2DEG*atan2((double)imu.magnet.rawY*magsensY-MAGY_BIAS, (double)imu.magnet.rawX*magsensX-MAGX_BIAS);
 }
 
 void update_ir()
