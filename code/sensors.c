@@ -293,6 +293,10 @@ void update_imu()
 	imu.magnet.posX = RAD2DEG*atan2(-(double)imu.magnet.rawZ*magsensZ, -(double)imu.magnet.rawY*magsensY);
 	imu.magnet.posY = RAD2DEG*atan2(-(double)imu.magnet.rawX*magsensX, -(double)imu.magnet.rawZ*magsensZ);
 	imu.magnet.posZ = RAD2DEG*atan2(-(double)imu.magnet.rawY*magsensY, -(double)imu.magnet.rawX*magsensX);
+
+	imu.magnet.velX = imu.magnet.rawX*magsensX;
+	imu.magnet.velY = imu.magnet.rawY*magsensY;
+	imu.magnet.velZ = imu.magnet.rawZ*magsensZ;
 }
 
 void update_ir()
