@@ -5,7 +5,7 @@
 
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
-#define MAGNET_GAIN 1.49938949939 //(49120.0/32760.0)
+#define MAGNET_GAIN 0.15 //(49120.0/32760.0) // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
