@@ -223,6 +223,7 @@ void update_imu()
 	uint8_t accYhi, accYlo;
 	uint8_t accZhi, accZlo;
 
+	uint8_t mag_overflow;
 	uint8_t magXhi, magXlo;
 	uint8_t magYhi, magYlo;
 	uint8_t magZhi, magZlo;
@@ -257,17 +258,22 @@ void update_imu()
     accZlo = wiringPiI2CReadReg8(MPU9250addr, 0x40);
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
-	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
-    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
-    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
+    mag_overflow = wiringPiI2CReadReg8(AK8963addr, 0x09);
 
-    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
-	magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
-	imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
+    if(!(mag_overflow & 0x18))
+    {
+		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
+	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
+	    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
 
-    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
-	magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
-	imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
+	    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
+		magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
+		imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
+
+	    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
+		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
+		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
+    }
 
 	/*
 
