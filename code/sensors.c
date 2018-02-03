@@ -103,14 +103,14 @@ struct imu {
 
 struct infrared ir;
 struct imu imu;
-int endeMPU9250;
+int MPU9250addr, AK8963addr;
 unsigned long long int last_update;
 
 void update_imu();
 
 void initMPU9250()
 {
-	endeMPU9250 = wiringPiI2CSetup(0x68);
+	MPU9250addr = wiringPiI2CSetup(0x68);
 
 	// set PWR_MGMT_1 register
 	// [7] H_RESET - if set to 1 it will auto clear and reset the chip registers to default values
@@ -119,26 +119,40 @@ void initMPU9250()
 	// [4] GYRO_STANDBY - if set, gyro will be always partially on so that it's faster to enable
 	// [3] PD_PTAT - power down the Proportional To Absolute Temperature voltage regulator
 	// [2:0] CLKSEL - set to 000 to use internal clock, 001 to auto select clock
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
 	delay(100);
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_1, 0x01); // disable sleep, set clock to auto
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x01); // disable sleep, set clock to auto
+
+	// enable magnetometer bypass
+	// INT_PIN_CFG
+	// [7] - ACTL - Check page 29 of register map for more info
+	// [6] - OPEN - Check page 29 of register map for more info
+	// [5] - LATCH_INT_EN - Check page 29 of register map for more info
+	// [4] - INT_ANYRD_2CLEAR - Check page 29 of register map for more info
+	// [3] - ACTL_FSYNC - Check page 29 of register map for more info
+	// [2] - FSYNC_INT_MODE_EN - Check page 29 of register map for more info
+	// [1] - BYPASS_EN - Check page 29 of register map for more info
+	// [0] - Reserved
+	wiringPiI2CWriteReg8(MPU9250addr, INT_PIN_CFG, 0x02);
+
+	AK8963addr = wiringPiI2CSetup(0x0c);
 
 	// set PWR_MGMT_2 register
 	// [7, 6] - Reserved
 	// [5, 4, 3] - Set to 0 to enable Accel [X, Y, Z]
 	// [2, 1, 0] - Set to 0 to enable Gyro  [X, Y, Z]
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_2, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_2, 0x00);
 
 	// set CONFIG register
 	// [7] - Reserved
 	// [6] - FIFO_MODE - when set to 0, discard readings if FIFO is full. Otherwise, oldest data will be replaced.
 	// [5:3] - EXT_SYNC_SET - just disable with 000. For more info, check page 13 of the register map
 	// [2:0] - DLPF_CFG - Differential Low Pass Filter Configuration. Check page 13 of the register map
-	wiringPiI2CWriteReg8(endeMPU9250, CONFIG, 0x03);
+	wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x03);
 
 	// set sample rate to 200Hz
 	// sample rate defined by 1/(1+SMPLRT_DIV)
-	wiringPiI2CWriteReg8(endeMPU9250, SMPLRT_DIV, 0x04);
+	wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x04);
 
 	// set gyro max range to 500 degrees/second
 	// GYRO_CONFIG
@@ -146,42 +160,42 @@ void initMPU9250()
 	// [4:3] - Gyro full scale value (250, 500, 1000, 2000 degrees/second)
 	// [2] - Reserved
 	// [1:0] - Setting to bypass DLPF(Differential Low Pass Filter). Disable with 00.
-	wiringPiI2CWriteReg8(endeMPU9250, GYRO_CONFIG, 0x08);
+	wiringPiI2CWriteReg8(MPU9250addr, GYRO_CONFIG, 0x08);
 
 	// set gyro offset registers (0x13 to 0x18) to values obtained by the calibGyro.c program
-	wiringPiI2CWriteReg8(endeMPU9250, XG_OFFSET_H, GYRO_X_OFFSET_HI);
-	wiringPiI2CWriteReg8(endeMPU9250, XG_OFFSET_L, GYRO_X_OFFSET_LO);
-	wiringPiI2CWriteReg8(endeMPU9250, YG_OFFSET_H, GYRO_Y_OFFSET_HI);
-	wiringPiI2CWriteReg8(endeMPU9250, YG_OFFSET_L, GYRO_Y_OFFSET_LO);
-	wiringPiI2CWriteReg8(endeMPU9250, ZG_OFFSET_H, GYRO_Z_OFFSET_HI);
-	wiringPiI2CWriteReg8(endeMPU9250, ZG_OFFSET_L, GYRO_Z_OFFSET_LO);
+	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_H, GYRO_X_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_L, GYRO_X_OFFSET_LO);
+	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_H, GYRO_Y_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_L, GYRO_Y_OFFSET_LO);
+	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_H, GYRO_Z_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_L, GYRO_Z_OFFSET_LO);
 
 	// set accel max range to 2 g
 	// ACCEL_CONFIG
 	// [7, 6, 5] - Accel self-test for [X, Y, Z] axis
 	// [4:3] - Accel full scale value (2, 4, 8, 16 g)
 	// [2:0] - Reserved
-	wiringPiI2CWriteReg8(endeMPU9250, ACCEL_CONFIG, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG, 0x00);
 
 	// soft reset magnetometer
 	// CNTL2
 	// [7:1] - Reserved
 	// [0] - When set to 1, magnetometer automatically resets and sets this bit to 0
-	wiringPiI2CWriteReg8(endeMPU9250, CNTL2, 0x01);
+	wiringPiI2CWriteReg8(AK8963addr, CNTL2, 0x01);
 
 	// set magnetometer Control 1 register
 	// CTNL1
 	// [7:5] - Reserved
 	// [4] - If 0, output is 14-bits two's complement. If 1, output is 16-bits two's complement
 	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
-	wiringPiI2CWriteReg8(endeMPU9250, CNTL1, 0x16);
+	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x16);
 
 	// set magnetometer sensitivity value
 	// ASAX, ASAY, ASAZ
 	// [7:0] - ASA value. Hadj = H*((ASA-128)/64 + 1)
-	wiringPiI2CWriteReg8(endeMPU9250, ASAX, 0x80);
-	wiringPiI2CWriteReg8(endeMPU9250, ASAY, 0x80);
-	wiringPiI2CWriteReg8(endeMPU9250, ASAZ, 0x80);
+	wiringPiI2CWriteReg8(AK8963addr, ASAX, 0x80);
+	wiringPiI2CWriteReg8(AK8963addr, ASAY, 0x80);
+	wiringPiI2CWriteReg8(AK8963addr, ASAZ, 0x80);
 
 	update_imu();
 
@@ -218,40 +232,40 @@ void update_imu()
 	last_update = now_time;
 
 	//bit magic
-	gyrXhi = wiringPiI2CReadReg8(endeMPU9250, 0x43);
-	gyrXlo = wiringPiI2CReadReg8(endeMPU9250, 0x44);
+	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
+	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
 
-	gyrYhi = wiringPiI2CReadReg8(endeMPU9250, 0x45);
-    gyrYlo = wiringPiI2CReadReg8(endeMPU9250, 0x46);
+	gyrYhi = wiringPiI2CReadReg8(MPU9250addr, 0x45);
+    gyrYlo = wiringPiI2CReadReg8(MPU9250addr, 0x46);
 	imu.gyro.rawY = (int16_t)((int16_t)gyrYhi<<8 | gyrYlo);
 
-	gyrZhi = wiringPiI2CReadReg8(endeMPU9250, 0x47);
-    gyrZlo = wiringPiI2CReadReg8(endeMPU9250, 0x48);
+	gyrZhi = wiringPiI2CReadReg8(MPU9250addr, 0x47);
+    gyrZlo = wiringPiI2CReadReg8(MPU9250addr, 0x48);
 	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
-	accXhi = wiringPiI2CReadReg8(endeMPU9250, 0x3b);
-    accXlo = wiringPiI2CReadReg8(endeMPU9250, 0x3c);
+	accXhi = wiringPiI2CReadReg8(MPU9250addr, 0x3b);
+    accXlo = wiringPiI2CReadReg8(MPU9250addr, 0x3c);
     imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
 
-	accYhi = wiringPiI2CReadReg8(endeMPU9250, 0x3d);
-    accYlo = wiringPiI2CReadReg8(endeMPU9250, 0x3e);
+	accYhi = wiringPiI2CReadReg8(MPU9250addr, 0x3d);
+    accYlo = wiringPiI2CReadReg8(MPU9250addr, 0x3e);
 	imu.accel.rawY = (int16_t)((int16_t)accYhi<<8 | accYlo);
 
-	accZhi = wiringPiI2CReadReg8(endeMPU9250, 0x3f);
-    accZlo = wiringPiI2CReadReg8(endeMPU9250, 0x40);
+	accZhi = wiringPiI2CReadReg8(MPU9250addr, 0x3f);
+    accZlo = wiringPiI2CReadReg8(MPU9250addr, 0x40);
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
-	magXlo = wiringPiI2CReadReg8(endeMPU9250, 0x03);
-    magXhi = wiringPiI2CReadReg8(endeMPU9250, 0x04);
+	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
+    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
     imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
 
-    magYlo = wiringPiI2CReadReg8(endeMPU9250, 0x05);
-	magYhi = wiringPiI2CReadReg8(endeMPU9250, 0x06);
+    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
+	magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
 	imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
 
-    magZlo = wiringPiI2CReadReg8(endeMPU9250, 0x07);
-	magZhi = wiringPiI2CReadReg8(endeMPU9250, 0x08);
+    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
+	magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
 	imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
 	/*
