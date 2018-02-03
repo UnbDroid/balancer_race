@@ -7,7 +7,6 @@
 
 int main()
 {
-	printf("\e[2J\e[H");
 	printf("You have 60 seconds to spin the robot around as much as you can. Preferably in a figure 8.\n");
 	wiringPiSetupPhys();
 	init_sensors();
