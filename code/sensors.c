@@ -30,12 +30,16 @@
 #define FIFO_COUNTH 0x72
 #define FIFO_COUNTL 0x73
 #define FIFO_R_W 0x74
-#define XG_OFFSET_H 0X13
-#define XG_OFFSET_L 0X14
-#define YG_OFFSET_H 0X15
-#define YG_OFFSET_L 0X16
-#define ZG_OFFSET_H 0X17
-#define ZG_OFFSET_L 0X18
+#define XG_OFFSET_H 0x13
+#define XG_OFFSET_L 0x14
+#define YG_OFFSET_H 0x15
+#define YG_OFFSET_L 0x16
+#define ZG_OFFSET_H 0x17
+#define ZG_OFFSET_L 0x18
+#define CNTL1 0x0a
+#define ASAX 0x10
+#define ASAY 0x11
+#define ASAZ 0x12
 
 #define IR_LEFT 22
 #define IR_RIGHT 40
@@ -156,50 +160,25 @@ void initMPU9250()
 	// [2:0] - Reserved
 	wiringPiI2CWriteReg8(endeMPU9250, ACCEL_CONFIG, 0x00);
 
-	/*
-	int i;
-	int32_t gyro_bias[3] = {0, 0, 0};
-	for(i = 0; i < 1000; ++i)
-	{
-		int16_t gyro_temp[3] = {0, 0, 0};
-		int8_t data[6];
-		data[0] = wiringPiI2CReadReg8(endeMPU9250, 0x43);
-		data[1] = wiringPiI2CReadReg8(endeMPU9250, 0x44);
-		data[2] = wiringPiI2CReadReg8(endeMPU9250, 0x45);
-		data[3] = wiringPiI2CReadReg8(endeMPU9250, 0x46);;
-		data[4] = wiringPiI2CReadReg8(endeMPU9250, 0x47);
-		data[5] = wiringPiI2CReadReg8(endeMPU9250, 0x48);
-		gyro_temp[0] = (int16_t)(((int16_t)data[0] << 8) | data[1]);
-		gyro_temp[1] = (int16_t)(((int16_t)data[2] << 8) | data[3]);
-		gyro_temp[2] = (int16_t)(((int16_t)data[4] << 8) | data[5]);
-		gyro_bias[0] += (int32_t) gyro_temp[0];
-		gyro_bias[1] += (int32_t) gyro_temp[1];
-		gyro_bias[2] += (int32_t) gyro_temp[2];
-	}
-	gyro_bias[0] /= (int32_t) 1000;
-	gyro_bias[1] /= (int32_t) 1000;
-	gyro_bias[2] /= (int32_t) 1000;
-	
-	printf("%d, %d, %d\n", gyro_bias[0], gyro_bias[1], gyro_bias[2]);
-	*/
+	// set magnetometer Control 1 register
+	// CTNL1
+	// [7:5] - Reserved
+	// [4] - If 0, output is 14-bits two's complement. If 1, output is 16-bits two's complement
+	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
+	wiringPiI2CWriteReg8(endeMPU9250, CNTL1, 0x12);
 
-	imu.gyro.posX = 0;
-	imu.gyro.posY = 0;
+	// set magnetometer sensitivity value
+	// ASAX, ASAY, ASAZ
+	// [7:0] - ASA value. Hadj = H*((ASA-128)/64 + 1)
+	wiringPiI2CWriteReg8(endeMPU9250, ASAX, 0x80);
+	wiringPiI2CWriteReg8(endeMPU9250, ASAY, 0x80);
+	wiringPiI2CWriteReg8(endeMPU9250, ASAZ, 0x80);
+
+	update_imu();
+
+	imu.gyro.posX = imu.accel.posX;
+	imu.gyro.posY = imu.accel.posY;
 	imu.gyro.posZ = 0;
-
-	imu.gyro.velX = 0;
-	imu.gyro.velY = 0;
-	imu.gyro.velZ = 0;
-
-	imu.accel.posX = 0;
-	imu.accel.posY = 0;
-	imu.accel.posZ = 0;
-
-	imu.magnet.posX = 0;
-	imu.magnet.posY = 0;
-	imu.magnet.posZ = 0;
-
-	last_update = micros();
 }
 
 void init_sensors()
