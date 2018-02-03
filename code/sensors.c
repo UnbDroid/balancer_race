@@ -105,6 +105,8 @@ struct imu imu;
 int endeMPU9250;
 unsigned long long int last_update;
 
+void update_imu();
+
 void initMPU9250()
 {
 	endeMPU9250 = wiringPiI2CSetup(0x68);
