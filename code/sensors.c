@@ -105,6 +105,7 @@ struct infrared ir;
 struct imu imu;
 int MPU9250addr, AK8963addr;
 unsigned long long int last_update;
+double magsensX, magsensY, magsensZ;
 
 void update_imu();
 
@@ -182,7 +183,7 @@ void initMPU9250()
 	// [7:1] - Reserved
 	// [0] - When set to 1, magnetometer automatically resets and sets this bit to 0
 	wiringPiI2CWriteReg8(AK8963addr, CNTL2, 0x01);
-
+	delay(100);
 	// set magnetometer Control 1 register
 	// CTNL1
 	// [7:5] - Reserved
@@ -190,12 +191,12 @@ void initMPU9250()
 	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
 	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x16);
 
-	// set magnetometer sensitivity value
+	// get magnetometer sensitivity value
 	// ASAX, ASAY, ASAZ
-	// [7:0] - ASA value. Hadj = H*((ASA-128)/64 + 1)
-	wiringPiI2CWriteReg8(AK8963addr, ASAX, 0x80);
-	wiringPiI2CWriteReg8(AK8963addr, ASAY, 0x80);
-	wiringPiI2CWriteReg8(AK8963addr, ASAZ, 0x80);
+	// [7:0] - ASA value. Hadj = H*((ASA-128)/256 + 1)
+	magsensX = (double)(wiringPiI2CReadReg8(AK8963addr, ASAX)-128.0)/256.0 + 1;
+	magsensY = (double)(wiringPiI2CReadReg8(AK8963addr, ASAY)-128.0)/256.0 + 1;
+	magsensZ = (double)(wiringPiI2CReadReg8(AK8963addr, ASAZ)-128.0)/256.0 + 1;
 
 	update_imu();
 
