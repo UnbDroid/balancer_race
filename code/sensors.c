@@ -260,7 +260,7 @@ void update_imu()
 
     mag_overflow = wiringPiI2CReadReg8(AK8963addr, 0x09);
 
-    if(!(mag_overflow & 0x18))
+    if(!(mag_overflow & 0x08))
     {
 		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
 	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
