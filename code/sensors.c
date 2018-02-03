@@ -298,18 +298,40 @@ void update_imu()
 	imu.gyro.posY += imu.gyro.velY*dt;
 	imu.gyro.posZ += imu.gyro.velZ*dt;	
 
-	imu.accel.posX = RAD2DEG*atan2(-(double)imu.accel.rawZ, -(double)imu.accel.rawY);
-	imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
-	imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
+	if(abs(imu.accel.rawX) > (3*(abs(imu.accel.rawZ)+abs(imu.accel.rawY))))
+		imu.accel.posX = sqrt(-1);
+	else
+		imu.accel.posX = RAD2DEG*atan2(-(double)imu.accel.rawZ, -(double)imu.accel.rawY);
+	
+	if(abs(imu.accel.rawY) > (3*(abs(imu.accel.rawZ)+abs(imu.accel.rawX))))
+		imu.accel.posY = sqrt(-1);
+	else
+		imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
+	
+	if(abs(imu.accel.rawZ) > (3*(abs(imu.accel.rawY)+abs(imu.accel.rawX))))
+		imu.accel.posZ = sqrt(-1);
+	else
+		imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
 
-	imu.magnet.posX = RAD2DEG*atan2(((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ, ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY);
-	imu.magnet.posY = RAD2DEG*atan2(((double)imu.magnet.rawX-MAGX_BIAS)*magsensX, ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ);
-	imu.magnet.posZ = RAD2DEG*atan2(((double)imu.magnet.rawY-MAGY_BIAS)*magsensY, ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX);
+	//usando imu.magnet.vel como temporários, maus
+	imu.magnet.velY = (double)(imu.magnet.rawX-MAGX_BIAS)*magsensX;
+	imu.magnet.velX = (double)(imu.magnet.rawY-MAGY_BIAS)*magsensY;
+	imu.magnet.velZ = (double)(-1*((imu.magnet.rawZ-MAGZ_BIAS)*magsensZ));
 
-	imu.magnet.velX = (imu.magnet.rawX-MAGX_BIAS)*magsensX*MAGNET_GAIN;
-	imu.magnet.velY = (imu.magnet.rawY-MAGY_BIAS)*magsensY*MAGNET_GAIN;
-	imu.magnet.velZ = (imu.magnet.rawZ-MAGZ_BIAS)*magsensZ*MAGNET_GAIN;
-
+	if(abs(imu.magnet.velX) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velY))))
+		imu.magnet.posX = sqrt(-1);
+	else
+		imu.magnet.posX = RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY);
+	
+	if(abs(imu.magnet.velY) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velX))))
+		imu.magnet.posY = sqrt(-1);
+	else
+		imu.magnet.posY = RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ);
+	
+	if(abs(imu.magnet.velZ) > (3*(abs(imu.magnet.velX)+abs(imu.magnet.velY))))
+		imu.magnet.posZ = sqrt(-1);
+	else
+		imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.velY, imu.magnet.velX);
 }
 
 void update_ir()
