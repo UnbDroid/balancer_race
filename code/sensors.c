@@ -299,9 +299,9 @@ void update_imu()
 	imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
 	imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
 
-	imu.magnet.posX = RAD2DEG*atan2((double)imu.magnet.rawZ*magsensZ-MAGZ_BIAS, (double)imu.magnet.rawY*magsensY-MAGY_BIAS);
-	imu.magnet.posY = RAD2DEG*atan2((double)imu.magnet.rawX*magsensX-MAGX_BIAS, (double)imu.magnet.rawZ*magsensZ-MAGZ_BIAS);
-	imu.magnet.posZ = RAD2DEG*atan2((double)imu.magnet.rawY*magsensY-MAGY_BIAS, (double)imu.magnet.rawX*magsensX-MAGX_BIAS);
+	imu.magnet.posX = RAD2DEG*atan2(((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ, ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY);
+	imu.magnet.posY = RAD2DEG*atan2(((double)imu.magnet.rawX-MAGX_BIAS)*magsensX, ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ);
+	imu.magnet.posZ = RAD2DEG*atan2(((double)imu.magnet.rawY-MAGY_BIAS)*magsensY, ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX);
 }
 
 void update_ir()
