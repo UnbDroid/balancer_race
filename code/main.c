@@ -89,7 +89,7 @@ PI_THREAD(led)
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
-	//piHiPri(0); //escolher prioridade
+	piHiPri(0);
 	while(keep_running)
 	{
 		update_ir();

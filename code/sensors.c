@@ -184,19 +184,22 @@ void initMPU9250()
 	// [0] - When set to 1, magnetometer automatically resets and sets this bit to 0
 	wiringPiI2CWriteReg8(AK8963addr, CNTL2, 0x01);
 	delay(100);
+
+	// get magnetometer sensitivity value
+	// ASAX, ASAY, ASAZ
+	// [7:0] - ASA value. Hadj = H*((ASA-128)/256 + 1)
+	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x1F);
+	delay(20);
+	magsensX = (double)(wiringPiI2CReadReg8(AK8963addr, ASAX)-128.0)/256.0 + 1;
+	magsensY = (double)(wiringPiI2CReadReg8(AK8963addr, ASAY)-128.0)/256.0 + 1;
+	magsensZ = (double)(wiringPiI2CReadReg8(AK8963addr, ASAZ)-128.0)/256.0 + 1;
+
 	// set magnetometer Control 1 register
 	// CTNL1
 	// [7:5] - Reserved
 	// [4] - If 0, output is 14-bits two's complement. If 1, output is 16-bits two's complement
 	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
 	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x16);
-
-	// get magnetometer sensitivity value
-	// ASAX, ASAY, ASAZ
-	// [7:0] - ASA value. Hadj = H*((ASA-128)/256 + 1)
-	magsensX = (double)(wiringPiI2CReadReg8(AK8963addr, ASAX)-128.0)/256.0 + 1;
-	magsensY = (double)(wiringPiI2CReadReg8(AK8963addr, ASAY)-128.0)/256.0 + 1;
-	magsensZ = (double)(wiringPiI2CReadReg8(AK8963addr, ASAZ)-128.0)/256.0 + 1;
 
 	update_imu();
 
