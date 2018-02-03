@@ -5,7 +5,7 @@
 
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
-#define MAGNET_GAIN 1.0
+#define MAGNET_GAIN 1.49938949939 //(49120.0/32760.0)
 #define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
@@ -302,6 +302,11 @@ void update_imu()
 	imu.magnet.posX = RAD2DEG*atan2(((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ, ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY);
 	imu.magnet.posY = RAD2DEG*atan2(((double)imu.magnet.rawX-MAGX_BIAS)*magsensX, ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ);
 	imu.magnet.posZ = RAD2DEG*atan2(((double)imu.magnet.rawY-MAGY_BIAS)*magsensY, ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX);
+
+	imu.magnet.velX = (imu.magnet.rawX-MAGX_BIAS)*magsensX*MAGNET_GAIN;
+	imu.magnet.velY = (imu.magnet.rawY-MAGY_BIAS)*magsensY*MAGNET_GAIN;
+	imu.magnet.velZ = (imu.magnet.rawZ-MAGZ_BIAS)*magsensZ*MAGNET_GAIN;
+
 }
 
 void update_ir()
