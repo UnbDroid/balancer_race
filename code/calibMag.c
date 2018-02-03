@@ -13,7 +13,7 @@ int main()
 	
 	int16_t max[3] = {-32000}, min[3] = {32000};
 
-	unsigned long int begin = millis();
+	unsigned long int begin = millis(), last_print = millis();
 	while(millis() - begin < 60000)
 	{
 		update_imu();
@@ -43,9 +43,15 @@ int main()
 		{
 			min[2] = imu.magnet.rawZ;
 		}
+		if(millis() - last_print > 200)
+		{
+			last_print = millis();
+			printf("\e[2J\e[H");
+			printf("Min Values: (%i, %i, %i)\n", min[0], min[1], min[2]);
+			printf("Max Values: (%i, %i, %i)\n", max[0], max[1], max[2]);
+		}
 	}
-	printf("Min Values: (%i, %i, %i)\n", min[0], min[1], min[2]);
-	printf("Max Values: (%i, %i, %i)\n", max[0], max[1], max[2]);
+
 
 	return 0;
 }
