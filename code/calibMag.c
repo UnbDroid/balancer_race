@@ -49,6 +49,7 @@ int main()
 			printf("\e[2J\e[H");
 			printf("Min Values: (%i, %i, %i)\n", min[0], min[1], min[2]);
 			printf("Max Values: (%i, %i, %i)\n", max[0], max[1], max[2]);
+			printf("Current Values: (%i, %i, %i)\n", imu.magnet.rawX, imu.magnet.rawY, imu.magnet.rawZ);
 		}
 	}
 
