@@ -37,6 +37,7 @@
 #define ZG_OFFSET_H 0x17
 #define ZG_OFFSET_L 0x18
 #define CNTL1 0x0a
+#define CNTL2 0x0b
 #define ASAX 0x10
 #define ASAY 0x11
 #define ASAZ 0x12
@@ -162,12 +163,18 @@ void initMPU9250()
 	// [2:0] - Reserved
 	wiringPiI2CWriteReg8(endeMPU9250, ACCEL_CONFIG, 0x00);
 
+	// soft reset magnetometer
+	// CNTL2
+	// [7:1] - Reserved
+	// [0] - When set to 1, magnetometer automatically resets and sets this bit to 0
+	wiringPiI2CWriteReg8(endeMPU9250, CNTL2, 0x01);
+
 	// set magnetometer Control 1 register
 	// CTNL1
 	// [7:5] - Reserved
 	// [4] - If 0, output is 14-bits two's complement. If 1, output is 16-bits two's complement
 	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
-	wiringPiI2CWriteReg8(endeMPU9250, CNTL1, 0x12);
+	wiringPiI2CWriteReg8(endeMPU9250, CNTL1, 0x16);
 
 	// set magnetometer sensitivity value
 	// ASAX, ASAY, ASAZ
