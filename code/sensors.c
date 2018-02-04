@@ -115,6 +115,8 @@ struct imu imu;
 int MPU9250addr, AK8963addr;
 unsigned long long int last_update;
 double magsensX, magsensY, magsensZ;
+double relative_shift_x, relative_shift_y, relative_shift_z;
+double NaN;
 
 void update_imu();
 
@@ -213,11 +215,22 @@ void initMPU9250()
 	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x16);
 	delay(50);
 	
+	relative_shift_x = 0;
+	relative_shift_y = 0;
+	relative_shift_z = 0;
+
 	update_imu();
 
-	imu.gyro.posX = imu.accel.posX;
-	imu.gyro.posY = imu.accel.posY;
-	imu.gyro.posZ = 0;
+	if(imu.accel.posX == imu.accel.posX) imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
+	if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
+	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
+
+	//checando de algum deles é NaN
+	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX)) relative_shift_x = imu.accel.posX - imu.magnet.posX;
+	if((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY)) relative_shift_y = imu.accel.posY - imu.magnet.posY;
+	if((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ)) relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
+
+
 }
 
 void init_sensors()
@@ -230,6 +243,8 @@ void init_sensors()
 
 void update_imu()
 {
+	NaN = sqrt(-1);
+
 	uint8_t gyrXhi, gyrXlo;
 	uint8_t gyrYhi, gyrYlo;
 	uint8_t gyrZhi, gyrZlo;
@@ -303,25 +318,33 @@ void update_imu()
 
 		//calculando o angulo com base na IMU
 		if(abs(imu.magnet.velX) > (MUITOMAIOR*(abs(imu.magnet.velZ)+abs(imu.magnet.velY))))
-			imu.magnet.posX = sqrt(-1);
+			imu.magnet.posX = NaN;
 		else
-			imu.magnet.posX = RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY);
+		{
+			imu.magnet.posX = (RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY)) + relative_shift_x;
+			if(imu.magnet.posX > 180) imu.magnet.posX -= 360;
+			else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
+		}
 		
 		if(abs(imu.magnet.velY) > (MUITOMAIOR*(abs(imu.magnet.velZ)+abs(imu.magnet.velX))))
-			imu.magnet.posY = sqrt(-1);
+			imu.magnet.posY = NaN;
 		else
-			imu.magnet.posY = RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ);
+		{
+			imu.magnet.posY = (RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ)) + relative_shift_y;
+			if(imu.magnet.posY > 180) imu.magnet.posY -= 360;
+			else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
+		}
 		
 		if(abs(imu.magnet.velZ) > (MUITOMAIOR*(abs(imu.magnet.velX)+abs(imu.magnet.velY))))
-			imu.magnet.posZ = sqrt(-1);
+			imu.magnet.posZ = NaN;
 		else
 			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.velY, imu.magnet.velX);		
     }
     else
     {
-    	imu.magnet.posX = sqrt(-1);
-		imu.magnet.posY = sqrt(-1);
-		imu.magnet.posZ = sqrt(-1);
+    	imu.magnet.posX = NaN;
+		imu.magnet.posY = NaN;
+		imu.magnet.posZ = NaN;
     }
     //}
 
@@ -342,19 +365,42 @@ void update_imu()
 
 	//calculando os angulos com base no acelerometro
 	if(abs(imu.accel.rawX) > (MUITOMAIOR*(abs(imu.accel.rawZ)+abs(imu.accel.rawY))))
-		imu.accel.posX = sqrt(-1);
+		imu.accel.posX = NaN;
 	else
 		imu.accel.posX = RAD2DEG*atan2((double)imu.accel.rawZ, (double)imu.accel.rawY);
 	
 	if(abs(imu.accel.rawY) > (MUITOMAIOR*(abs(imu.accel.rawZ)+abs(imu.accel.rawX))))
-		imu.accel.posY = sqrt(-1);
+		imu.accel.posY = NaN;
 	else
 		imu.accel.posY = RAD2DEG*atan2((double)imu.accel.rawX, (double)imu.accel.rawZ);
 	
 	if(abs(imu.accel.rawZ) > (MUITOMAIOR*(abs(imu.accel.rawY)+abs(imu.accel.rawX))))
-		imu.accel.posZ = sqrt(-1);
+		imu.accel.posZ = NaN;
 	else
-		imu.accel.posZ = RAD2DEG*atan2((double)imu.accel.rawY, (double)imu.accel.rawX);
+	{
+		imu.accel.posZ = (RAD2DEG*atan2((double)imu.accel.rawY, (double)imu.accel.rawX)) + relative_shift_z;
+		if(imu.accel.posZ > 180) imu.accel.posZ -= 360;
+		else if(imu.accel.posZ < -180) imu.accel.posZ += 360;
+	}
+
+
+
+	//checando se estamos devendo setar algum relative_shift
+	if((relative_shift_x == 0)&&((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))) 
+	{
+		relative_shift_x = imu.accel.posX - imu.magnet.posX;
+		imu.gyro.posX = imu.accel.posX;
+	}
+	if((relative_shift_y == 0)&&((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY))) 
+	{
+		relative_shift_y = imu.accel.posY - imu.magnet.posY;
+		imu.gyro.posY = imu.accel.posY;
+	}
+	if((relative_shift_z == 0)&&((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ))) 
+	{
+		relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
+		imu.gyro.posZ = imu.magnet.posZ;
+	}
 
 }
 
