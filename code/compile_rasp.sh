@@ -22,7 +22,6 @@ else
 
 	../gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so -lm
 
-
 	sshpass -p ${password} scp ./${nome_binario} ${login_rasp}@${ip_rasp}:${dst_folder_rasp} 
 	rm ${nome_binario}
 fi

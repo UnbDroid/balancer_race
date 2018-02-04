@@ -118,6 +118,24 @@ double magsensX, magsensY, magsensZ;
 double relative_shift_x, relative_shift_y, relative_shift_z;
 double NaN;
 
+uint8_t gyrXhi, gyrXlo;
+uint8_t gyrYhi, gyrYlo;
+uint8_t gyrZhi, gyrZlo;
+
+uint8_t accXhi, accXlo;
+uint8_t accYhi, accYlo;
+uint8_t accZhi, accZlo;
+
+uint8_t mag_overflow, mag_data_ready;
+uint8_t magXhi, magXlo;
+uint8_t magYhi, magYlo;
+uint8_t magZhi, magZlo;
+
+int16_t temp;
+
+unsigned long long int now_time;
+double dt;
+
 void update_imu();
 
 void initMPU9250()
@@ -226,15 +244,19 @@ void initMPU9250()
 	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
 
 	//checando de algum deles é NaN
-	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX)) relative_shift_x = imu.accel.posX - imu.magnet.posX;
-	if((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY)) relative_shift_y = imu.accel.posY - imu.magnet.posY;
-	if((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ)) relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
+	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))
+			relative_shift_x = imu.accel.posX - imu.magnet.posX;
+	if((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY))
+			relative_shift_y = imu.accel.posY - imu.magnet.posY;
+	if((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ))
+			relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
 
 
 }
 
 void init_sensors()
 {
+	NaN = sqrt(-1);
 	initMPU9250();
 
 	pinMode(IR_LEFT, INPUT);
@@ -243,26 +265,9 @@ void init_sensors()
 
 void update_imu()
 {
-	NaN = sqrt(-1);
-
-	uint8_t gyrXhi, gyrXlo;
-	uint8_t gyrYhi, gyrYlo;
-	uint8_t gyrZhi, gyrZlo;
-
-	uint8_t accXhi, accXlo;
-	uint8_t accYhi, accYlo;
-	uint8_t accZhi, accZlo;
-
-	uint8_t mag_overflow, mag_data_ready;
-	uint8_t magXhi, magXlo;
-	uint8_t magYhi, magYlo;
-	uint8_t magZhi, magZlo;
-
-	int16_t temp;
-
-	unsigned long long int now_time = micros();
+	now_time = micros();
 	imu.dt = now_time - last_update;
-	double dt = (double)imu.dt/1000000.0;
+	dt = (double)imu.dt/1000000.0;
 	last_update = now_time;
 
 	//reading gyro
@@ -360,8 +365,14 @@ void update_imu()
 
 	//integrando o gyro
 	imu.gyro.posX += imu.gyro.velX*dt;
+		if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
+		else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
 	imu.gyro.posY += imu.gyro.velY*dt;
-	imu.gyro.posZ += imu.gyro.velZ*dt;	
+		if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
+		else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
+	imu.gyro.posZ += imu.gyro.velZ*dt;
+		if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
+		else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
 
 	//calculando os angulos com base no acelerometro
 	if(abs(imu.accel.rawX) > (MUITOMAIOR*(abs(imu.accel.rawZ)+abs(imu.accel.rawY))))
