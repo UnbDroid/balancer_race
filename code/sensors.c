@@ -245,6 +245,7 @@ void initMPU9250()
 	if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
 	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
 
+	/*
 	// Checking if sensor values are NaN and setting relative shift values
 	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))
 			relative_shift_x = imu.accel.posX - imu.magnet.posX;
@@ -252,7 +253,7 @@ void initMPU9250()
 			relative_shift_y = imu.accel.posY - imu.magnet.posY;
 	if((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ))
 			relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
-
+	*/ // No need to do this here if it is already tested in update_imu() function, called above
 
 }
 
