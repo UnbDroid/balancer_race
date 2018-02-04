@@ -68,9 +68,6 @@ struct gyro {
 	double velX;
 	double velY;
 	double velZ;
-	double accX;
-	double accY;
-	double accZ;
 };
 
 struct accel {
@@ -83,9 +80,6 @@ struct accel {
 	double velX;
 	double velY;
 	double velZ;
-	double accX;
-	double accY;
-	double accZ;
 };
 
 struct magnet {
@@ -98,9 +92,6 @@ struct magnet {
 	double velX;
 	double velY;
 	double velZ;
-	double accX;
-	double accY;
-	double accZ;
 };
 
 struct imu {
@@ -131,7 +122,6 @@ uint8_t magXhi, magXlo;
 uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
 
-int16_t temp;
 double tempX, tempY, tempZ;
 
 unsigned long long int now_time;
