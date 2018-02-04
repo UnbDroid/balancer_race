@@ -9,6 +9,7 @@ struct joystick js;
 int keep_running = 1;
 int led_finished = 1, joystick_finished = 1, watch_finished = 1;
 int shutdown = 0, reboot = 0, close_program=0;
+int debug_flag;
 
 PI_THREAD(joystick)
 {
@@ -69,11 +70,27 @@ void clean_up()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/main&");
+	else if (!close_program) 
+	{
+		if(debug_flag) system("sudo /home/pi/ccdir/main -d");
+		else system("sudo /home/pi/ccdir/main&");
+	}
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+	debug_flag = 0;
+	if(argc > 1)
+	{
+		for(i = 1; i < argc; ++i)
+		{
+			if(	strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0 )
+			{
+				debug_flag = 1;
+			}
+		}
+	}
+
 	if(!am_i_su()) 
 	{
 		printf("Restricted area. Super users only.\n");

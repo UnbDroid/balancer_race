@@ -140,7 +140,11 @@ void clean_up()
 
 	if(shutdown) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) system("sudo /home/pi/ccdir/watcher&");
+	else if (!close_program) 
+	{
+		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d");
+		else system("sudo /home/pi/ccdir/watcher&");
+	}
 }
 
 int main(int argc, char* argv[])
