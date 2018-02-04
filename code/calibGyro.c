@@ -29,53 +29,60 @@
 
 int main()
 {
-	int endeMPU9250;
+	int MPU9250addr;
 	uint8_t data[6];
 	uint16_t ii, jj, packet_count, fifo_count;
 	int32_t gyro_bias[3] = {0, 0, 0};
 
-	endeMPU9250 = wiringPiI2CSetup(0x68);
+	MPU9250addr = wiringPiI2CSetup(0x68);
 
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
 	delay(100);
 
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_1, 0x01);
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_2, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_L, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_L, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_L, 0x00);
 
-	wiringPiI2CWriteReg8(endeMPU9250, INT_ENABLE, 0x00);
-	wiringPiI2CWriteReg8(endeMPU9250, FIFO_EN, 0x00);
-	wiringPiI2CWriteReg8(endeMPU9250, PWR_MGMT_1, 0x00);
-	wiringPiI2CWriteReg8(endeMPU9250, I2C_MST_CTRL, 0x00);
-	wiringPiI2CWriteReg8(endeMPU9250, USER_CTRL, 0x00);
-	wiringPiI2CWriteReg8(endeMPU9250, USER_CTRL, 0x0c);
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x01);
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_2, 0x00);
+
+	wiringPiI2CWriteReg8(MPU9250addr, INT_ENABLE, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, I2C_MST_CTRL, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x0c);
     delay(15);    
 
-    wiringPiI2CWriteReg8(endeMPU9250, CONFIG, 0x01);
-    wiringPiI2CWriteReg8(endeMPU9250, SMPLRT_DIV, 0x00);
-    wiringPiI2CWriteReg8(endeMPU9250, GYRO_CONFIG, 0x00);
+    wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x01);
+    wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x00);
+    wiringPiI2CWriteReg8(MPU9250addr, GYRO_CONFIG, 0x00);
  
 	uint16_t gyrosensitivity = 131;   // = 131 LSB/degrees/sec
 
-	wiringPiI2CWriteReg8(endeMPU9250, USER_CTRL, 0x40);
-	wiringPiI2CWriteReg8(endeMPU9250, FIFO_EN, 0x70);
+	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x40);
+	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x70);
 	delay(60);
 
-	wiringPiI2CWriteReg8(endeMPU9250, FIFO_EN, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x00);
 
-	data[0] = wiringPiI2CReadReg8(endeMPU9250, FIFO_COUNTH);
-	data[1] = wiringPiI2CReadReg8(endeMPU9250, FIFO_COUNTL);
+	data[0] = wiringPiI2CReadReg8(MPU9250addr, FIFO_COUNTH);
+	data[1] = wiringPiI2CReadReg8(MPU9250addr, FIFO_COUNTL);
 	fifo_count = ((uint16_t)data[0] << 8) | data[1];
 	packet_count = fifo_count/6;
 
 	for(ii = 0; ii < packet_count; ++ii)
 	{
 		int16_t gyro_temp[3] = {0, 0, 0};
-		data[0] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
-		data[1] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
-		data[2] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
-		data[3] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
-		data[4] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
-		data[5] = wiringPiI2CReadReg8(endeMPU9250, FIFO_R_W);
+		data[0] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
+		data[1] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
+		data[2] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
+		data[3] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
+		data[4] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
+		data[5] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		gyro_temp[0] = (int16_t)(((int16_t)data[0] << 8) | data[1]);
 		gyro_temp[1] = (int16_t)(((int16_t)data[2] << 8) | data[3]);
 		gyro_temp[2] = (int16_t)(((int16_t)data[4] << 8) | data[5]);
