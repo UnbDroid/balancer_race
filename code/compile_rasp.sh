@@ -17,17 +17,13 @@ else
 
 
 	login_rasp="pi"
-	#password="godroidgo"
+	password="godroidgo"
 	dst_folder_rasp="/home/pi/ccdir"
 
 	../gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so -lm
 
-	#arm-linux-gnueabi-gcc -o ${nome_binario} ${nome_codigo} -I. -L. ./libwiringPi.so -lm
-	#./libm.so.6
 
-	# encrypted_password="$(perl -e 'printf("%s\n", crypt($ARGV[0], "password"))' "${password}")"
-
-	scp ./${nome_binario} ${login_rasp}@${ip_rasp}:${dst_folder_rasp}
+	sshpass -p ${password} scp ./${nome_binario} ${login_rasp}@${ip_rasp}:${dst_folder_rasp} 
 	rm ${nome_binario}
 fi
 
