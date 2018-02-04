@@ -238,12 +238,15 @@ void update_imu()
 	uint8_t magYhi, magYlo;
 	uint8_t magZhi, magZlo;
 
+	int16_t temp;
+	int mag_overflow_flag = 0;
+
 	unsigned long long int now_time = micros();
 	imu.dt = now_time - last_update;
 	double dt = (double)imu.dt/1000000.0;
 	last_update = now_time;
 
-	//bit magic
+	//reading gyro
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
@@ -256,6 +259,7 @@ void update_imu()
     gyrZlo = wiringPiI2CReadReg8(MPU9250addr, 0x48);
 	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
+	//readig acc
 	accXhi = wiringPiI2CReadReg8(MPU9250addr, 0x3b);
     accXlo = wiringPiI2CReadReg8(MPU9250addr, 0x3c);
     imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
@@ -275,6 +279,7 @@ void update_imu()
 
     if(!(mag_overflow & 0x08))
     {
+    	//reding mag
 		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
 	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
 	    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
@@ -286,14 +291,26 @@ void update_imu()
 	    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
 		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
 		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
+
+		mag_overflow_flag = 0;
+    }
+    else
+    {
+    	mag_overflow_flag = 1;
     }
     //}
 
+    //invertendo o sensor e arrumando a unidade
+	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawY;
+	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawX;
+	imu.gyro.velZ = GYRO_GAIN*(double)imu.gyro.rawZ;
 
-	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawX;
-	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawY;
-	imu.gyro.velZ = -GYRO_GAIN*(double)imu.gyro.rawZ;
+	imu.accel.rawZ = -1*imu.accel.rawZ;
+	temp = imu.accel.rawX;
+	imu.accel.rawX = imu.accel.rawY;
+	imu.accel.rawY = temp;
 
+	//integrando o gyro
 	imu.gyro.posX += imu.gyro.velX*dt;
 	imu.gyro.posY += imu.gyro.velY*dt;
 	imu.gyro.posZ += imu.gyro.velZ*dt;	
@@ -301,37 +318,46 @@ void update_imu()
 	if(abs(imu.accel.rawX) > (3*(abs(imu.accel.rawZ)+abs(imu.accel.rawY))))
 		imu.accel.posX = sqrt(-1);
 	else
-		imu.accel.posX = RAD2DEG*atan2(-(double)imu.accel.rawZ, -(double)imu.accel.rawY);
+		imu.accel.posX = RAD2DEG*atan2((double)imu.accel.rawZ, (double)imu.accel.rawY);
 	
 	if(abs(imu.accel.rawY) > (3*(abs(imu.accel.rawZ)+abs(imu.accel.rawX))))
 		imu.accel.posY = sqrt(-1);
 	else
-		imu.accel.posY = RAD2DEG*atan2(-(double)imu.accel.rawX, -(double)imu.accel.rawZ);
+		imu.accel.posY = RAD2DEG*atan2((double)imu.accel.rawX, (double)imu.accel.rawZ);
 	
 	if(abs(imu.accel.rawZ) > (3*(abs(imu.accel.rawY)+abs(imu.accel.rawX))))
 		imu.accel.posZ = sqrt(-1);
 	else
-		imu.accel.posZ = RAD2DEG*atan2(-(double)imu.accel.rawY, -(double)imu.accel.rawX);
+		imu.accel.posZ = RAD2DEG*atan2((double)imu.accel.rawY, (double)imu.accel.rawX);
 
-	//usando imu.magnet.vel como temporários, maus
-	imu.magnet.velY = (double)(imu.magnet.rawX-MAGX_BIAS)*magsensX;
-	imu.magnet.velX = (double)(imu.magnet.rawY-MAGY_BIAS)*magsensY;
-	imu.magnet.velZ = (double)(-1*((imu.magnet.rawZ-MAGZ_BIAS)*magsensZ));
+	if(!mag_overflow_flag)
+	{
+		//usando imu.magnet.vel como temporários, maus
+		imu.magnet.velX = (double)(imu.magnet.rawX-MAGX_BIAS)*magsensX;
+		imu.magnet.velY = (double)(imu.magnet.rawY-MAGY_BIAS)*magsensY;
+		imu.magnet.velZ = (double)(imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
-	if(abs(imu.magnet.velX) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velY))))
+		if(abs(imu.magnet.velX) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velY))))
+			imu.magnet.posX = sqrt(-1);
+		else
+			imu.magnet.posX = RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY);
+		
+		if(abs(imu.magnet.velY) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velX))))
+			imu.magnet.posY = sqrt(-1);
+		else
+			imu.magnet.posY = RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ);
+		
+		if(abs(imu.magnet.velZ) > (3*(abs(imu.magnet.velX)+abs(imu.magnet.velY))))
+			imu.magnet.posZ = sqrt(-1);
+		else
+			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.velY, imu.magnet.velX);
+	}
+	else
+	{
 		imu.magnet.posX = sqrt(-1);
-	else
-		imu.magnet.posX = RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY);
-	
-	if(abs(imu.magnet.velY) > (3*(abs(imu.magnet.velZ)+abs(imu.magnet.velX))))
 		imu.magnet.posY = sqrt(-1);
-	else
-		imu.magnet.posY = RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ);
-	
-	if(abs(imu.magnet.velZ) > (3*(abs(imu.magnet.velX)+abs(imu.magnet.velY))))
 		imu.magnet.posZ = sqrt(-1);
-	else
-		imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.velY, imu.magnet.velX);
+	}
 }
 
 void update_ir()
