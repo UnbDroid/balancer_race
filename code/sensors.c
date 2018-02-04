@@ -132,6 +132,7 @@ uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
 
 int16_t temp;
+double tempX, tempY, tempZ;
 
 unsigned long long int now_time;
 double dt;
@@ -239,11 +240,12 @@ void initMPU9250()
 
 	update_imu();
 
+	// Checking if accel and magnet values are not NaN and setting gyroscope position initial values
 	if(imu.accel.posX == imu.accel.posX) imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
 	if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
 	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
 
-	//checando de algum deles é NaN
+	// Checking if sensor values are NaN and setting relative shift values
 	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))
 			relative_shift_x = imu.accel.posX - imu.magnet.posX;
 	if((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY))
@@ -316,34 +318,33 @@ void update_imu()
 		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
 		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
-		//usando imu.magnet.vel como temporários, maus
-		imu.magnet.velX = (double)(imu.magnet.rawX-MAGX_BIAS)*magsensX;
-		imu.magnet.velY = (double)(imu.magnet.rawY-MAGY_BIAS)*magsensY;
-		imu.magnet.velZ = (double)(imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
+		tempX = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
+		tempY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
+		tempZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
 		//calculando o angulo com base na IMU
-		if(abs(imu.magnet.velX) > (MUITOMAIOR*(abs(imu.magnet.velZ)+abs(imu.magnet.velY))))
+		if(abs(tempX) > (MUITOMAIOR*(abs(tempZ)+abs(tempY))))
 			imu.magnet.posX = NaN;
 		else
 		{
-			imu.magnet.posX = (RAD2DEG*atan2(imu.magnet.velZ, imu.magnet.velY)) + relative_shift_x;
+			imu.magnet.posX = (RAD2DEG*atan2(tempZ, tempY)) + relative_shift_x;
 			if(imu.magnet.posX > 180) imu.magnet.posX -= 360;
 			else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
 		}
 		
-		if(abs(imu.magnet.velY) > (MUITOMAIOR*(abs(imu.magnet.velZ)+abs(imu.magnet.velX))))
+		if(abs(tempY) > (MUITOMAIOR*(abs(tempZ)+abs(tempX))))
 			imu.magnet.posY = NaN;
 		else
 		{
-			imu.magnet.posY = (RAD2DEG*atan2(imu.magnet.velX, imu.magnet.velZ)) + relative_shift_y;
+			imu.magnet.posY = (RAD2DEG*atan2(tempX, tempZ)) + relative_shift_y;
 			if(imu.magnet.posY > 180) imu.magnet.posY -= 360;
 			else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
 		}
 		
-		if(abs(imu.magnet.velZ) > (MUITOMAIOR*(abs(imu.magnet.velX)+abs(imu.magnet.velY))))
+		if(abs(tempZ) > (MUITOMAIOR*(abs(tempX)+abs(tempY))))
 			imu.magnet.posZ = NaN;
 		else
-			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.velY, imu.magnet.velX);		
+			imu.magnet.posZ = RAD2DEG*atan2(tempY, tempX);		
     }
     else
     {
@@ -353,50 +354,49 @@ void update_imu()
     }
     //}
 
-    //invertendo o sensor e arrumando a unidade
+    // Axis inversions and unit corrections for the gyroscope
 	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawY;
 	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawX;
 	imu.gyro.velZ = GYRO_GAIN*(double)imu.gyro.rawZ;
 
-	imu.accel.rawZ = -1*imu.accel.rawZ;
-	temp = imu.accel.rawX;
-	imu.accel.rawX = imu.accel.rawY;
-	imu.accel.rawY = temp;
-
-	//integrando o gyro
+	// Gyroscope integration
 	imu.gyro.posX += imu.gyro.velX*dt;
-		if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
-		else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
+	if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
+	else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
+	
 	imu.gyro.posY += imu.gyro.velY*dt;
-		if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
-		else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
+	if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
+	else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
+	
 	imu.gyro.posZ += imu.gyro.velZ*dt;
-		if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
-		else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
+	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
+	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
 
-	//calculando os angulos com base no acelerometro
-	if(abs(imu.accel.rawX) > (MUITOMAIOR*(abs(imu.accel.rawZ)+abs(imu.accel.rawY))))
+	// Accelerometer angular position measurement calculations
+	tempX = (double)imu.accel.rawY;
+	tempY = (double)imu.accel.rawX;
+	tempZ = -1.0*(double)imu.accel.rawZ;
+
+	if(abs(tempX) > (MUITOMAIOR*(abs(tempZ)+abs(tempY))))
 		imu.accel.posX = NaN;
 	else
-		imu.accel.posX = RAD2DEG*atan2((double)imu.accel.rawZ, (double)imu.accel.rawY);
+		imu.accel.posX = RAD2DEG*atan2(tempZ, tempY);
 	
-	if(abs(imu.accel.rawY) > (MUITOMAIOR*(abs(imu.accel.rawZ)+abs(imu.accel.rawX))))
+	if(abs(tempY) > (MUITOMAIOR*(abs(tempX)+abs(tempZ))))
 		imu.accel.posY = NaN;
 	else
-		imu.accel.posY = RAD2DEG*atan2((double)imu.accel.rawX, (double)imu.accel.rawZ);
+		imu.accel.posY = RAD2DEG*atan2(tempX, tempZ);
 	
-	if(abs(imu.accel.rawZ) > (MUITOMAIOR*(abs(imu.accel.rawY)+abs(imu.accel.rawX))))
-		imu.accel.posZ = NaN;
-	else
+	if(abs(tempZ) > (MUITOMAIOR*(abs(tempY)+abs(tempX))))
 	{
-		imu.accel.posZ = (RAD2DEG*atan2((double)imu.accel.rawY, (double)imu.accel.rawX)) + relative_shift_z;
+		imu.accel.posZ = NaN;
+	} else {
+		imu.accel.posZ = (RAD2DEG*atan2(tempY, tempX)) + relative_shift_z;
 		if(imu.accel.posZ > 180) imu.accel.posZ -= 360;
 		else if(imu.accel.posZ < -180) imu.accel.posZ += 360;
 	}
 
-
-
-	//checando se estamos devendo setar algum relative_shift
+	// Checking if sensor values are NaN and setting relative shift values if they are not yet set
 	if((relative_shift_x == 0)&&((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))) 
 	{
 		relative_shift_x = imu.accel.posX - imu.magnet.posX;
