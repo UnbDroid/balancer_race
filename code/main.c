@@ -125,9 +125,7 @@ PI_THREAD(supervisory)
 	
 	supervisory_finished = 0;
 	piHiPri(0);
-	//supervisory_finished = 1;
 	init_supervisory();
-	//supervisory_finished = 1;
 	while(keep_running)
 	{
 		send_superv_message(&debug);
