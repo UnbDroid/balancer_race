@@ -185,13 +185,11 @@ int addrlen = sizeof(address);
 void init_supervisory()
 {
 	// Creating socket file descriptor
-    printf("1\n");
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
-    printf("2\n");
     // Forcefully attaching socket to the port 8080
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
@@ -201,8 +199,7 @@ void init_supervisory()
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
-printf("3\n");
-if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
+	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
     {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -212,14 +209,11 @@ if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
         perror("listen");
         exit(EXIT_FAILURE);
     }
-printf("4\n");
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
     {
-    	printf("4.5\n");
         perror("accept");
         exit(EXIT_FAILURE);
     }
-    printf("5\n");
 }
 
 #define STRSIZE 97
@@ -231,7 +225,7 @@ void send_superv_message(struct debug_data* debug)
 	int ret;
 
 	snprintf(mess, STRSIZE,
-		"g%07.2f,%07.2f,%07.2fa%07.2f,%07.2f,%07.2fm%07.2f,%07.2f,%07.2fk%07.2f,%07.2f,%07.2f\n",
+		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
 		debug->imu.gyro.posX,
 		debug->imu.gyro.posY,
 		debug->imu.gyro.posZ,
