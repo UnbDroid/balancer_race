@@ -122,7 +122,6 @@ PI_THREAD(debug_thread)
 
 PI_THREAD(supervisory)
 {
-	
 	supervisory_finished = 0;
 	piHiPri(0);
 	init_supervisory();

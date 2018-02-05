@@ -170,7 +170,7 @@ void update_debug(struct debug_data* debug)
 void print_message(char mess[], int num)
 {
 	if(num > 0 && num <= 15)
-		printf("\033[%d;%dH%-36s\n", 27+num, 45, mess);
+		printf("\033[%d;%dH%-36s\n", 27+num, 44, mess);
 }
 
 /* Supervisory system portion of the code */
@@ -199,7 +199,7 @@ void init_supervisory()
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
-	
+
 	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
     {
         perror("bind failed");
@@ -214,7 +214,6 @@ void init_supervisory()
 
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
     {
-    	printf("4.5\n");
         perror("accept");
         exit(EXIT_FAILURE);
     }
@@ -229,7 +228,7 @@ void send_superv_message(struct debug_data* debug)
 	int ret;
 
 	snprintf(mess, STRSIZE,
-		"g%07.2f,%07.2f,%07.2fa%07.2f,%07.2f,%07.2fm%07.2f,%07.2f,%07.2fk%07.2f,%07.2f,%07.2f\n",
+		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
 		debug->imu.gyro.posX,
 		debug->imu.gyro.posY,
 		debug->imu.gyro.posZ,
