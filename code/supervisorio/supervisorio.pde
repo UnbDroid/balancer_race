@@ -1,9 +1,17 @@
+import processing.net.*; 
+import java.net.*;
+
+Client myClient; 
+String dataIn;
+String[] dataSplit;
+String[] pastData = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
+
 float gyrx, gyry, gyrz;
 float accx, accy, accz;
 float magx, magy, magz;
 float kalx, kaly, kalz;
 
-float i = 0;
+int i = 0;
 
 void setup() {
     // define tamanho da janela e modo de rendering 3D
@@ -12,22 +20,70 @@ void setup() {
     // setup lights and antialiasing
     lights();
     smooth();
+
+    // Connect to the local machine at port 8080.
+    // This example will not run if you haven't
+    // previously started a server on this port.
+    myClient = new Client(this, "192.168.200.1", 8080);
 }
 
 void draw() {
-    i += 1;
-    
-    // definicao dos valores de angulo
-    gyrx = radians(i);   gyry = radians(0);   gyrz = radians(0);
-    accx = radians(0);   accy = radians(i);   accz = radians(0);
-    magx = radians(0);   magy = radians(0);   magz = radians(i);
-    kalx = radians(i);   kaly = radians(i);   kalz = radians(i);
-    
     // muda tipo de perspectiva para ortho
     ortho();
     
     // black background
     background(0);
+  
+    if (myClient.available() > 0) {
+        dataIn = myClient.readString();
+        
+        dataSplit = dataIn.split(";");
+        for (i = 0; i < 12; i++){
+            if (dataSplit[i].contains("nan")){
+                dataSplit[i] = pastData[i];
+            }
+        }
+        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
+        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
+        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
+        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
+        for (i = 0; i < 12; i++){
+            pastData[i] = dataSplit[i];
+        }
+        
+        myClient.write("abacaxi");
+        delay(300);
+    } else {
+        for (i = 0; i < 12; i++){
+            dataSplit[i] = pastData[i];
+        }  
+        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
+        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
+        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
+        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
+    }
+  
+    // mostra valores
+    fill(255);
+    text("X", 10, 50);
+    text("Y", 10, 100);
+    text("Z", 10, 150);
+    fill(0, 255, 255);
+    text(dataSplit[0], 50, 50);
+    text(dataSplit[1], 50, 100);
+    text(dataSplit[2], 50, 150);
+    fill(255, 255, 0);
+    text(dataSplit[3], 150, 50);
+    text(dataSplit[4], 150, 100);
+    text(dataSplit[5], 150, 150);
+    fill(255, 0, 255);
+    text(dataSplit[6], 250, 50);
+    text(dataSplit[7], 250, 100);
+    text(dataSplit[8], 250, 150);
+    fill(255);
+    text(dataSplit[9], 350, 50);
+    text(dataSplit[10], 350, 100);
+    text(dataSplit[11], 350, 150);
     
     // labels
     textAlign(CENTER);
