@@ -14,6 +14,7 @@ struct debug_data debug;
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
 int shutdown_flag = 0, reboot = 0, close_program=0;;
+int supervisory_flag = 0;
 
 PI_THREAD(main_thread)
 {
@@ -170,11 +171,17 @@ int main(int argc, char* argv[])
 			if(	strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0 )
 			{
 				debug.debug_flag = 1;
+			} else if(	strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--supervisory") == 0 ) {
+				supervisory_flag = 1;
 			}
+			
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
+		}
+		if(supervisory_flag)
+		{
 			piThreadCreate(supervisory);
 		}
 	}
