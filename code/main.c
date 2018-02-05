@@ -128,6 +128,12 @@ PI_THREAD(supervisory)
 	supervisory_finished = 0;
 	while(keep_running)
 	{
+		debug.js = js;
+		debug.left_motor = left_motor;
+		debug.right_motor = right_motor;
+		debug.ir = ir;
+		debug.imu = imu;
+		debug.led_state = led_state;
 		send_superv_message(&debug);
 		delay(100);
 	}
