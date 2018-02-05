@@ -122,9 +122,12 @@ PI_THREAD(debug_thread)
 
 PI_THREAD(supervisory)
 {
+	
 	supervisory_finished = 0;
 	piHiPri(0);
+	//supervisory_finished = 1;
 	init_supervisory();
+	//supervisory_finished = 1;
 	while(keep_running)
 	{
 		send_superv_message(&debug);
@@ -147,7 +150,7 @@ void clean_up()
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished && sensors_finished));
+	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished));
 	set_color(WHITE, 255);
 	light_rgb();
 
