@@ -1,4 +1,10 @@
 #include <stdio.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <unistd.h>
+#include "./socket.h"
 
 struct debug_data {
 	struct joystick js;
@@ -165,4 +171,72 @@ void print_message(char mess[], int num)
 {
 	if(num > 0 && num <= 15)
 		printf("\033[%d;%dH%-36s\n", 27+num, 45, mess);
+}
+
+/* Supervisory system portion of the code */
+
+#define PORT 8080
+
+int server_fd, new_socket;
+struct sockaddr_in address;
+int opt = 1;
+int addrlen = sizeof(address);
+
+void init_supervisory()
+{
+	// Creating socket file descriptor
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Forcefully attaching socket to the port 8080
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( PORT );
+
+    if (listen(server_fd, 3) < 0)
+    {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+    {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+}
+
+#define STRSIZE 97
+
+void send_superv_message(struct debug_data* debug)
+{
+	char mess[STRSIZE];
+	char buffer[1024] = {0};
+	int ret;
+
+	snprintf(mess, STRSIZE,
+		"g%07.2f,%07.2f,%07.2fa%07.2f,%07.2f,%07.2fm%07.2f,%07.2f,%07.2fk%07.2f,%07.2f,%07.2f\n",
+		debug->imu.gyro.posX,
+		debug->imu.gyro.posY,
+		debug->imu.gyro.posZ,
+		debug->imu.accel.posX,
+		debug->imu.accel.posY,
+		debug->imu.accel.posZ,
+		debug->imu.magnet.posX,
+		debug->imu.magnet.posY,
+		debug->imu.magnet.posZ,
+		0,
+		0,	// Zeroes to be replaced by Kalman Filter output when we implement it
+		0);
+
+	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
+    ret = read(new_socket , buffer, 1024);
 }

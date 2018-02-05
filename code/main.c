@@ -12,8 +12,8 @@
 struct debug_data debug;
 
 int keep_running = 1;
-int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1;
-int shutdown = 0, reboot = 0, close_program=0;;
+int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
+int shutdown_flag = 0, reboot = 0, close_program=0;;
 
 PI_THREAD(main_thread)
 {
@@ -66,7 +66,7 @@ PI_THREAD(joystick)
 		}
         update_joystick(&js);
 	}
-	if(js.dpad.down) shutdown = 1;
+	if(js.dpad.down) shutdown_flag = 1;
 	if(js.dpad.up) reboot = 1;
 	if(js.dpad.left) close_program = 1;
 	keep_running = 0;
@@ -120,6 +120,19 @@ PI_THREAD(debug_thread)
 	debug_finished = 1;
 }
 
+PI_THREAD(supervisory)
+{
+	supervisory_finished = 0;
+	piHiPri(0);
+	init_supervisory();
+	while(keep_running)
+	{
+		send_superv_message(&debug);
+		delay(100);
+	}
+	supervisory_finished = 1;
+}
+
 int am_i_su()
 {
     if(geteuid())
@@ -138,7 +151,7 @@ void clean_up()
 	set_color(WHITE, 255);
 	light_rgb();
 
-	if(shutdown) system("sudo shutdown now&");
+	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
 	else if (!close_program) 
 	{
@@ -162,6 +175,7 @@ int main(int argc, char* argv[])
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
+			piThreadCreate(supervisory);
 		}
 	}
 
