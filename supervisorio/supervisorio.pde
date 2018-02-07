@@ -21,10 +21,10 @@ void setup() {
     lights();
     smooth();
 
-    // Connect to the local machine at port 8080.
+    // Connect to the local machine at port 9001.
     // This example will not run if you haven't
     // previously started a server on this port.
-    myClient = new Client(this, "192.168.200.1", 8080);
+    myClient = new Client(this, "192.168.200.1", 9001);
 }
 
 void draw() {
