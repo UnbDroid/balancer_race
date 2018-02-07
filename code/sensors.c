@@ -317,6 +317,10 @@ void update_imu()
 		imu.magnet.treatedY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
 		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
+		////imu.magnet.velX = imu.magnet.treatedX;//apenas para imprimir este valor na tela de debug
+		//imu.magnet.velY = imu.magnet.treatedY;//apenas para imprimir este valor na tela de debug
+		//imu.magnet.velZ = imu.magnet.treatedZ;//apenas para imprimir este valor na tela de debug
+
 		//calculando o angulo com base na IMU
 		if(abs(imu.magnet.treatedX) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
 			imu.magnet.posX = NaN;
@@ -371,6 +375,10 @@ void update_imu()
 	imu.accel.treatedX = (double)imu.accel.rawY;
 	imu.accel.treatedY = (double)imu.accel.rawX;
 	imu.accel.treatedZ = -1.0*(double)imu.accel.rawZ;
+
+	//imu.accel.velX = imu.accel.treatedX;//apenas para imprimir este valor na tela de debug
+	//imu.accel.velY = imu.accel.treatedY;//apenas para imprimir este valor na tela de debug
+	//imu.accel.velZ = imu.accel.treatedZ;//apenas para imprimir este valor na tela de debug
 
 	if(abs(imu.accel.treatedX) > (MUITOMAIOR*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
 		imu.accel.posX = NaN;
