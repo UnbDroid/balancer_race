@@ -227,7 +227,8 @@ void send_superv_message(struct debug_data* debug)
 	char buffer[1024] = {0};
 	int ret;
 
-	snprintf(mess, STRSIZE,
+	//mensagem para o sistemas supervisório feito no processing
+	/*snprintf(mess, STRSIZE,
 		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
 		debug->imu.gyro.posX,
 		debug->imu.gyro.posY,
@@ -241,7 +242,17 @@ void send_superv_message(struct debug_data* debug)
 		0,
 		0,	// Zeroes to be replaced by Kalman Filter output when we implement it
 		0);
+	*/
 
+	snprintf(mess, STRSIZE,
+		"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;",
+		debug->imu.accel.treatedX,
+		debug->imu.accel.treatedY,
+		debug->imu.accel.treatedZ,
+		debug->imu.magnet.treatedX,
+		debug->imu.magnet.treatedY,
+		debug->imu.magnet.treatedZ
+		);
 	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
     ret = read(new_socket , buffer, 1024);
 }
