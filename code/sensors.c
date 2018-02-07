@@ -74,6 +74,9 @@ struct accel {
 	int16_t rawX;
 	int16_t rawY;
 	int16_t rawZ;
+	double treatedX;
+	double treatedY;
+	double treatedZ;
 	double posX;
 	double posY;
 	double posZ;
@@ -86,6 +89,9 @@ struct magnet {
 	int16_t rawX;
 	int16_t rawY;
 	int16_t rawZ;
+	double treatedX;
+	double treatedY;
+	double treatedZ;		
 	double posX;
 	double posY;
 	double posZ;
@@ -121,8 +127,6 @@ uint8_t mag_overflow, mag_data_ready;
 uint8_t magXhi, magXlo;
 uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
-
-double tempX, tempY, tempZ;
 
 unsigned long long int now_time;
 double dt;
@@ -309,33 +313,33 @@ void update_imu()
 		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
 		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
-		tempX = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
-		tempY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
-		tempZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
+		imu.magnet.treatedX = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
+		imu.magnet.treatedY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
+		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
 		//calculando o angulo com base na IMU
-		if(abs(tempX) > (MUITOMAIOR*(abs(tempZ)+abs(tempY))))
+		if(abs(imu.magnet.treatedX) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
 			imu.magnet.posX = NaN;
 		else
 		{
-			imu.magnet.posX = (RAD2DEG*atan2(tempZ, tempY)) + relative_shift_x;
+			imu.magnet.posX = (RAD2DEG*atan2(imu.magnet.treatedZ, imu.magnet.treatedY)) + relative_shift_x;
 			if(imu.magnet.posX > 180) imu.magnet.posX -= 360;
 			else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
 		}
 		
-		if(abs(tempY) > (MUITOMAIOR*(abs(tempZ)+abs(tempX))))
+		if(abs(imu.magnet.treatedY) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedX))))
 			imu.magnet.posY = NaN;
 		else
 		{
-			imu.magnet.posY = (RAD2DEG*atan2(tempX, tempZ)) + relative_shift_y;
+			imu.magnet.posY = (RAD2DEG*atan2(imu.magnet.treatedX, imu.magnet.treatedZ)) + relative_shift_y;
 			if(imu.magnet.posY > 180) imu.magnet.posY -= 360;
 			else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
 		}
 		
-		if(abs(tempZ) > (MUITOMAIOR*(abs(tempX)+abs(tempY))))
+		if(abs(imu.magnet.treatedZ) > (MUITOMAIOR*(abs(imu.magnet.treatedX)+abs(imu.magnet.treatedY))))
 			imu.magnet.posZ = NaN;
 		else
-			imu.magnet.posZ = RAD2DEG*atan2(tempY, tempX);		
+			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.treatedY, imu.magnet.treatedX);		
     }
     else
     {
@@ -364,25 +368,25 @@ void update_imu()
 	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
 
 	// Accelerometer angular position measurement calculations
-	tempX = (double)imu.accel.rawY;
-	tempY = (double)imu.accel.rawX;
-	tempZ = -1.0*(double)imu.accel.rawZ;
+	imu.accel.treatedX = (double)imu.accel.rawY;
+	imu.accel.treatedY = (double)imu.accel.rawX;
+	imu.accel.treatedZ = -1.0*(double)imu.accel.rawZ;
 
-	if(abs(tempX) > (MUITOMAIOR*(abs(tempZ)+abs(tempY))))
+	if(abs(imu.accel.treatedX) > (MUITOMAIOR*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
 		imu.accel.posX = NaN;
 	else
-		imu.accel.posX = RAD2DEG*atan2(tempZ, tempY);
+		imu.accel.posX = RAD2DEG*atan2(imu.accel.treatedZ, imu.accel.treatedY);
 	
-	if(abs(tempY) > (MUITOMAIOR*(abs(tempX)+abs(tempZ))))
+	if(abs(imu.accel.treatedY) > (MUITOMAIOR*(abs(imu.accel.treatedX)+abs(imu.accel.treatedZ))))
 		imu.accel.posY = NaN;
 	else
-		imu.accel.posY = RAD2DEG*atan2(tempX, tempZ);
+		imu.accel.posY = RAD2DEG*atan2(imu.accel.treatedX, imu.accel.treatedZ);
 	
-	if(abs(tempZ) > (MUITOMAIOR*(abs(tempY)+abs(tempX))))
+	if(abs(imu.accel.treatedZ) > (MUITOMAIOR*(abs(imu.accel.treatedY)+abs(imu.accel.treatedX))))
 	{
 		imu.accel.posZ = NaN;
 	} else {
-		imu.accel.posZ = (RAD2DEG*atan2(tempY, tempX)) + relative_shift_z;
+		imu.accel.posZ = (RAD2DEG*atan2(imu.accel.treatedY, imu.accel.treatedX)) + relative_shift_z;
 		if(imu.accel.posZ > 180) imu.accel.posZ -= 360;
 		else if(imu.accel.posZ < -180) imu.accel.posZ += 360;
 	}
