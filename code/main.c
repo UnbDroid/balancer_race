@@ -14,7 +14,7 @@ struct debug_data debug;
 int keep_running = 1;
 int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
 int shutdown_flag = 0, reboot = 0, close_program=0;;
-int supervisory_flag = 0;
+int supervisory_flag = 0, matlab_flag = 0;
 
 PI_THREAD(main_thread)
 {
@@ -134,8 +134,11 @@ PI_THREAD(supervisory)
 		debug.ir = ir;
 		debug.imu = imu;
 		debug.led_state = led_state;
-		send_superv_message(&debug);
-		delay(100);
+		if(supervisory_flag)
+			send_superv_message(&debug, DEF_SUPERVISORIO);
+		else if(matlab_flag)
+			send_superv_message(&debug, DEF_MATLAB);
+		delay(10);//delay apenas de segurança, para esta tread os clients soket que ditam a velocidade
 	}
 	supervisory_finished = 1;
 }
@@ -179,14 +182,16 @@ int main(int argc, char* argv[])
 				debug.debug_flag = 1;
 			} else if(	strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--supervisory") == 0 ) {
 				supervisory_flag = 1;
-			}
+			} else if(	strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--MATLAB") == 0 ) {
+				matlab_flag = 1;
+			} 
 			
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
 		}
-		if(supervisory_flag)
+		if(supervisory_flag || matlab_flag)
 		{
 			piThreadCreate(supervisory);
 		}

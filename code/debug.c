@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include "./socket.h"
 
+#define DEF_SUPERVISORIO 0
+#define DEF_MATLAB 1
+
 struct debug_data {
 	struct joystick js;
 	struct motor left_motor;
@@ -221,38 +224,47 @@ void init_supervisory()
 
 #define STRSIZE 97
 
-void send_superv_message(struct debug_data* debug)
+void send_superv_message(struct debug_data* debug, int option)
 {
 	char mess[STRSIZE];
 	char buffer[1024] = {0};
 	int ret;
 
-	//mensagem para o sistemas supervisório feito no processing
-	/*snprintf(mess, STRSIZE,
-		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
-		debug->imu.gyro.posX,
-		debug->imu.gyro.posY,
-		debug->imu.gyro.posZ,
-		debug->imu.accel.posX,
-		debug->imu.accel.posY,
-		debug->imu.accel.posZ,
-		debug->imu.magnet.posX,
-		debug->imu.magnet.posY,
-		debug->imu.magnet.posZ,
-		0,
-		0,	// Zeroes to be replaced by Kalman Filter output when we implement it
-		0);
-	*/
 
-	snprintf(mess, STRSIZE,
-		"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;",
-		debug->imu.accel.treatedX,
-		debug->imu.accel.treatedY,
-		debug->imu.accel.treatedZ,
-		debug->imu.magnet.treatedX,
-		debug->imu.magnet.treatedY,
-		debug->imu.magnet.treatedZ
-		);
+	if(option == DEF_SUPERVISORIO)
+	{
+	//mensagem para o sistemas supervisório feito no processing
+		snprintf(mess, STRSIZE,
+			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
+			debug->imu.gyro.posX,
+			debug->imu.gyro.posY,
+			debug->imu.gyro.posZ,
+			debug->imu.accel.posX,
+			debug->imu.accel.posY,
+			debug->imu.accel.posZ,
+			debug->imu.magnet.posX,
+			debug->imu.magnet.posY,
+			debug->imu.magnet.posZ,
+			0,
+			0,	// Zeroes to be replaced by Kalman Filter output when we implement it
+			0);
+	}
+	else if(option == DEF_MATLAB)
+	{
+		snprintf(mess, STRSIZE,
+			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;",
+			debug->imu.accel.treatedX,
+			debug->imu.accel.treatedY,
+			debug->imu.accel.treatedZ,
+			debug->imu.magnet.treatedX,
+			debug->imu.magnet.treatedY,
+			debug->imu.magnet.treatedZ
+			);
+	}
+	else//caso a flag venha errada aobortar a funcção entes de tentar enviar a mensagem para não quebrar o programa
+	{
+		return;
+	}
 	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
     ret = read(new_socket , buffer, 1024);
 }
