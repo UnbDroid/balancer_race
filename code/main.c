@@ -98,8 +98,8 @@ PI_THREAD(joystick)
 }
 
 /*
-This is the LED thread. It runs the LED above the robot, used for debugging and
-for informing the operator about the robot's current status.
+This is the LED thread. It runs the LED above the robot, used for debugging
+and for informing the operator about the robot's current status.
 */
 PI_THREAD(led)
 {
@@ -115,18 +115,28 @@ PI_THREAD(led)
 }
 
 /*
-This is the sensors thread. It keeps the robot's sensors updated at a (supposedly)
-steady rate.
+This is the sensors thread. It keeps the robot's sensors updated at a
+(supposedly) steady rate.
 */
+
+#define SENSORS_UPDATE_RATE 20 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
+	unsigned long int last_update, now_time;
 	piHiPri(0);
 	while(keep_running)
 	{
-		update_ir();
-		update_imu();
-		delay(10);
+		now_time = millis();
+		if(now_time - last_update > SENSORS_UPDATE_RATE)
+		{
+			last_update = now_time;
+			update_ir();
+			update_imu();
+		} else {
+			delay(5);
+		}
+		
 	}
 	sensors_finished = 1;
 }
