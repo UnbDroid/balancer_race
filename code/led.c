@@ -32,8 +32,12 @@
 
 #define LED_RANGE 4095
 
-int endPCA9685;
+int PCA9685addr; // PCA9685 board I2C address
 
+/* The state_flags vector holds the flags that determine whether each state
+ * is on or off. That way, it is possible to define a priority sequence.
+ * To properly set a state on, see the set_led_state() function.
+ */
 int state_flags[NUM_STATES] = {0};
 int led_state = -1;
 
@@ -45,8 +49,8 @@ int r, g, b, i;
 
 void init_led()
 {
-	endPCA9685 = wiringPiI2CSetup(0x40);
-	initPCA9685(endPCA9685);
+	PCA9685addr = wiringPiI2CSetup(0x40);
+	initPCA9685(PCA9685addr);
 }
 
 void set_led_state(int state, int on_off)
@@ -129,9 +133,9 @@ void light_rgb()
 	int g_dutycycle = LED_RANGE - i * g * g / LED_RANGE; 
 	int b_dutycycle = LED_RANGE - i * b * b / LED_RANGE;
 
-	pwmPCA9685(endPCA9685, LED_R, r_dutycycle);
-	pwmPCA9685(endPCA9685, LED_G, g_dutycycle);
-	pwmPCA9685(endPCA9685, LED_B, b_dutycycle);
+	pwmPCA9685(PCA9685addr, LED_R, r_dutycycle);
+	pwmPCA9685(PCA9685addr, LED_G, g_dutycycle);
+	pwmPCA9685(PCA9685addr, LED_B, b_dutycycle);
 }
 
 void update_led()
