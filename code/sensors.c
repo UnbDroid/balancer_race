@@ -9,11 +9,11 @@
 #define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
-#define GYRO_X_OFFSET_LO 0x0b
+#define GYRO_X_OFFSET_LO 0x08
 #define GYRO_Y_OFFSET_HI 0xff
 #define GYRO_Y_OFFSET_LO 0xf8
 #define GYRO_Z_OFFSET_HI 0x00
-#define GYRO_Z_OFFSET_LO 0x04
+#define GYRO_Z_OFFSET_LO 0x03
 
 #define MAGX_BIAS 18
 #define MAGY_BIAS 73

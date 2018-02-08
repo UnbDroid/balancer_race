@@ -222,7 +222,7 @@ void init_supervisory()
     }
 }
 
-#define STRSIZE 100
+#define STRSIZE 102
 
 void send_superv_message(struct debug_data* debug, int option)
 {
@@ -253,19 +253,20 @@ void send_superv_message(struct debug_data* debug, int option)
 	{
 		snprintf(mess, STRSIZE,
 			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09d;",
-			debug->imu.gyro.velX,
-			debug->imu.gyro.velY,
-			debug->imu.gyro.velZ,
 			debug->imu.accel.treatedX,
 			debug->imu.accel.treatedY,
 			debug->imu.accel.treatedZ,
 			debug->imu.magnet.treatedX,
 			debug->imu.magnet.treatedY,
 			debug->imu.magnet.treatedZ,
+			debug->imu.gyro.velX,
+			debug->imu.gyro.velY,
+			debug->imu.gyro.velZ,
 			debug->imu.dt);
 	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;
 	}
 	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
     ret = read(new_socket , buffer, 1024);
+
 }
