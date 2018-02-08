@@ -222,7 +222,7 @@ void init_supervisory()
     }
 }
 
-#define STRSIZE 97
+#define STRSIZE 100
 
 void send_superv_message(struct debug_data* debug, int option)
 {
@@ -252,7 +252,7 @@ void send_superv_message(struct debug_data* debug, int option)
 	else if(option == DEF_MATLAB)
 	{
 		snprintf(mess, STRSIZE,
-			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%06d;",
+			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09d;",
 			debug->imu.gyro.velX,
 			debug->imu.gyro.velY,
 			debug->imu.gyro.velZ,
