@@ -9,11 +9,11 @@
 #define RAD2DEG 57.2957
 
 #define GYRO_X_OFFSET_HI 0x00
-#define GYRO_X_OFFSET_LO 0x08
+#define GYRO_X_OFFSET_LO 0x09
 #define GYRO_Y_OFFSET_HI 0xff
-#define GYRO_Y_OFFSET_LO 0xf8
+#define GYRO_Y_OFFSET_LO 0xfb
 #define GYRO_Z_OFFSET_HI 0x00
-#define GYRO_Z_OFFSET_LO 0x03
+#define GYRO_Z_OFFSET_LO 0x04
 
 #define MAGX_BIAS 18
 #define MAGY_BIAS 73
@@ -113,7 +113,7 @@ struct imu imu;
 int MPU9250addr, AK8963addr;
 double magsensX, magsensY, magsensZ;
 double relative_shift_x, relative_shift_y, relative_shift_z;
-double NaN;
+//double NaN;//cancelei isso vai ser tratado no filtro
 
 uint8_t gyrXhi, gyrXlo;
 uint8_t gyrYhi, gyrYlo;
@@ -235,14 +235,18 @@ void initMPU9250()
 	update_imu();
 
 	// Checking if accel and magnet values are not NaN and setting gyroscope position initial values
-	if(imu.accel.posX == imu.accel.posX) imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
-	if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
-	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
+	//if(imu.accel.posX == imu.accel.posX) imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
+	//if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
+	//if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
+
+	imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
+	imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
+	imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
 }
 
 void init_sensors()
 {
-	NaN = sqrt(-1);
+	//NaN = sqrt(-1);//cacelei isso vai ser tratado no filtro de kalmean 
 	initMPU9250();
 
 	pinMode(IR_LEFT, INPUT);
@@ -308,34 +312,34 @@ void update_imu()
 		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
 		// Magnetometer angular position measurement calculations
-		if(abs(imu.magnet.treatedX) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
-			imu.magnet.posX = NaN;
-		else
-		{
+		//if(abs(imu.magnet.treatedX) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
+		//	imu.magnet.posX = NaN;
+		//else
+		//{
 			imu.magnet.posX = (RAD2DEG*atan2(imu.magnet.treatedZ, imu.magnet.treatedY)) + relative_shift_x;
-			if(imu.magnet.posX > 180) imu.magnet.posX -= 360;
-			else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
-		}
+			//if(imu.magnet.posX > 180) imu.magnet.posX -= 360;
+			//else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
+		//}
 		
-		if(abs(imu.magnet.treatedY) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedX))))
-			imu.magnet.posY = NaN;
-		else
-		{
+		//if(abs(imu.magnet.treatedY) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedX))))
+		//	imu.magnet.posY = NaN;
+		//else
+		//{
 			imu.magnet.posY = (RAD2DEG*atan2(imu.magnet.treatedX, imu.magnet.treatedZ)) + relative_shift_y;
-			if(imu.magnet.posY > 180) imu.magnet.posY -= 360;
-			else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
-		}
+			//if(imu.magnet.posY > 180) imu.magnet.posY -= 360;
+			//else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
+		//}
 		
-		if(abs(imu.magnet.treatedZ) > (MUCHBIGGER*(abs(imu.magnet.treatedX)+abs(imu.magnet.treatedY))))
-			imu.magnet.posZ = NaN;
-		else
+		//if(abs(imu.magnet.treatedZ) > (MUCHBIGGER*(abs(imu.magnet.treatedX)+abs(imu.magnet.treatedY))))
+			//imu.magnet.posZ = NaN;
+		//else
 			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.treatedY, imu.magnet.treatedX);		
     }
     else
     {
-    	imu.magnet.posX = NaN;
-		imu.magnet.posY = NaN;
-		imu.magnet.posZ = NaN;
+    	//imu.magnet.posX = NaN;
+		//imu.magnet.posY = NaN;
+		//imu.magnet.posZ = NaN;
     }
     //}
 
@@ -363,26 +367,28 @@ void update_imu()
 	imu.accel.treatedZ = -ACCEL_GAIN*(double)imu.accel.rawZ;
 
 	// Accelerometer angular position measurement calculations
-	if(abs(imu.accel.treatedX) > (MUCHBIGGER*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
-		imu.accel.posX = NaN;
-	else
+	//if(abs(imu.accel.treatedX) > (MUCHBIGGER*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
+		//imu.accel.posX = NaN;
+	//else
 		imu.accel.posX = RAD2DEG*atan2(imu.accel.treatedZ, imu.accel.treatedY);
 	
-	if(abs(imu.accel.treatedY) > (MUCHBIGGER*(abs(imu.accel.treatedX)+abs(imu.accel.treatedZ))))
-		imu.accel.posY = NaN;
-	else
+	//if(abs(imu.accel.treatedY) > (MUCHBIGGER*(abs(imu.accel.treatedX)+abs(imu.accel.treatedZ))))
+		//imu.accel.posY = NaN;
+	//else
 		imu.accel.posY = RAD2DEG*atan2(imu.accel.treatedX, imu.accel.treatedZ);
 	
-	if(abs(imu.accel.treatedZ) > (MUCHBIGGER*(abs(imu.accel.treatedY)+abs(imu.accel.treatedX))))
-	{
-		imu.accel.posZ = NaN;
-	} else {
+	//if(abs(imu.accel.treatedZ) > (MUCHBIGGER*(abs(imu.accel.treatedY)+abs(imu.accel.treatedX))))
+	//{
+		//imu.accel.posZ = NaN;
+	//} else {
 		imu.accel.posZ = (RAD2DEG*atan2(imu.accel.treatedY, imu.accel.treatedX)) + relative_shift_z;
-		if(imu.accel.posZ > 180) imu.accel.posZ -= 360;
-		else if(imu.accel.posZ < -180) imu.accel.posZ += 360;
-	}
+		//if(imu.accel.posZ > 180) imu.accel.posZ -= 360;
+		//else if(imu.accel.posZ < -180) imu.accel.posZ += 360;
+	//}
 
 	// Checking if sensor values are NaN and setting relative shift values if they are not yet set
+	
+	/*
 	if((relative_shift_x == 0)&&((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))) 
 	{
 		relative_shift_x = imu.accel.posX - imu.magnet.posX;
@@ -398,6 +404,7 @@ void update_imu()
 		relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
 		imu.gyro.posZ = imu.magnet.posZ;
 	}
+	*/
 
 }
 
