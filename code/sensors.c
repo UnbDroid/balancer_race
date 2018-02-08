@@ -104,13 +104,13 @@ struct imu {
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
-	long int dt;
+	unsigned long int dt;
+	unsigned long long int last_update;
 };
 
 struct infrared ir;
 struct imu imu;
 int MPU9250addr, AK8963addr;
-unsigned long long int last_update;
 double magsensX, magsensY, magsensZ;
 double relative_shift_x, relative_shift_y, relative_shift_z;
 double NaN;
@@ -252,9 +252,9 @@ void init_sensors()
 void update_imu()
 {
 	now_time = micros();
-	imu.dt = now_time - last_update;
+	imu.dt = now_time - imu.last_update;
 	dt = (double)imu.dt/1000000.0;
-	last_update = now_time;
+	imu.last_update = now_time;
 
 	// reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
