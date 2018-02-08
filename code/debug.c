@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "./socket.h"
 
-#define DEF_SUPERVISORIO 0
+#define DEF_SUPERVISORY 0
 #define DEF_MATLAB 1
 
 struct debug_data {
@@ -231,7 +231,7 @@ void send_superv_message(struct debug_data* debug, int option)
 	int ret;
 
 
-	if(option == DEF_SUPERVISORIO)
+	if(option == DEF_SUPERVISORY)
 	{
 	//mensagem para o sistemas supervisório feito no processing
 		snprintf(mess, STRSIZE,

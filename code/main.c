@@ -9,13 +9,30 @@
 #include "sensors.c"
 #include "debug.c"
 
-struct debug_data debug;
+struct debug_data debug;	// struct containing all robot values
+							// for debugging purposes
 
-int keep_running = 1;
-int main_finished = 1, led_finished = 1, joystick_finished = 1, debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
-int shutdown_flag = 0, reboot = 0, close_program=0;;
-int supervisory_flag = 0, matlab_flag = 0;
+int keep_running = 1;	// end of program flag. it is controlled by the
+						// joystick thread. if set to 0, all threads will
+						// finish up and set their own flags to 1 so that
+						// the main program can clean everything up and end.
 
+int main_finished = 1, led_finished = 1, joystick_finished = 1
+int debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
+
+int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
+													// commands so that the
+													// program knows what to
+													// do when finishing up.
+
+int supervisory_flag = 0, matlab_flag = 0;	// flags for remote
+											// debugging purposes
+
+/*
+This is the main thread. In it, we are supposed to put everything that doesn't
+belong in the infrastructure threads below it. Generally, it is used to test
+new features using the joystick controller.
+*/
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
@@ -46,6 +63,12 @@ PI_THREAD(main_thread)
 	main_finished = 1;
 }
 
+/*
+This is the joystick thread. It runs the code behind reading and interpreting
+joystick commands. The joystick is the primary way of commanding the robot and
+will be eventually used as safety trigger. Aside from that, it allows the
+operator to control the robot without the need for opening a terminal.
+*/
 PI_THREAD(joystick)
 {
     joystick_finished = 0;
@@ -74,6 +97,10 @@ PI_THREAD(joystick)
 	joystick_finished = 1;
 }
 
+/*
+This is the LED thread. It runs the LED above the robot, used for debugging and
+for informing the operator about the robot's current status.
+*/
 PI_THREAD(led)
 {
 	led_finished = 0;
@@ -87,6 +114,10 @@ PI_THREAD(led)
 	led_finished = 1;
 }
 
+/*
+This is the sensors thread. It keeps the robot's sensors updated at a (supposedly)
+steady rate.
+*/
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
@@ -100,6 +131,11 @@ PI_THREAD(sensors)
 	sensors_finished = 1;
 }
 
+/*
+This is the debug thread. It runs the debug screen code and is only run if the
+program is called with the -d or --debug parameter. For example:
+pi@raspberrypi $ sudo ./main -d
+*/
 PI_THREAD(debug_thread)
 {
 	debug_finished = 0;
@@ -121,6 +157,11 @@ PI_THREAD(debug_thread)
 	debug_finished = 1;
 }
 
+/*
+This is the supervisory system support thread. It runs separately from the
+debug thread although it shouldn't. The reason for that is that the socket
+server functions halt the program if there is no supervisory client running.
+*/
 PI_THREAD(supervisory)
 {
 	piHiPri(0);
@@ -135,10 +176,10 @@ PI_THREAD(supervisory)
 		debug.imu = imu;
 		debug.led_state = led_state;
 		if(supervisory_flag)
-			send_superv_message(&debug, DEF_SUPERVISORIO);
+			send_superv_message(&debug, DEF_SUPERVISORY);
 		else if(matlab_flag)
 			send_superv_message(&debug, DEF_MATLAB);
-		delay(10);//delay apenas de segurança, para esta tread os clients soket que ditam a velocidade
+		delay(10);
 	}
 	supervisory_finished = 1;
 }
@@ -177,12 +218,12 @@ int main(int argc, char* argv[])
 	{
 		for(i = 1; i < argc; ++i)
 		{
-			if(	strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0 )
+			if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0)
 			{
 				debug.debug_flag = 1;
-			} else if(	strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--supervisory") == 0 ) {
+			} else if(strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--supervisory") == 0) {
 				supervisory_flag = 1;
-			} else if(	strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--MATLAB") == 0 ) {
+			} else if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--MATLAB") == 0) {
 				matlab_flag = 1;
 			} 
 			
