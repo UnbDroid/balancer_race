@@ -238,17 +238,6 @@ void initMPU9250()
 	if(imu.accel.posX == imu.accel.posX) imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
 	if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
 	if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
-
-	/*
-	// Checking if sensor values are NaN and setting relative shift values
-	if((imu.accel.posX == imu.accel.posX) && (imu.magnet.posX == imu.magnet.posX))
-			relative_shift_x = imu.accel.posX - imu.magnet.posX;
-	if((imu.accel.posY == imu.accel.posY) && (imu.magnet.posY == imu.magnet.posY))
-			relative_shift_y = imu.accel.posY - imu.magnet.posY;
-	if((imu.accel.posZ == imu.accel.posZ) && (imu.magnet.posZ == imu.magnet.posZ))
-			relative_shift_z = imu.magnet.posZ - imu.accel.posZ;
-	*/ // No need to do this here if it is already tested in update_imu() function, called above
-
 }
 
 void init_sensors()
@@ -267,7 +256,7 @@ void update_imu()
 	dt = (double)imu.dt/1000000.0;
 	last_update = now_time;
 
-	//reading gyro
+	// reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
@@ -280,7 +269,7 @@ void update_imu()
     gyrZlo = wiringPiI2CReadReg8(MPU9250addr, 0x48);
 	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
-	//readig acc
+	// reading accelerometer
 	accXhi = wiringPiI2CReadReg8(MPU9250addr, 0x3b);
     accXlo = wiringPiI2CReadReg8(MPU9250addr, 0x3c);
     imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
@@ -293,6 +282,8 @@ void update_imu()
     accZlo = wiringPiI2CReadReg8(MPU9250addr, 0x40);
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
+    // reading magnetometer
+
     //mag_data_ready = wiringPiI2CReadReg8(AK8963addr, 0x02);
     //if(mag_data_ready & 0x01)
     //{
@@ -300,7 +291,6 @@ void update_imu()
 
     if(!(mag_overflow & 0x08))
     {
-    	//reding mag
 		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
 	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
 	    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
@@ -317,11 +307,7 @@ void update_imu()
 		imu.magnet.treatedY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
 		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
-		////imu.magnet.velX = imu.magnet.treatedX;//apenas para imprimir este valor na tela de debug
-		//imu.magnet.velY = imu.magnet.treatedY;//apenas para imprimir este valor na tela de debug
-		//imu.magnet.velZ = imu.magnet.treatedZ;//apenas para imprimir este valor na tela de debug
-
-		//calculando o angulo com base na IMU
+		// Magnetometer angular position measurement calculations
 		if(abs(imu.magnet.treatedX) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
 			imu.magnet.posX = NaN;
 		else
@@ -371,15 +357,12 @@ void update_imu()
 	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
 	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
 
+	// Axis inversions and unit corrections for the accelerometer
+	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawY;
+	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawX;
+	imu.accel.treatedZ = -ACCEL_GAIN*(double)imu.accel.rawZ;
+
 	// Accelerometer angular position measurement calculations
-	imu.accel.treatedX = (double)imu.accel.rawY;
-	imu.accel.treatedY = (double)imu.accel.rawX;
-	imu.accel.treatedZ = -1.0*(double)imu.accel.rawZ;
-
-	//imu.accel.velX = imu.accel.treatedX;//apenas para imprimir este valor na tela de debug
-	//imu.accel.velY = imu.accel.treatedY;//apenas para imprimir este valor na tela de debug
-	//imu.accel.velZ = imu.accel.treatedZ;//apenas para imprimir este valor na tela de debug
-
 	if(abs(imu.accel.treatedX) > (MUITOMAIOR*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
 		imu.accel.posX = NaN;
 	else
