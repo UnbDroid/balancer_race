@@ -65,7 +65,7 @@ int main()
 
 	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x40);
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x70);
-	delay(60);
+	delay(80);
 
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x00);
 
