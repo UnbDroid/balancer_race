@@ -235,7 +235,7 @@ void send_superv_message(struct debug_data* debug, int option)
 	{
 	//mensagem para o sistemas supervisório feito no processing
 		snprintf(mess, STRSIZE,
-			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f\n",
+			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;",
 			debug->imu.gyro.posX,
 			debug->imu.gyro.posY,
 			debug->imu.gyro.posZ,
@@ -252,7 +252,10 @@ void send_superv_message(struct debug_data* debug, int option)
 	else if(option == DEF_MATLAB)
 	{
 		snprintf(mess, STRSIZE,
-			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;",
+			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;",
+			debug->imu.gyro.velX,
+			debug->imu.gyro.velY,
+			debug->imu.gyro.velZ,
 			debug->imu.accel.treatedX,
 			debug->imu.accel.treatedY,
 			debug->imu.accel.treatedZ,
@@ -260,9 +263,7 @@ void send_superv_message(struct debug_data* debug, int option)
 			debug->imu.magnet.treatedY,
 			debug->imu.magnet.treatedZ
 			);
-	}
-	else//caso a flag venha errada aobortar a funcção entes de tentar enviar a mensagem para não quebrar o programa
-	{
+	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;
 	}
 	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
