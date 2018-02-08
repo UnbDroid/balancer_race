@@ -52,7 +52,7 @@
 
 //numero escolhido com base em testes, para saber quando 
 //ignorar leitura de um dos eixos do acelerometroou do gyro
-#define MUITOMAIOR 3
+#define MUCHBIGGER 3
 
 struct infrared {
 	int left, right;
@@ -308,7 +308,7 @@ void update_imu()
 		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
 
 		// Magnetometer angular position measurement calculations
-		if(abs(imu.magnet.treatedX) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
+		if(abs(imu.magnet.treatedX) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedY))))
 			imu.magnet.posX = NaN;
 		else
 		{
@@ -317,7 +317,7 @@ void update_imu()
 			else if(imu.magnet.posX < -180) imu.magnet.posX += 360;
 		}
 		
-		if(abs(imu.magnet.treatedY) > (MUITOMAIOR*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedX))))
+		if(abs(imu.magnet.treatedY) > (MUCHBIGGER*(abs(imu.magnet.treatedZ)+abs(imu.magnet.treatedX))))
 			imu.magnet.posY = NaN;
 		else
 		{
@@ -326,7 +326,7 @@ void update_imu()
 			else if(imu.magnet.posY < -180) imu.magnet.posY += 360;
 		}
 		
-		if(abs(imu.magnet.treatedZ) > (MUITOMAIOR*(abs(imu.magnet.treatedX)+abs(imu.magnet.treatedY))))
+		if(abs(imu.magnet.treatedZ) > (MUCHBIGGER*(abs(imu.magnet.treatedX)+abs(imu.magnet.treatedY))))
 			imu.magnet.posZ = NaN;
 		else
 			imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.treatedY, imu.magnet.treatedX);		
@@ -363,17 +363,17 @@ void update_imu()
 	imu.accel.treatedZ = -ACCEL_GAIN*(double)imu.accel.rawZ;
 
 	// Accelerometer angular position measurement calculations
-	if(abs(imu.accel.treatedX) > (MUITOMAIOR*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
+	if(abs(imu.accel.treatedX) > (MUCHBIGGER*(abs(imu.accel.treatedZ)+abs(imu.accel.treatedY))))
 		imu.accel.posX = NaN;
 	else
 		imu.accel.posX = RAD2DEG*atan2(imu.accel.treatedZ, imu.accel.treatedY);
 	
-	if(abs(imu.accel.treatedY) > (MUITOMAIOR*(abs(imu.accel.treatedX)+abs(imu.accel.treatedZ))))
+	if(abs(imu.accel.treatedY) > (MUCHBIGGER*(abs(imu.accel.treatedX)+abs(imu.accel.treatedZ))))
 		imu.accel.posY = NaN;
 	else
 		imu.accel.posY = RAD2DEG*atan2(imu.accel.treatedX, imu.accel.treatedZ);
 	
-	if(abs(imu.accel.treatedZ) > (MUITOMAIOR*(abs(imu.accel.treatedY)+abs(imu.accel.treatedX))))
+	if(abs(imu.accel.treatedZ) > (MUCHBIGGER*(abs(imu.accel.treatedY)+abs(imu.accel.treatedX))))
 	{
 		imu.accel.posZ = NaN;
 	} else {
