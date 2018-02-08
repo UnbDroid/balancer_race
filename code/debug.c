@@ -254,12 +254,12 @@ void send_superv_message(struct debug_data* debug, int option)
 			debug->imu.gyro.velX,
 			debug->imu.gyro.velY,
 			debug->imu.gyro.velZ,
-			debug->imu.accel.treatedX,
-			debug->imu.accel.treatedY,
-			debug->imu.accel.treatedZ,
-			debug->imu.magnet.treatedX,
-			debug->imu.magnet.treatedY,
-			debug->imu.magnet.treatedZ,
+			debug->imu.accel.posX,
+			debug->imu.accel.posY,
+			debug->imu.accel.posZ,
+			debug->imu.magnet.posX,
+			debug->imu.magnet.posY,
+			debug->imu.magnet.posZ,
 			debug->imu.last_update);
 	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;
