@@ -68,6 +68,7 @@ This is the joystick thread. It runs the code behind reading and interpreting
 joystick commands. The joystick is the primary way of commanding the robot and
 will be eventually used as safety trigger. Aside from that, it allows the
 operator to control the robot without the need for opening a terminal.
+All joystick support functions available in the jstick.c file.
 */
 PI_THREAD(joystick)
 {
@@ -78,21 +79,29 @@ PI_THREAD(joystick)
     init_joystick(&js, devname);
     set_led_state(BLUETOOTH, OFF);
 
-    while(!(js.select && js.start))
+    while(!(js.select && js.start)) // START+SELECT finishes the program
     {
         if(js.disconnect)
         {
-        	Coast(RMOTOR);
-        	Coast(LMOTOR);
+        	Coast(RMOTOR); // release motors
+        	Coast(LMOTOR); // for safety purposes
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
 		}
         update_joystick(&js);
 	}
+	// If a D-Pad key is pressed along with START+SELECT when finishing
+	// the program, special finishing up routines are called inside the
+	// clean_up() function. They are:
+	
+	// DOWN+START+SELECT: shuts the Raspberry Pi Zero W down
 	if(js.dpad.down) shutdown_flag = 1;
+	// UP+START+SELECT: reboots the Raspberry Pi Zero W
 	if(js.dpad.up) reboot = 1;
+	// LEFT+START+SELECT: finished the program instead of calling the watcher
 	if(js.dpad.left) close_program = 1;
+	
 	keep_running = 0;
 	joystick_finished = 1;
 }
@@ -100,6 +109,7 @@ PI_THREAD(joystick)
 /*
 This is the LED thread. It runs the LED above the robot, used for debugging
 and for informing the operator about the robot's current status.
+All LED support functions are available in the led.c file.
 */
 PI_THREAD(led)
 {
