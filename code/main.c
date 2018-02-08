@@ -17,7 +17,7 @@ int keep_running = 1;	// end of program flag. it is controlled by the
 						// finish up and set their own flags to 1 so that
 						// the main program can clean everything up and end.
 
-int main_finished = 1, led_finished = 1, joystick_finished = 1
+int main_finished = 1, led_finished = 1, joystick_finished = 1;
 int debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
 
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
@@ -101,7 +101,7 @@ PI_THREAD(joystick)
 	if(js.dpad.up) reboot = 1;
 	// LEFT+START+SELECT: finished the program instead of calling the watcher
 	if(js.dpad.left) close_program = 1;
-	
+
 	keep_running = 0;
 	joystick_finished = 1;
 }
