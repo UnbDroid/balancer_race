@@ -233,7 +233,7 @@ void send_superv_message(struct debug_data* debug, int option)
 
 	if(option == DEF_SUPERVISORY)
 	{
-	//mensagem para o sistemas supervisório feito no processing
+	// Format message to send data to the supervisory program
 		snprintf(mess, STRSIZE,
 			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;",
 			debug->imu.gyro.posX,
@@ -266,4 +266,5 @@ void send_superv_message(struct debug_data* debug, int option)
 	}
 	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
     ret = read(new_socket , buffer, 1024);
+
 }
