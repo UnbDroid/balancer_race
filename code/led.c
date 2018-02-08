@@ -34,19 +34,33 @@
 
 int PCA9685addr; // PCA9685 board I2C address
 
-/* The state_flags vector holds the flags that determine whether each state
- * is on or off. That way, it is possible to define a priority sequence.
- * To properly set a state on, see the set_led_state() function.
+/*
+ *	The state_flags vector holds the flags that determine whether each state
+ *	is on or off. That way, it is possible to define a priority sequence.
+ *	To properly set a state on, see the set_led_state() function.
  */
 int state_flags[NUM_STATES] = {0};
-int led_state = -1;
+int led_state = -1;	// Determines which state should the LED be on.
+					// It is modified by the set_led_state() function.
 
+// Flow control variables.
 int last_led_update = 0;
 int led_state_flag = 0;
+
+// Time to wait between LED updates.
+// It is different depending on the LED state.
 unsigned int led_delay = 100;
 
-int r, g, b, i;
+// Red, Green and Blue values for lighting up the LED
+// Should vary from 0 to 255.
+int r, g, b;
+// Intensity modifier. Multiplies every color channel.
+// Should vary from 0 to 255 where 0 means black (LED off)
+// and 255 means r, g and b won't be modified.
+int i;
 
+// Initializes I2C communication with the PCA9685 board.
+// Should be called at the beginning of the code.
 void init_led()
 {
 	PCA9685addr = wiringPiI2CSetup(0x40);
