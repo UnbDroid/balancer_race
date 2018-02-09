@@ -37,6 +37,7 @@ __s32 value;
 };
 */
 
+// Device name of the XBox Controller being used.
 char devname[] = "/dev/input/event0";
 
 struct analog {
@@ -57,13 +58,14 @@ struct joystick {
 	struct analog ranalog;
 	int start, select;
 	int home;
-	int new_data;
 	int disconnect;
 	struct input_event last_event;
 };
 
+// Global struct to contain all joystick button values
 struct joystick js;
 
+// Function to check if joystick device exists (is connected).
 int exists(const char *fname)
 {
 	FILE *file;
@@ -75,12 +77,7 @@ int exists(const char *fname)
 	return 0;
 }
 
-void print_error()
-{
-	printf("\e[2J\e[H");
-	printf("       ________  _______   _______    ______   _______   __               \n      |        \\|       \\ |       \\  /      \\ |       \\ |  \\              \n      | $$$$$$$$| $$$$$$$\\| $$$$$$$\\|  $$$$$$\\| $$$$$$$\\| $$              \n      | $$__    | $$__| $$| $$__| $$| $$  | $$| $$__| $$| $$              \n      | $$  \\   | $$    $$| $$    $$| $$  | $$| $$    $$| $$              \n      | $$$$$   | $$$$$$$\\| $$$$$$$\\| $$  | $$| $$$$$$$\\ \\$$              \n      | $$_____ | $$  | $$| $$  | $$| $$__/ $$| $$  | $$ __               \n      | $$     \\| $$  | $$| $$  | $$ \\$$    $$| $$  | $$|  \\              \n       \\$$$$$$$$ \\$$   \\$$ \\$$   \\$$  \\$$$$$$  \\$$   \\$$ \\$$              \n                                                                          \n                                                                          \n                                                                          \n  ______                                                       __         \n /      \\                                                     |  \\        \n|  $$$$$$\\  ______   _______   _______    ______    _______  _| $$_       \n| $$   \\$$ /      \\ |       \\ |       \\  /      \\  /       \\|   $$ \\      \n| $$      |  $$$$$$\\| $$$$$$$\\| $$$$$$$\\|  $$$$$$\\|  $$$$$$$ \\$$$$$$      \n| $$   __ | $$  | $$| $$  | $$| $$  | $$| $$    $$| $$        | $$ __     \n| $$__/  \\| $$__/ $$| $$  | $$| $$  | $$| $$$$$$$$| $$_____   | $$|  \\    \n \\$$    $$ \\$$    $$| $$  | $$| $$  | $$ \\$$     \\ \\$$     \\   \\$$  $$    \n  \\$$$$$$   \\$$$$$$  \\$$   \\$$ \\$$   \\$$  \\$$$$$$$  \\$$$$$$$    \\$$$$     \n                                                                          \n                                                                          \n                                                                          \n    _____                                  __      __            __       \n   |     \\                                |  \\    |  \\          |  \\      \n    \\$$$$$  ______   __    __   _______  _| $$_    \\$$  _______ | $$   __ \n      | $$ /      \\ |  \\  |  \\ /       \\|   $$ \\  |  \\ /       \\| $$  /  \\\n __   | $$|  $$$$$$\\| $$  | $$|  $$$$$$$ \\$$$$$$  | $$|  $$$$$$$| $$_/  $$\n|  \\  | $$| $$  | $$| $$  | $$ \\$$    \\   | $$ __ | $$| $$      | $$   $$ \n| $$__| $$| $$__/ $$| $$__/ $$ _\\$$$$$$\\  | $$|  \\| $$| $$_____ | $$$$$$\\ \n \\$$    $$ \\$$    $$ \\$$    $$|       $$   \\$$  $$| $$ \\$$     \\| $$  \\$$\\\n  \\$$$$$$   \\$$$$$$  _\\$$$$$$$ \\$$$$$$$     \\$$$$  \\$$  \\$$$$$$$ \\$$   \\$$\n                    |  \\__| $$                                            \n                     \\$$    $$                                            \n                      \\$$$$$$\n");
-}
-
+// Opens joystick device file and sets all struct variables to 0. 
 void init_joystick(struct joystick* js, char devname[])
 {
 	while(!exists(devname)) sleep(0.5);
@@ -111,18 +108,13 @@ void init_joystick(struct joystick* js, char devname[])
 	js->start = 0;
 	js->select = 0;
 	js->home = 0;
-	js->new_data = 0;
 	js->disconnect = 0;
 }
 
-int is_updated_js(struct joystick* js)
-{
-	if(!js->new_data)
-		return 0;
-	js->new_data = 0;
-	return 1;
-}
-
+/* Remaps the analog values to a range between 0 and 1023.
+ * There was a need for setting up a dead zone because the analogs
+ * never got back to 0 after the user let go of them.
+ */
 int analog_map(int v_max, int v_min, int value)
 {
 	if(v_max > v_min)
@@ -140,17 +132,22 @@ int analog_map(int v_max, int v_min, int value)
 	return ((1023*(value - v_min))/(v_max - v_min)); 
 }
 
+// Updates the joystick struct according to the buttons pressed.
 void update_joystick(struct joystick* js)
 {
 	struct input_event ev;
 	int temp;
 	
+	// Checks if a successful reading of the device path was possible.
+	// The code gets stuck in this read() function if no new input is given
+	// but the device is still connected.
 	if(read(js->device, &ev, sizeof(ev)) != -1)
 	{
 		if(ev.type != 0)
 		{
 			js->last_event = ev;
-			js->new_data = 1;
+			
+			// This switch encodes the input_event code value for our joystick.
 			switch(ev.code)
 			{
 				case B_KEY:
@@ -223,17 +220,11 @@ void update_joystick(struct joystick* js)
 					{
 						temp = analog_map(0, ZERO_VAL, ev.value);
 						js->lanalog.down = 0;
-						if(temp != js->lanalog.up)
-							js->lanalog.up = temp;
-						else
-							js->new_data = 0;	
+						js->lanalog.up = temp;
 					} else {
 						temp = analog_map(65535, ZERO_VAL, ev.value);
 						js->lanalog.up = 0;
-						if(temp != js->lanalog.down)
-							js->lanalog.down = temp;
-						else
-							js->new_data = 0;
+						js->lanalog.down = temp;
 					}
 					break;
 				case LANALOG_LR:
@@ -241,17 +232,11 @@ void update_joystick(struct joystick* js)
 					{
 						temp = analog_map(0, ZERO_VAL, ev.value);
 						js->lanalog.right = 0;
-						if(temp != js->lanalog.left)
-							js->lanalog.left = temp;
-						else
-							js->new_data = 0;
+						js->lanalog.left = temp;
 					} else {
 						temp = analog_map(65535, ZERO_VAL, ev.value);
 						js->lanalog.left = 0;
-						if(temp != js->lanalog.right)
-							js->lanalog.right = temp;
-						else
-							js->new_data = 0;
+						js->lanalog.right = temp;
 					}
 					break;
 				case RANALOG_UD:
@@ -259,17 +244,11 @@ void update_joystick(struct joystick* js)
 					{
 						temp = analog_map(0, ZERO_VAL, ev.value);
 						js->ranalog.down = 0;
-						if(temp != js->ranalog.up)
-							js->ranalog.up = temp;
-						else
-							js->new_data = 0;
+						js->ranalog.up = temp;
 					} else {
 						temp = analog_map(65535, ZERO_VAL, ev.value);
 						js->ranalog.up = 0;
-						if(temp != js->ranalog.down)
-							js->ranalog.down = temp;
-						else
-							js->new_data = 0;
+						js->ranalog.down = temp;
 					}
 					break;
 				case RANALOG_LR:
@@ -277,22 +256,18 @@ void update_joystick(struct joystick* js)
 					{
 						temp = analog_map(0, ZERO_VAL, ev.value);
 						js->ranalog.right = 0;
-						if(temp != js->ranalog.left)
-							js->ranalog.left = temp;
-						else
-							js->new_data = 0;
+						js->ranalog.left = temp;
 					} else {
 						temp = analog_map(65535, ZERO_VAL, ev.value);
 						js->ranalog.left = 0;
-						if(temp != js->ranalog.right)
-							js->ranalog.right = temp;
-						else
-							js->new_data = 0;
+						js->ranalog.right = temp;
 					}
 					break;
 			}
 		}
-	} else { //erro de leitura, provavelmente controle desconectou do rasp {
+	} else {	// If there is a reading error (probably because the
+				// controller disconnected), close the device and set the
+				// disconnect flag to 1.
 		close(js->device);
 		js->disconnect = 1;
 	}
