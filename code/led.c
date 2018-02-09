@@ -48,7 +48,8 @@ int last_led_update = 0;
 int led_state_flag = 0;
 
 // Time to wait between LED updates.
-// It is different depending on the LED state.
+// It is different depending on the LED state. Set by update_led() function.
+// Should be equal to or higher than 50 milliseconds.
 unsigned int led_delay = 100;
 
 // Red, Green and Blue values for lighting up the LED
@@ -67,6 +68,12 @@ void init_led()
 	initPCA9685(PCA9685addr);
 }
 
+/* This function sets a chosen state flag to the condition passed as
+ * an argument. It automatically checks for higher priority states to
+ * guarantee that the led_state variable is set correctly.
+ * State constants are defined in the header and the on_off parameter
+ * should be passed as ON or OFF.
+ */
 void set_led_state(int state, int on_off)
 {
 	if(on_off == ON)
@@ -89,6 +96,10 @@ void set_led_state(int state, int on_off)
 		led_state = -1;
 }
 
+/* This function sets the r, g, b variables to pre-defined values
+ * so that the LED shines with the color passed as argument and the
+ * i variable passed as the intensity argument.
+ */
 void set_color(int color, int intensity)
 {
 	i = intensity;
@@ -141,6 +152,10 @@ void set_color(int color, int intensity)
 	}
 }
 
+/* This function writes the r, g, b and i values to the PCA9685 registers
+ * so that the LED shines accordingly. It is mainly used at the end of the
+ * update_led() function.
+ */
 void light_rgb()
 {
 	int r_dutycycle = LED_RANGE - i * r * r / LED_RANGE; 
@@ -152,6 +167,10 @@ void light_rgb()
 	pwmPCA9685(PCA9685addr, LED_B, b_dutycycle);
 }
 
+/* This function should be periodically called (by the LED thread) with a
+ * period equal to led_delay milliseconds. It encodes what each LED state
+ * does to the LED and how it should be updated.
+ */
 void update_led()
 {
 	if(millis() - last_led_update > led_delay)
@@ -189,10 +208,3 @@ void update_led()
 		light_rgb(r, g, b, i);
 	}
 }
-
-/*
-yellow = R: 255 G: 175 B:   0
-cyan = R:   0 G: 255 B: 255
-magenta = R: 255 G:   0 B: 255
-orange = R: 180 G:  81 B:   0
-*/
