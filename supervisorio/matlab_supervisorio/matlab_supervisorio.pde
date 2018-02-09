@@ -3,7 +3,7 @@ import java.net.*;
 
 Server agora_eu_sou_o_mestre; 
 String dataIn;
-String[] dataSplit;
+String[] dataSplit = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 String[] pastData = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 
 float gyrx, gyry, gyrz;
@@ -39,21 +39,25 @@ void draw() {
         dataIn = client.readString();
         
         dataSplit = dataIn.split(";");
-        for (i = 0; i < 12; i++){
-            if (dataSplit[i].contains("nan")){
-                dataSplit[i] = pastData[i];
-            }
-        }
-        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
-        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
-        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
-        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
+      
+        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   
+        gyry = radians(Float.parseFloat(dataSplit[1]));   
+        gyrz = radians(-Float.parseFloat(dataSplit[2]));
+        accx = radians(Float.parseFloat(dataSplit[3])+180);  
+        accy = radians(Float.parseFloat(dataSplit[4]));   
+        accz = radians(-Float.parseFloat(dataSplit[5]));
+        magx = radians(Float.parseFloat(dataSplit[6])+180);   
+        magy = radians(Float.parseFloat(dataSplit[7]));   
+        magz = radians(-Float.parseFloat(dataSplit[8]));
+        kalx = radians(Float.parseFloat(dataSplit[9])+180);   
+        kaly = radians(Float.parseFloat(dataSplit[10]));  
+        kalz = radians(-Float.parseFloat(dataSplit[11]));
         for (i = 0; i < 12; i++){
             pastData[i] = dataSplit[i];
         }
         
         agora_eu_sou_o_mestre.write("abacaxi");
-        delay(300);
+        delay(50);
     } else {
         for (i = 0; i < 12; i++){
             dataSplit[i] = pastData[i];
