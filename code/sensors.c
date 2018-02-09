@@ -239,9 +239,9 @@ void initMPU9250()
 	//if(imu.accel.posY == imu.accel.posY) imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
 	//if(imu.magnet.posZ == imu.magnet.posZ) imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
 
-	imu.gyro.posX = imu.accel.posX; else imu.gyro.posX = 0;
-	imu.gyro.posY = imu.accel.posY; else imu.gyro.posY = 0;
-	imu.gyro.posZ = imu.magnet.posZ; else imu.gyro.posZ = 0;
+	imu.gyro.posX = imu.accel.posX; 
+	imu.gyro.posY = imu.accel.posY; 
+	imu.gyro.posZ = imu.magnet.posZ; 
 }
 
 void init_sensors()
