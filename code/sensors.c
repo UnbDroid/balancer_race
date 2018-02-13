@@ -49,11 +49,6 @@
 #define IR_LEFT 22
 #define IR_RIGHT 40
 
-
-//numero escolhido com base em testes, para saber quando 
-//ignorar leitura de um dos eixos do acelerometroou do gyro
-#define MUCHBIGGER 3
-
 struct infrared {
 	int left, right;
 };
@@ -62,6 +57,9 @@ struct gyro {
 	int16_t rawX;
 	int16_t rawY;
 	int16_t rawZ;
+	double treatedX;
+	double treatedY;
+	double treatedZ;
 	double posX;
 	double posY;
 	double posZ;
@@ -77,43 +75,38 @@ struct accel {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
-	double posX;
-	double posY;
-	double posZ;
-	double velX;
-	double velY;
-	double velZ;
+	double magnitude;
 };
 
 struct magnet {
+	int overflow;
 	int16_t rawX;
 	int16_t rawY;
 	int16_t rawZ;
 	double treatedX;
 	double treatedY;
-	double treatedZ;		
-	double posX;
-	double posY;
-	double posZ;
-	double velX;
-	double velY;
-	double velZ;
+	double treatedZ;
+	double magnitude;	
 };
 
 struct imu {
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
+	double yaw, pitch, roll;
 	unsigned long int dt;
 	unsigned long long int last_update;
 };
+
+double u[3], v[3], tempvec[3], tempmag;
+double i_n[3], j_n[3], k_n[3];
+double i_b[3], j_b[3], k_b[3];
+double rot_matrix[3][3];
 
 struct infrared ir;
 struct imu imu;
 int MPU9250addr, AK8963addr;
 double magsensX, magsensY, magsensZ;
-double relative_shift_x, relative_shift_y, relative_shift_z;
-//double NaN;//cancelei isso vai ser tratado no filtro
 
 uint8_t gyrXhi, gyrXlo;
 uint8_t gyrYhi, gyrYlo;
@@ -123,7 +116,7 @@ uint8_t accXhi, accXlo;
 uint8_t accYhi, accYlo;
 uint8_t accZhi, accZlo;
 
-uint8_t mag_overflow, mag_data_ready;
+uint8_t mag_data_ready;
 uint8_t magXhi, magXlo;
 uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
@@ -227,17 +220,25 @@ void initMPU9250()
 	// [3:0] - Magnetometer mode selection. Check page 51 of the register map for more info
 	wiringPiI2CWriteReg8(AK8963addr, CNTL1, 0x16);
 	delay(50);
+	wiringPiI2CReadReg8(AK8963addr, 0x09); // Clear register for first magnetometer reading.
+	delay(10);
 
+	int c;
+	for(c = 0; c < 3; ++c)
+	{
+		i_n[c] = 0;
+		j_n[c] = 0;
+		k_n[c] = 0;
+	}
 	update_imu();
 
-	imu.gyro.posX = imu.accel.posX; 
-	imu.gyro.posY = imu.accel.posY; 
-	imu.gyro.posZ = imu.magnet.posZ; 
+	imu.gyro.posZ = imu.yaw; 
+	imu.gyro.posY = imu.pitch; 
+	imu.gyro.posX = imu.roll; 
 }
 
 void init_sensors()
 {
-	//NaN = sqrt(-1);//cacelei isso vai ser tratado no filtro de kalmean 
 	initMPU9250();
 
 	pinMode(IR_LEFT, INPUT);
@@ -278,62 +279,141 @@ void update_imu()
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
     // reading magnetometer
+	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
+    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
+    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
 
-    //mag_data_ready = wiringPiI2CReadReg8(AK8963addr, 0x02);
-    //if(mag_data_ready & 0x01)
-    //{
-    mag_overflow = wiringPiI2CReadReg8(AK8963addr, 0x09);
+    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
+	magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
+	imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
 
-    if(!(mag_overflow & 0x08))
-    {
-		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
-	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
-	    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
+    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
+	magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
+	imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
 
-	    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
-		magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
-		imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
-
-	    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
-		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
-		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
-
-		imu.magnet.treatedX = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
-		imu.magnet.treatedY = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
-		imu.magnet.treatedZ = ((double)imu.magnet.rawZ-MAGZ_BIAS)*magsensZ;
-
-		imu.magnet.posX = (RAD2DEG*atan2(imu.magnet.treatedZ, imu.magnet.treatedY));
-		imu.magnet.posY = (RAD2DEG*atan2(imu.magnet.treatedX, imu.magnet.treatedZ));
-		imu.magnet.posZ = RAD2DEG*atan2(imu.magnet.treatedY, imu.magnet.treatedX);		
-    }
-
-    // Axis inversions and unit corrections for the gyroscope
-	imu.gyro.velX = -GYRO_GAIN*(double)imu.gyro.rawY;
-	imu.gyro.velY = -GYRO_GAIN*(double)imu.gyro.rawX;
-	imu.gyro.velZ = GYRO_GAIN*(double)imu.gyro.rawZ;
+    // Unit corrections for the gyroscope
+	imu.gyro.treatedX = GYRO_GAIN*(double)imu.gyro.rawX;
+	imu.gyro.treatedY = GYRO_GAIN*(double)imu.gyro.rawY;
+	imu.gyro.treatedZ = GYRO_GAIN*(double)imu.gyro.rawZ;
 
 	// Gyroscope integration
-	imu.gyro.posX += imu.gyro.velX*dt;
+	imu.gyro.posX += imu.gyro.treatedX*dt;
 	if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
 	else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
 	
-	imu.gyro.posY += imu.gyro.velY*dt;
+	imu.gyro.posY += imu.gyro.treatedY*dt;
 	if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
 	else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
 	
-	imu.gyro.posZ += imu.gyro.velZ*dt;
+	imu.gyro.posZ += imu.gyro.treatedZ*dt;
 	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
-	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;	
+	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;
 
-	// Axis inversions and unit corrections for the accelerometer
-	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawY;
-	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawX;
-	imu.accel.treatedZ = -ACCEL_GAIN*(double)imu.accel.rawZ;
+	// Unit corrections for the accelerometer
+	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
+	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
+	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
+	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
-	// Accelerometer angular position measurement calculations
-	imu.accel.posX = RAD2DEG*atan2(imu.accel.treatedZ, imu.accel.treatedY);
-	imu.accel.posY = RAD2DEG*atan2(imu.accel.treatedX, imu.accel.treatedZ);
-	imu.accel.posZ = (RAD2DEG*atan2(imu.accel.treatedY, imu.accel.treatedX));
+	// Axis inversions and unit corrections for the magnetometer.
+	// For some reason it is mounted to the MPU9250 module with X and Y axis switched and Z axis inverted.
+	imu.magnet.treatedX = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
+	imu.magnet.treatedY = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
+	imu.magnet.treatedZ = (MAGZ_BIAS-(double)imu.magnet.rawZ)*magsensZ;
+	imu.magnet.magnitude = sqrt(pow(imu.magnet.treatedX, 2) + pow(imu.magnet.treatedY, 2) + pow(imu.magnet.treatedZ, 2));
+
+	// Reading magnetometer status to check for magnetometer overflow.
+	if(!(wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08))
+	{
+		imu.magnet.overflow = 1;
+	} else {
+		imu.magnet.overflow = 0;
+	}
+
+	// TRIAD algorithm code
+
+	// Defining u and v vectors.
+	// These are unit vectors corresponding to gravitational force and magnetic field respectively.
+	u[0] = imu.accel.treatedX/imu.accel.magnitude;
+	u[1] = imu.accel.treatedY/imu.accel.magnitude;
+	u[2] = imu.accel.treatedZ/imu.accel.magnitude;
+	
+	v[0] = imu.magnet.treatedX/imu.magnet.magnitude;
+	v[1] = imu.magnet.treatedY/imu.magnet.magnitude;
+	v[2] = imu.magnet.treatedZ/imu.magnet.magnitude;
+	
+	// Defining i, j and k as described in the robot coordinate system.
+	int c;
+	for(c = 0; c < 3; ++c)
+	{
+		tempvec[c] = u[c] + v[c];
+	}
+	tempmag = sqrt(pow(tempvec[0], 2) + pow(tempvec[1], 2) + pow(tempvec[2], 2));
+	for(c = 0; c < 3; ++c)
+	{
+		i_b[c] = (u[c]+v[c])/tempmag;
+	}		
+	
+	for(c = 0; c < 3; ++c)
+	{
+		tempvec[c] = u[c] - v[c];
+	}
+	j_b[0] = i_b[1]*tempvec[2] - i_b[2]*tempvec[1];
+	j_b[1] = i_b[2]*tempvec[0] - i_b[0]*tempvec[2];
+	j_b[2] = i_b[0]*tempvec[1] - i_b[1]*tempvec[0];
+	tempmag = sqrt(pow(j_b[0], 2) + pow(j_b[1], 2) + pow(j_b[2], 2));
+	for(c = 0; c < 3; ++c)
+	{
+		j_b[c] /= tempmag;
+	}
+
+	k_b[0] = i_b[1]*j_b[2] - i_b[2]*j_b[1];
+	k_b[1] = i_b[2]*j_b[0] - i_b[0]*j_b[2];
+	k_b[2] = i_b[0]*j_b[1] - i_b[1]*j_b[0];
+
+	// Strongly recommend that the section below be done during calibration instead.
+	if(	i_n[0] == 0 && i_n[1] == 0 && i_n[2] == 0 &&
+		j_n[0] == 0 && j_n[1] == 0 && j_n[2] == 0 &&
+		k_n[0] == 0 && k_n[1] == 0 && k_n[2] == 0)
+	{
+		/* Since this is run when we first call update_imu() function, set
+		 * the TRIAD vectors in reference to the robot coordinate system
+		 * as equal to the TRIAD vectors in reference to the navigational
+		 * coordinate system. This means the starting position of the robot
+		 * will define its navigational coordinate system.
+		*/
+		for(c = 0; c < 3; ++c)
+		{
+			i_n[c] = i_b[c];
+			j_n[c] = j_b[c];
+			k_n[c] = k_b[c];
+		}
+	}
+
+
+	// Calculating the rotation matrix from the navigational coordinate
+	// system to the robot coordinate system using the TRIAD algorithm.
+	int i, j;
+	for(i = 0; i < 3; ++i)
+	{
+		for(j = 0; j < 3; ++j)
+		{
+			rot_matrix[i][j] = i_b[i]*i_n[j] + j_b[i]*j_n[j] + k_b[i]*k_n[j];
+		}
+	}
+
+	// Calculating yaw, pitch and roll angles based on the rotation matrix
+	// obtained above using the TRIAD algorithm.
+	imu.yaw = atan2(rot_matrix[1][0], 
+					rot_matrix[0][0]);
+
+	imu.pitch = atan2(	rot_matrix[2][0],
+						sqrt(pow(rot_matrix[2][1], 2) + pow(rot_matrix[2][2], 2)));
+
+	imu.roll = atan2(	rot_matrix[2][1], 
+						rot_matrix[2][0]);
+
+
 }
 
 void update_ir()

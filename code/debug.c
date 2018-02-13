@@ -57,13 +57,10 @@ void init_debug()
 	printf("  X  *******  X  *******  X  *******    6:                                      \n");
 	printf("  Y  *******  Y  *******  Y  *******    7:                                      \n");
 	printf("  Z  *******  Z  *******  Z  *******    8:                                      \n");
-	printf("  X' *******  X' *******  X' *******    9:                                      \n");
-	printf("  Y' *******  Y' *******  Y' *******   10:                                      \n");
-	printf("  Z' *******  Z' *******  Z' *******   11:                                      \n");
-	printf("  rawX ****** rawX ****** rawX ******  12:                                      \n");
-	printf("  rawY ****** rawY ****** rawY ******  13:                                      \n");
-	printf("  rawZ ****** rawZ ****** rawZ ******  14:                                      \n");
-	printf("  IMU Time: ******us                   15:                                      \n");
+	printf("  rawX ****** rawX ****** rawX ******   9:                                      \n");
+	printf("  rawY ****** rawY ****** rawY ******  10:                                      \n");
+	printf("  rawZ ****** rawZ ****** rawZ ******  11:                                      \n");
+	printf("  IMU Time: ******us                   12:                                      \n");
 }
 
 
@@ -130,49 +127,45 @@ void update_debug(struct debug_data* debug)
 		printf("\033[%d;%dHOff\n", 27, 62);
 	
 	// Code to print Yaw-Pitch-Roll values here
-
-	printf("\033[%d;%dH%07.2f\n", 33, 6, debug->imu.gyro.posX);
-	printf("\033[%d;%dH%07.2f\n", 33, 18, debug->imu.accel.posX);
-	printf("\033[%d;%dH%07.2f\n", 33, 30, debug->imu.magnet.posX);
 	
-	printf("\033[%d;%dH%07.2f\n", 34, 6, debug->imu.gyro.posY);
-	printf("\033[%d;%dH%07.2f\n", 34, 18, debug->imu.accel.posY);
-	printf("\033[%d;%dH%07.2f\n", 34, 30, debug->imu.magnet.posY);
+	printf("\033[%d;%dH%07.2f\n", 29, 10, debug->imu.yaw);
+	printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.pitch);
+	printf("\033[%d;%dH%07.2f\n", 29, 30, debug->imu.roll);
 
-	printf("\033[%d;%dH%07.2f\n", 35, 6, debug->imu.gyro.posZ);
-	printf("\033[%d;%dH%07.2f\n", 35, 18, debug->imu.accel.posZ);
-	printf("\033[%d;%dH%07.2f\n", 35, 30, debug->imu.magnet.posZ);
+	printf("\033[%d;%dH%07.2f\n", 30, 10, debug->imu.gyro.treatedZ);
+	printf("\033[%d;%dH%07.2f\n", 30, 20, debug->imu.gyro.treatedY);
+	printf("\033[%d;%dH%07.2f\n", 30, 30, debug->imu.gyro.treatedX);
 
-	printf("\033[%d;%dH%07.2f\n", 36, 6, debug->imu.gyro.velX);
-	printf("\033[%d;%dH%07.2f\n", 36, 18, debug->imu.accel.velX);
-	printf("\033[%d;%dH%07.2f\n", 36, 30, debug->imu.magnet.velX);
+	printf("\033[%d;%dH%07.2f\n", 33, 6, debug->imu.gyro.treatedX);
+	printf("\033[%d;%dH%07.2f\n", 33, 18, debug->imu.accel.treatedX);
+	printf("\033[%d;%dH%07.2f\n", 33, 30, debug->imu.magnet.treatedX);
+	
+	printf("\033[%d;%dH%07.2f\n", 34, 6, debug->imu.gyro.treatedY);
+	printf("\033[%d;%dH%07.2f\n", 34, 18, debug->imu.accel.treatedY);
+	printf("\033[%d;%dH%07.2f\n", 34, 30, debug->imu.magnet.treatedY);
 
-	printf("\033[%d;%dH%07.2f\n", 37, 6, debug->imu.gyro.velY);
-	printf("\033[%d;%dH%07.2f\n", 37, 18, debug->imu.accel.velY);
-	printf("\033[%d;%dH%07.2f\n", 37, 30, debug->imu.magnet.velY);
+	printf("\033[%d;%dH%07.2f\n", 35, 6, debug->imu.gyro.treatedZ);
+	printf("\033[%d;%dH%07.2f\n", 35, 18, debug->imu.accel.treatedZ);
+	printf("\033[%d;%dH%07.2f\n", 35, 30, debug->imu.magnet.treatedZ);
 
-	printf("\033[%d;%dH%07.2f\n", 38, 6, debug->imu.gyro.velZ);
-	printf("\033[%d;%dH%07.2f\n", 38, 18, debug->imu.accel.velZ);
-	printf("\033[%d;%dH%07.2f\n", 38, 30, debug->imu.magnet.velZ);
+	printf("\033[%d;%dH%06d\n", 36, 8, debug->imu.gyro.rawX);
+	printf("\033[%d;%dH%06d\n", 36, 20, debug->imu.accel.rawX);
+	printf("\033[%d;%dH%06d\n", 36, 32, debug->imu.magnet.rawX);
 
-	printf("\033[%d;%dH%06d\n", 39, 8, debug->imu.gyro.rawX);
-	printf("\033[%d;%dH%06d\n", 39, 20, debug->imu.accel.rawX);
-	printf("\033[%d;%dH%06d\n", 39, 32, debug->imu.magnet.rawX);
+	printf("\033[%d;%dH%06d\n", 37, 8, debug->imu.gyro.rawY);
+	printf("\033[%d;%dH%06d\n", 37, 20, debug->imu.accel.rawY);
+	printf("\033[%d;%dH%06d\n", 37, 32, debug->imu.magnet.rawY);
 
-	printf("\033[%d;%dH%06d\n", 40, 8, debug->imu.gyro.rawY);
-	printf("\033[%d;%dH%06d\n", 40, 20, debug->imu.accel.rawY);
-	printf("\033[%d;%dH%06d\n", 40, 32, debug->imu.magnet.rawY);
-
-	printf("\033[%d;%dH%06d\n", 41, 8, debug->imu.gyro.rawZ);
-	printf("\033[%d;%dH%06d\n", 41, 20, debug->imu.accel.rawZ);
-	printf("\033[%d;%dH%06d\n", 41, 32, debug->imu.magnet.rawZ);
-
-	printf("\033[%d;%dH%06ld\n", 42, 13, debug->imu.dt);
+	printf("\033[%d;%dH%06d\n", 38, 8, debug->imu.gyro.rawZ);
+	printf("\033[%d;%dH%06d\n", 38, 20, debug->imu.accel.rawZ);
+	printf("\033[%d;%dH%06d\n", 38, 32, debug->imu.magnet.rawZ);
+	
+	printf("\033[%d;%dH%06ld\n", 39, 13, debug->imu.dt);
 }
 
 void print_message(char mess[], int num)
 {
-	if(num > 0 && num <= 15)
+	if(num > 0 && num <= 12)
 		printf("\033[%d;%dH%-36s\n", 27+num, 44, mess);
 }
 
@@ -230,10 +223,10 @@ void send_superv_message(struct debug_data* debug, int option)
 	char buffer[1024] = {0};
 	int ret;
 
-
 	if(option == DEF_SUPERVISORY)
 	{
 	// Format message to send data to the supervisory program
+		/*
 		snprintf(mess, STRSIZE,
 			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;",
 			debug->imu.gyro.posX,
@@ -248,7 +241,9 @@ void send_superv_message(struct debug_data* debug, int option)
 			0,
 			0,	// Zeroes to be replaced by Kalman Filter output when we implement it
 			0);
+		*/
 	} else if(option == DEF_MATLAB) {
+		/*
 		snprintf(mess, STRSIZE,
 			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%011d;",
 			debug->imu.gyro.velX,
@@ -261,6 +256,7 @@ void send_superv_message(struct debug_data* debug, int option)
 			debug->imu.magnet.posY,
 			debug->imu.magnet.posZ,
 			debug->imu.last_update);
+		*/
 	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;
 	}
