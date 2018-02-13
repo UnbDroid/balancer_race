@@ -176,8 +176,8 @@ void initMPU9250()
 	wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x03);
 
 	// set sample rate to 200Hz
-	// sample rate defined by 1/(1+SMPLRT_DIV)
-	wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x04);
+	// sample rate defined by 1000/(1+SMPLRT_DIV)
+	wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x09);
 
 	// set gyro max range to 500 degrees/second
 	// GYRO_CONFIG
