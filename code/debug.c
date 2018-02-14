@@ -226,37 +226,36 @@ void send_superv_message(struct debug_data* debug, int option)
 	if(option == DEF_SUPERVISORY)
 	{
 	// Format message to send data to the supervisory program
-		/*
+		
 		snprintf(mess, STRSIZE,
-			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;",
-			debug->imu.gyro.posX,
-			debug->imu.gyro.posY,
-			debug->imu.gyro.posZ,
-			debug->imu.accel.posX,
-			debug->imu.accel.posY,
-			debug->imu.accel.posZ,
-			debug->imu.magnet.posX,
-			debug->imu.magnet.posY,
-			debug->imu.magnet.posZ,
+			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f",
 			0,
-			0,	// Zeroes to be replaced by Kalman Filter output when we implement it
-			0);
-		*/
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			imu.yaw,
+			imu.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
+			imu.roll);
+		
 	} else if(option == DEF_MATLAB) {
-		/*
+		
 		snprintf(mess, STRSIZE,
-			"%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%09.2f;%011d;",
-			debug->imu.gyro.velX,
-			debug->imu.gyro.velY,
-			debug->imu.gyro.velZ,
-			debug->imu.accel.posX,
-			debug->imu.accel.posY,
-			debug->imu.accel.posZ,
-			debug->imu.magnet.posX,
-			debug->imu.magnet.posY,
-			debug->imu.magnet.posZ,
+			"%09f;%09f;%09f;%09f;%09f;%09f;%09f;%09f;%09f;%011d;",
+			debug->imu.gyro.treatedX,
+			debug->imu.gyro.treatedY,
+			debug->imu.gyro.treatedZ,
+			debug->imu.accel.treatedX,
+			debug->imu.accel.treatedY,
+			debug->imu.accel.treatedZ,
+			debug->imu.magnet.treatedX,
+			debug->imu.magnet.treatedY,
+			debug->imu.magnet.treatedZ,
 			debug->imu.last_update);
-		*/
 	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;
 	}
