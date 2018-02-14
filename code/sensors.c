@@ -404,13 +404,13 @@ void update_imu()
 
 	// Calculating yaw, pitch and roll angles based on the rotation matrix
 	// obtained above using the TRIAD algorithm.
-	imu.yaw = atan2(rot_matrix[1][0], 
+	imu.yaw = RAD2DEG*atan2(rot_matrix[1][0], 
 					rot_matrix[0][0]);
 
-	imu.pitch = atan2(	rot_matrix[2][0],
+	imu.pitch = RAD2DEG*atan2(	rot_matrix[2][0],
 						sqrt(pow(rot_matrix[2][1], 2) + pow(rot_matrix[2][2], 2)));
 
-	imu.roll = atan2(	rot_matrix[2][1], 
+	imu.roll = RAD2DEG*atan2(	rot_matrix[2][1], 
 						rot_matrix[2][0]);
 
 
