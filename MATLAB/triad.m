@@ -71,9 +71,9 @@ while 1
 
     clc %limpando a tela
     
-    Yaw = atan2d(-Mrot(2,1),Mrot(1,1))
-    Pitch = atan2d(Mrot(3,1),sqrt(Mrot(3,2)^2+Mrot(3,3)^2))
-    Roll = atan2d(Mrot(3,2),Mrot(3,3))
+    %Yaw = atan2d(-Mrot(2,1),Mrot(1,1))
+    %Pitch = atan2d(Mrot(3,1),sqrt(Mrot(3,2)^2+Mrot(3,3)^2))
+    %Roll = atan2d(Mrot(3,2),Mrot(3,3))
     
     pause(0.1)
 
