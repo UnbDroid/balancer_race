@@ -49,6 +49,9 @@ old_time = time;
 time = str2num(datanum{7})/1000000;
 
 dt = time - old_time;
+old_TriadX = TriadX;
+old_TriadY = TriadY;
+old_TriadZ = TriadZ;
 
 %valores iniciais das matrize do filtro de kalma
 T = eye(3)*dt;
@@ -88,11 +91,14 @@ while 1
     Pi = Pk + Qk*T^2;
 
 	%correção
-	K = Pi/(Pi + R);
-    Xk = Xk + K*(Yk - Xk);
-	%atualizar covariancia
-	Pk = (eye(3)-K)*Pi*(eye(3)-K)' + K*R*K';
-
+	if (old_TriadX != TriadX) || (old_TriadY != TriadY) || (old_TriadZ != TriadZ)
+        K = Pi/(Pi + R);
+        Xk = Xk + K*(Yk - Xk);
+    	%atualizar covariancia
+    	Pk = (eye(3)-K)*Pi*(eye(3)-K)' + K*R*K';
+    else
+        Pk = Pi;
+    end
 	%imprimindo a saída do filtro
     clc %limpando a tela
     Xk
