@@ -3,11 +3,19 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define LBD 0
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
 #define BIGGER_THAN_G 1.1
+
+#define STD_DEV_GYRO_X 0.1628
+#define STD_DEV_GYRO_Y 0.2210
+#define STD_DEV_GYRO_Z 0.2206
+#define STD_DEV_TRIAD_X 2.6934
+#define STD_DEV_TRIAD_Y 0.3951
+#define STD_DEV_TRIAD_Z 0.5645
 
 #define GYRO_X_OFFSET_HI 0x00
 #define GYRO_X_OFFSET_LO 0x09
@@ -54,6 +62,16 @@ struct infrared {
 	int left, right;
 };
 
+struct k_filter {
+	float yaw, pitch, roll;//valores tratados
+	float R[3];//matriz de covariamcia da tried
+	float Wk[3];//covariancia gyro
+	float Xk[3];//resultado do filtro
+	float Pk[3];//matriz de covariancia da predição
+	float Qk[3];//covariancia ...
+	float K[3];//ganho de kalman	
+};
+
 struct gyro {
 	int16_t rawX;
 	int16_t rawY;
@@ -97,6 +115,7 @@ struct imu {
 	double yaw, pitch, roll;
 	unsigned long int dt;
 	unsigned long long int last_update;
+	int update;
 };
 
 double u[3], v[3], tempvec[3], tempmag;
@@ -104,6 +123,7 @@ double i_n[3], j_n[3], k_n[3];
 double i_b[3], j_b[3], k_b[3];
 double rot_matrix[3][3];
 
+struct k_filter kalman;
 struct infrared ir;
 struct imu imu;
 int MPU9250addr, AK8963addr;
@@ -134,6 +154,60 @@ unsigned long long int now_time;
 double dt;
 
 void update_imu();
+
+void init_kalman()
+{
+	kalman.R[0] = STD_DEV_TRIAD_X;
+	kalman.R[1] = STD_DEV_TRIAD_Y;
+	kalman.R[2] = STD_DEV_TRIAD_Z;
+	kalman.Wk[0] = STD_DEV_GYRO_X;
+	kalman.Wk[1] = STD_DEV_GYRO_Y;
+	kalman.Wk[2] = STD_DEV_GYRO_Z;
+
+	kalman.Xk[0] = imu.roll;
+	kalman.Xk[1] = imu.pitch;
+	kalman.Xk[2] = imu.yaw;
+
+	kalman.Pk[0] = kalman.R[0];
+	kalman.Pk[1] = kalman.R[1];
+	kalman.Pk[2] = kalman.R[2];
+
+	kalman.Qk[0] = kalman.Wk[0] + LBD;
+	kalman.Qk[1] = kalman.Wk[1] + LBD;
+	kalman.Qk[2] = kalman.Wk[2] + LBD;
+}
+
+void update_kalman()
+{
+	//predição
+	kalman.Xk[0] = kalman.Xk[0] + dt*imu.gyro.treatedX;
+	kalman.Xk[1] = kalman.Xk[1] + dt*imu.gyro.treatedY;
+	kalman.Xk[2] = kalman.Xk[2] + dt*imu.gyro.treatedZ;
+
+	kalman.Pk[0] = kalman.Pk[0] + kalman.Qk[0];
+	kalman.Pk[1] = kalman.Pk[1] + kalman.Qk[1];
+	kalman.Pk[2] = kalman.Pk[2] + kalman.Qk[2];
+	
+	if(imu.update)
+	{
+		//correção
+		kalman.K[0] = kalman.Pk[0] / (kalman.Pk[0]+kalman.R[0]);
+		kalman.K[1] = kalman.Pk[1] / (kalman.Pk[1]+kalman.R[1]);
+		kalman.K[2] = kalman.Pk[2] / (kalman.Pk[2]+kalman.R[2]);
+
+		kalman.Xk[0] = kalman.Xk[0] + kalman.K[0] * (imu.roll - kalman.Xk[0]);
+		kalman.Xk[1] = kalman.Xk[1] + kalman.K[1] * (imu.pitch - kalman.Xk[1]);
+		kalman.Xk[2] = kalman.Xk[2] + kalman.K[2] * (imu.yaw - kalman.Xk[2]);
+
+		kalman.Pk[0] = (1-kalman.K[0])*kalman.Pk[0]*(1 - kalman.K[0]) + kalman.K[0]*kalman.R[0]*kalman.K[0];
+		kalman.Pk[1] = (1-kalman.K[1])*kalman.Pk[1]*(1 - kalman.K[1]) + kalman.K[1]*kalman.R[1]*kalman.K[1];
+		kalman.Pk[2] = (1-kalman.K[2])*kalman.Pk[2]*(1 - kalman.K[2]) + kalman.K[2]*kalman.R[2]*kalman.K[2];
+	}
+
+	kalman.roll = kalman.Xk[0];
+	kalman.pitch = kalman.Xk[1];
+	kalman.yaw = kalman.Xk[2];
+}
 
 void initMPU9250()
 {
@@ -249,7 +323,7 @@ void initMPU9250()
 void init_sensors()
 {
 	initMPU9250();
-
+	init_kalman();
 	pinMode(IR_LEFT, INPUT);
 	pinMode(IR_RIGHT, INPUT);
 }
@@ -358,13 +432,16 @@ void update_imu()
 	// Check if the magnetometer and accelerometer has been updated, if not we don't update the values for our TRIAD algorithm input.
 	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
 	{
+		imu.update = 0;
 		return;
 	}
 	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
 	{
+		imu.update = 0;
 		return;
 	}
 
+	imu.update = 1;
 	// TRIAD algorithm code
 
 	// Defining u and v vectors.

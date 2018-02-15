@@ -31,7 +31,7 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
-float KP = 6.3;
+float KP = 6.7;
 int pot;
 
 PI_THREAD(main_thread)
@@ -41,7 +41,7 @@ PI_THREAD(main_thread)
 	while(keep_running)
 	{		
 		//brincando de controle
-		pot = (int)(abs(imu.pitch)*KP);
+		pot = (int)(abs(kalman.pitch)*KP);
 		
 		//tirando a zona morta dos motores
 		pot = 150 + 0.853372*pot;
@@ -158,6 +158,7 @@ PI_THREAD(sensors)
 			last_update = now_time;
 			update_ir();
 			update_imu();
+			update_kalman();
 		} else {
 			delay(5);
 		}
