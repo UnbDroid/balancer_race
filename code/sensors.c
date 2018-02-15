@@ -121,6 +121,13 @@ uint8_t magXhi, magXlo;
 uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
 
+double old_mag_treatedX;
+double old_mag_treatedY;
+double old_mag_treatedZ;
+double old_acc_treatedX;
+double old_acc_treatedY;
+double old_acc_treatedZ;
+
 unsigned long long int now_time;
 double dt;
 
@@ -309,12 +316,18 @@ void update_imu()
 	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
 	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;
 
+	old_acc_treatedX = imu.accel.treatedX;
+	old_acc_treatedY = imu.accel.treatedY;
+	old_acc_treatedZ = imu.accel.treatedZ;
 	// Unit corrections for the accelerometer
 	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
 	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
 	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
+	old_mag_treatedX = imu.magnet.treatedX;
+	old_mag_treatedY = imu.magnet.treatedY;
+	old_mag_treatedZ = imu.magnet.treatedZ;
 	// Axis inversions and unit corrections for the magnetometer.
 	// For some reason it is mounted to the MPU9250 module with X and Y axis switched and Z axis inverted.
 	imu.magnet.treatedX = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
@@ -328,6 +341,16 @@ void update_imu()
 		imu.magnet.overflow = 1;
 	} else {
 		imu.magnet.overflow = 0;
+	}
+
+	// Check if the magnetometer and accelerometer has been updated, if not we don't update the values for our TRIAD algorithm input.
+	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
+	{
+		return;
+	}
+	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
+	{
+		return;
 	}
 
 	// TRIAD algorithm code
