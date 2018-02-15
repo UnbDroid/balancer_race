@@ -186,7 +186,7 @@ void init_supervisory()
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
-    // Forcefully attaching socket to the port 8080
+    // Forcefully attaching socket to the port 9001
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
         perror("setsockopt");
@@ -215,7 +215,7 @@ void init_supervisory()
     }
 }
 
-#define STRSIZE 103
+#define STRSIZE 72
 
 void send_superv_message(struct debug_data* debug, int option)
 {
@@ -245,16 +245,13 @@ void send_superv_message(struct debug_data* debug, int option)
 	} else if(option == DEF_MATLAB) {
 		
 		snprintf(mess, STRSIZE,
-			"%09f;%09f;%09f;%09f;%09f;%09f;%09f;%09f;%09f;%011d;",
+			"%09f;%09f;%09f;%09f;%09f;%09f;%010d;",
 			debug->imu.gyro.treatedX,
 			debug->imu.gyro.treatedY,
 			debug->imu.gyro.treatedZ,
-			debug->imu.accel.treatedX,
-			debug->imu.accel.treatedY,
-			debug->imu.accel.treatedZ,
-			debug->imu.magnet.treatedX,
-			debug->imu.magnet.treatedY,
-			debug->imu.magnet.treatedZ,
+			debug->imu.yaw,
+			debug->imu.pitch,
+			debug->imu.roll,
 			debug->imu.last_update);
 	} else { // in case the flag is set wrong, the function returns before sending the data
 		return;

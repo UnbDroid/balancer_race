@@ -3,69 +3,50 @@ clear %limpando as variáveis
 t = tcpip('192.168.200.1', 9001, 'NetworkRole', 'client'); %criando o objeto tcpip com os parametros corretos para a comunicação com o rasp
 fopen(t);%abrindo o  canal de comunicação
 %zerando os vaoler das medias
-avgGx = 0;
-avgGy = 0;
-avgGz = 0;
-avgAx = 0;
-avgAy = 0;
-avgAz = 0;
-avgMx = 0;
-avgMy = 0;
-avgMz = 0;
-avgdt = 0;
+avgGyroX = 0;
+avgGyroY = 0;
+avgGyroZ = 0;
+avgTriadX = 0;
+avgTriadY = 0;
+avgTriadZ = 0;
 
-N_LEITURAS = 50000;%amostragem
+
+N_LEITURAS = 5000;%amostragem
 
 %descartando as primeiras leituras
 for i = 1:10   
-    data = fread(t, 102);%recebendo os dados 
+    data = fread(t, 72);%recebendo os dados 
     fwrite(t, "ok!");%mandano a confirmação para o server
     tdata = char(data');%colocando os caracteres recebidos em vetor linha
     
-    datanum = regexp(tdata,'[+-]?\d+\.?\d*', 'match');
-    time = str2num(datanum{10})/1000000;
     pause(0.005)
 end
 
 %loop para tirar as medidas e calcular a media
 for i = 1:N_LEITURAS
     
-    data = fread(t, 102);%recebendo os dados 
+    data = fread(t, 72);%recebendo os dados 
     fwrite(t, "ok!");%mandano a confirmação para o server
     tdata = char(data');%colocando os caracteres recebidos em vetor linha
     
     %convertendo de char para floats
     datanum = regexp(tdata,'[+-]?\d+\.?\d*', 'match');
     
-    Gx(i) = str2num(datanum{1});
-    Gy(i) = str2num(datanum{2});
-    Gz(i) = str2num(datanum{3});
-    Ax(i) = str2num(datanum{4});
-    Ay(i) = str2num(datanum{5});
-    Az(i) = str2num(datanum{6});
-    Mx(i) = str2num(datanum{7});
-    My(i) = str2num(datanum{8});
-    Mz(i) = str2num(datanum{9});
-    %dt(i) = str2num(datanum{10})/1000000;
-    old_time = time;
-    time = str2num(datanum{10})/1000000;
-
-    dt(i) = time - old_time;
-
-    %printaio = time - old_time
+    GyroX(i) = str2num(datanum{1});
+    GyroY(i) = str2num(datanum{2});
+    GyroZ(i) = str2num(datanum{3});
+    TriadX(i) = str2num(datanum{4});
+    TriadY(i) = str2num(datanum{5});
+    TriadZ(i) = str2num(datanum{6});
 
     %incrementando o somatório
-    avgdt = avgdt + dt(i);
-    avgGx = avgGx + Gx(i)*dt(i);
-    avgGy = avgGy + Gy(i)*dt(i);
-    avgGz = avgGz + Gz(i)*dt(i);
-    avgAx = avgAx + Ax(i);
-    avgAy = avgAy + Ay(i);
-    avgAz = avgAz + Az(i);
-    avgMx = avgMx + Mx(i);
-    avgMy = avgMy + My(i);
-    avgMz = avgMz + Mz(i);
-    
+    avgGyroX =  avgGyroX  + GyroX(i);
+    avgGyroY =  avgGyroY  + GyroY(i);
+    avgGyroZ =  avgGyroZ  + GyroZ(i);
+    avgTriadX = avgTriadX + TriadX(i);
+    avgTriadY = avgTriadY + TriadY(i);
+    avgTriadZ = avgTriadZ + TriadZ(i);
+
     %mostrando i na tela para saber qunto ainda falta rodas
     i
     
@@ -74,59 +55,41 @@ for i = 1:N_LEITURAS
 end
 
 %tirando a média
-avgGx = avgGx/N_LEITURAS;
-avgGy = avgGy/N_LEITURAS;
-avgGz = avgGz/N_LEITURAS;
-avgAx = avgAx/N_LEITURAS;
-avgAy = avgAy/N_LEITURAS;
-avgAz = avgAz/N_LEITURAS;
-avgMx = avgMx/N_LEITURAS;
-avgMy = avgMy/N_LEITURAS;
-avgMz = avgMz/N_LEITURAS;
-avgdt = avgdt/N_LEITURAS;
+avgGyroX = avgGyroX/N_LEITURAS;
+avgGyroY = avgGyroY/N_LEITURAS;
+avgGyroZ = avgGyroZ/N_LEITURAS;
+avgTriadX = avgTriadX/N_LEITURAS;
+avgTriadY = avgTriadY/N_LEITURAS;
+avgTriadZ = avgTriadZ/N_LEITURAS;
 
 %zerando a variancia
-varGx = 0;
-varGy = 0;
-varGz = 0;
-varAx = 0;
-varAy = 0;
-varAz = 0;
-varMx = 0;
-varMy = 0;
-varMz = 0;
+varGyroX = 0;
+varGyroY = 0;
+varGyroZ = 0;
+varTriadX = 0;
+varTriadY = 0;
+varTriadZ = 0;
 
 
 %loop para calcular o valar da variancia 
 for i = 1:N_LEITURAS
-
-    varGx = varGx + (avgGx - Gx(i)*dt(i))^2;
-    varGy = varGy + (avgGy - Gy(i)*dt(i))^2;
-    varGz = varGz + (avgGz - Gz(i)*dt(i))^2;
-    varAx = varAx + (avgAx - Ax(i))^2;
-    varAy = varAy + (avgAy - Ay(i))^2;
-    varAz = varAz + (avgAz - Az(i))^2;
-    varMx = varMx + (avgMx - Mx(i))^2;
-    varMy = varMy + (avgMy - My(i))^2;
-    varMz = varMz + (avgMz - Mz(i))^2;     
-    
+    varGyroX = varGyroX + (avgGyroX - GyroX(i))^2;
+    varGyroY = varGyroY + (avgGyroY - GyroY(i))^2;
+    varGyroZ = varGyroZ + (avgGyroZ - GyroZ(i))^2;
+    varTriadX = varTriadX + (avgTriadX - TriadX(i))^2;
+    varTriadY = varTriadY + (avgTriadY - TriadY(i))^2;
+    varTriadZ = varTriadZ + (avgTriadZ - TriadZ(i))^2;    
 end
 
 
 %calculando a variancia e mostrando tudo na tela 
 
-varGx = varGx/N_LEITURAS
-varGy = varGy/N_LEITURAS
-varGz = varGz/N_LEITURAS
-varAx = varAx/N_LEITURAS
-varAy = varAy/N_LEITURAS
-varAz = varAz/N_LEITURAS
-varMx = varMx/N_LEITURAS
-varMy = varMy/N_LEITURAS
-varMz = varMz/N_LEITURAS
-
-
-
+varGyroX = varGyroX/N_LEITURAS
+varGyroY = varGyroY/N_LEITURAS
+varGyroZ = varGyroZ/N_LEITURAS
+varTriadX = varTriadX/N_LEITURAS
+varTriadY = varTriadY/N_LEITURAS
+varTriadZ = varTriadZ/N_LEITURAS
 
 fclose(t);%fechando; ;o canal de comunicação
 

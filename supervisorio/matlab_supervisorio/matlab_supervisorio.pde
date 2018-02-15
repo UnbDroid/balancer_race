@@ -10,6 +10,7 @@ float gyrx, gyry, gyrz;
 float accx, accy, accz;
 float magx, magy, magz;
 float kalx, kaly, kalz;
+float dt;
 
 int i = 0;
 
@@ -40,32 +41,48 @@ void draw() {
         
         dataSplit = dataIn.split(";");
       
-        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   
-        gyry = radians(Float.parseFloat(dataSplit[1]));   
-        gyrz = radians(-Float.parseFloat(dataSplit[2]));
-        accx = radians(Float.parseFloat(dataSplit[3])+180);  
-        accy = radians(Float.parseFloat(dataSplit[4]));   
-        accz = radians(-Float.parseFloat(dataSplit[5]));
-        magx = radians(Float.parseFloat(dataSplit[6])+180);   
-        magy = radians(Float.parseFloat(dataSplit[7]));   
-        magz = radians(-Float.parseFloat(dataSplit[8]));
-        kalx = radians(Float.parseFloat(dataSplit[9])+180);   
-        kaly = radians(Float.parseFloat(dataSplit[10]));  
-        kalz = radians(-Float.parseFloat(dataSplit[11]));
-        for (i = 0; i < 12; i++){
+
+        gyrx = 0;//*radians(Float.parseFloat(dataSplit[0])+180);   
+        gyry = 0;//*radians(Float.parseFloat(dataSplit[1]));   
+        gyrz = 0;//*radians(-Float.parseFloat(dataSplit[2]));
+        accx = 0;//*radians(Float.parseFloat(dataSplit[3])+180);  
+        accy = 0;//*radians(Float.parseFloat(dataSplit[4]));   
+        accz = 0;//*radians(-Float.parseFloat(dataSplit[5]));
+        magx = 0;//*radians(Float.parseFloat(dataSplit[6])+180);   
+        magy = 0;//*radians(Float.parseFloat(dataSplit[7]));   
+        magz = 0;//*radians(-Float.parseFloat(dataSplit[8]));
+        
+        kalx = radians(Float.parseFloat(dataSplit[0]));   
+        kaly = radians(Float.parseFloat(dataSplit[1]));  
+        kalz = radians(Float.parseFloat(dataSplit[2]));
+        dt = Float.parseFloat(dataSplit[3]);
+        for (i = 0; i < 4; i++){
             pastData[i] = dataSplit[i];
         }
         
         agora_eu_sou_o_mestre.write("abacaxi");
-        delay(50);
-    } else {
-        for (i = 0; i < 12; i++){
+        delay(250);
+    }
+    else
+    {
+        for(i = 0; i < 4; i++)
+        {
             dataSplit[i] = pastData[i];
         }  
-        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
-        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
-        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
-        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
+        gyrx = 0;//*radians(Float.parseFloat(dataSplit[0])+180);   
+        gyry = 0;//*radians(Float.parseFloat(dataSplit[1]));   
+        gyrz = 0;//*radians(-Float.parseFloat(dataSplit[2]));
+        accx = 0;//*radians(Float.parseFloat(dataSplit[3])+180);  
+        accy = 0;//*radians(Float.parseFloat(dataSplit[4]));   
+        accz = 0;//*radians(-Float.parseFloat(dataSplit[5]));
+        magx = 0;//*radians(Float.parseFloat(dataSplit[6])+180);   
+        magy = 0;//*radians(Float.parseFloat(dataSplit[7]));   
+        magz = 0;//*radians(-Float.parseFloat(dataSplit[8]));
+        
+        kalx = radians(Float.parseFloat(dataSplit[0]));   
+        kaly = radians(Float.parseFloat(dataSplit[1]));  
+        kalz = radians(Float.parseFloat(dataSplit[2]));
+        dt = Float.parseFloat(dataSplit[3]);
     }
   
     // mostra valores
@@ -74,21 +91,21 @@ void draw() {
     text("Y", 10, 100);
     text("Z", 10, 150);
     fill(0, 255, 255);
-    text(dataSplit[0], 50, 50);
-    text(dataSplit[1], 50, 100);
-    text(dataSplit[2], 50, 150);
+    text(dataSplit[3], 50, 50);
+    text(dataSplit[3], 50, 100);
+    text(dataSplit[3], 50, 150);
     fill(255, 255, 0);
     text(dataSplit[3], 150, 50);
-    text(dataSplit[4], 150, 100);
-    text(dataSplit[5], 150, 150);
+    text(dataSplit[3], 150, 100);
+    text(dataSplit[3], 150, 150);
     fill(255, 0, 255);
-    text(dataSplit[6], 250, 50);
-    text(dataSplit[7], 250, 100);
-    text(dataSplit[8], 250, 150);
+    text(dataSplit[3], 250, 50);
+    text(dataSplit[3], 250, 100);
+    text(dataSplit[3], 250, 150);
     fill(255);
-    text(dataSplit[9], 350, 50);
-    text(dataSplit[10], 350, 100);
-    text(dataSplit[11], 350, 150);
+    text(dataSplit[0], 350, 50);
+    text(dataSplit[1], 350, 100);
+    text(dataSplit[2], 350, 150);
     
     // labels
     textAlign(CENTER);
