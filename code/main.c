@@ -31,30 +31,47 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
+float KP = 6.3;
+int pot;
+
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{		
-		if(js.lanalog.up > 0)
+		//brincando de controle
+		pot = (int)(abs(imu.pitch)*KP);
+		
+		//tirando a zona morta dos motores
+		pot = 150 + 0.853372*pot;
+
+		//levando em conta a saturação dos motores
+		if(pot<100)
+			pot = 0;
+		if(pot>1023)
+			pot = 1023;
+
+
+
+		if(imu.pitch < 0)
 		{
-			OnFwd(LMOTOR, js.lanalog.up);
-		} else if (js.lanalog.down > 0) {
-			OnRev(LMOTOR, js.lanalog.down);
-		} else {
-			Brake(LMOTOR);
+			OnFwd(LMOTOR, pot);
+			OnFwd(RMOTOR, pot);
 		}
 
-		if(js.ranalog.up > 0)
+		if(imu.pitch > 0)
 		{
-			OnFwd(RMOTOR, js.ranalog.up);
-		} else if (js.ranalog.down > 0) {
-			OnRev(RMOTOR, js.ranalog.down);
-		} else {
-			Brake(RMOTOR);
+			OnRev(LMOTOR, pot);
+			OnRev(RMOTOR, pot);
 		}
-		delay(20);
+
+		if(imu.pitch == 0)
+		{
+			Brake(RMOTOR);
+			Brake(LMOTOR);
+		}
+		delay(10);
 	}
 	Coast(LMOTOR);
 	Coast(RMOTOR);

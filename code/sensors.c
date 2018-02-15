@@ -417,12 +417,24 @@ void update_imu()
 		 * coordinate system. This means the starting position of the robot
 		 * will define its navigational coordinate system.
 		*/
-		for(c = 0; c < 3; ++c)
-		{
-			i_n[c] = i_b[c];
-			j_n[c] = j_b[c];
-			k_n[c] = k_b[c];
-		}
+
+		i_n[0] = 0.056063;	i_n[1] = -0.493376;	i_n[2] = -0.868007;
+		j_n[0] = 0.969514;	j_n[1] = 0.234605;	j_n[2] = -0.070731;
+		k_n[0] = 0.238536;	k_n[1] = -0.837580;	k_n[2] = 0.491488;
+
+		//for calibration
+		/*
+			printf("i_n[0] = %lf;\ti_n[1] = %lf;\ti_n[2] = %lf;\n", i_n[0], i_n[1], i_n[2]);
+			printf("j_n[0] = %lf;\tj_n[1] = %lf;\tj_n[2] = %lf;\n", j_n[0], j_n[1], j_n[2]);
+			printf("k_n[0] = %lf;\tk_n[1] = %lf;\tk_n[2] = %lf;\n", k_n[0], k_n[1], k_n[2]);
+
+			for(c = 0; c < 3; ++c)
+			{
+				i_n[c] = i_b[c];
+				j_n[c] = j_b[c];
+				k_n[c] = k_b[c];
+			}
+		*/
 	}
 
 
