@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define LBD 0
+#define LBD 1.0
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.

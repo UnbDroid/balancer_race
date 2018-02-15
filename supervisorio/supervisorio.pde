@@ -1,22 +1,30 @@
 import processing.net.*; 
 import java.net.*;
 
-Client myClient; 
+Client agora_eu_sou_o_mestre; 
 String dataIn;
 String[] dataSplit = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 String[] pastData = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 
-float gyrx, gyry, gyrz;
-float accx, accy, accz;
-float magx, magy, magz;
 float kalx, kaly, kalz;
+float dt;
 
 int i = 0;
+int j = 0;
+int k = 85;
+int l = 170;
+
+int jf = 0;
+int kf = 0;
+int lf = 0;
 
 void setup() {
     // define tamanho da janela e modo de rendering 3D
     size(1000, 600, P3D);
 
+    // torna o tamanho da janela redimencionavel.
+    surface.setResizable(true);
+    
     // setup lights and antialiasing
     lights();
     smooth();
@@ -24,7 +32,7 @@ void setup() {
     // Connect to the local machine at port 9001.
     // This example will not run if you haven't
     // previously started a server on this port.
-    myClient = new Client(this, "192.168.200.1", 9001);
+    agora_eu_sou_o_mestre = new Client(this, "192.168.200.1",9001);
 }
 
 void draw() {
@@ -33,96 +41,96 @@ void draw() {
     
     // black background
     background(0);
-  
-    if (myClient.available() > 0) {
-        dataIn = myClient.readString();
-        
+    
+    
+    if (agora_eu_sou_o_mestre.available() > 0) {
+        dataIn = agora_eu_sou_o_mestre.readString();
         dataSplit = dataIn.split(";");
-        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
-        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
-        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
-        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
-        for (i = 0; i < 12; i++){
+      
+        kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+        kaly = radians(-Float.parseFloat(dataSplit[0]));  
+        kalz = radians(-Float.parseFloat(dataSplit[2])+180);
+        dt = Float.parseFloat(dataSplit[3]);
+        for (i = 0; i < 4; i++){
             pastData[i] = dataSplit[i];
         }
         
-        myClient.write("abacaxi");
-        delay(60);
-    } else {
-        for (i = 0; i < 12; i++){
+        agora_eu_sou_o_mestre.write("abacaxi");
+        delay(50);
+    }
+    else
+    {
+        for(i = 0; i < 4; i++)
+        {
             dataSplit[i] = pastData[i];
-        }  
-        gyrx = radians(Float.parseFloat(dataSplit[0])+180);   gyry = radians(Float.parseFloat(dataSplit[1]));   gyrz = radians(-Float.parseFloat(dataSplit[2]));
-        accx = radians(Float.parseFloat(dataSplit[3])+180);   accy = radians(Float.parseFloat(dataSplit[4]));   accz = radians(-Float.parseFloat(dataSplit[5]));
-        magx = radians(Float.parseFloat(dataSplit[6])+180);   magy = radians(Float.parseFloat(dataSplit[7]));   magz = radians(-Float.parseFloat(dataSplit[8]));
-        kalx = radians(Float.parseFloat(dataSplit[9])+180);   kaly = radians(Float.parseFloat(dataSplit[10]));  kalz = radians(-Float.parseFloat(dataSplit[11]));
+        }
+        kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+        kaly = radians(-Float.parseFloat(dataSplit[0]));  
+        kalz = radians(-Float.parseFloat(dataSplit[2])+180);
+        dt = Float.parseFloat(dataSplit[3]);
     }
   
     // mostra valores
     fill(255);
-    text("X", 10, 50);
-    text("Y", 10, 100);
-    text("Z", 10, 150);
-    fill(0, 255, 255);
-    text(dataSplit[0], 50, 50);
-    text(dataSplit[1], 50, 100);
-    text(dataSplit[2], 50, 150);
-    fill(255, 255, 0);
-    text(dataSplit[3], 150, 50);
-    text(dataSplit[4], 150, 100);
-    text(dataSplit[5], 150, 150);
+    text("Atitude", 130, 50);
+    text("Roll", 30, 100);
+    text("Pitch", 30, 150);
+    text("Yall", 30, 200);
+    text("dt", 30, 250);
+    text(dataSplit[0], 130, 100);
+    text(dataSplit[1], 130, 150);
+    text(dataSplit[2], 130, 200);
+    text(dataSplit[3], 130, 250);
+    text("X", 30, 350);
+    text("Y", 30, 400);
+    text("Z", 30, 450);
     fill(255, 0, 255);
-    text(dataSplit[6], 250, 50);
-    text(dataSplit[7], 250, 100);
-    text(dataSplit[8], 250, 150);
-    fill(255);
-    text(dataSplit[9], 350, 50);
-    text(dataSplit[10], 350, 100);
-    text(dataSplit[11], 350, 150);
+    text("Gyro", 130, 300);
+    text("gX", 130, 350);
+    text("gY", 130, 400);
+    text("gZ", 130, 450);
+    fill(255, 255, 0);
+    text("Accel", 230, 300);
+    text("aX", 230, 350);
+    text("aY", 230, 400);
+    text("aZ", 230, 450);
+    fill(0, 255, 255);
+    text("Magnet", 330, 300);
+    text("mX", 330, 350);
+    text("mY", 330, 400);
+    text("mZ", 330, 450);
     
     // labels
+    if (jf == 0) {
+      j++;
+      if (j == 255) jf = 1;
+    }else{
+      j--;
+      if (j == 0) jf = 0;
+    }
+    if (kf == 0) {
+      k++;
+      if (k == 255) kf = 1;
+    }else{
+      k--;
+      if (k == 0) kf = 0;
+    }
+    if (lf == 0) {
+      l++;
+      if (l == 255) lf = 1;
+    }else{
+      l--;
+      if (l == 0) lf = 0;
+    }
     textAlign(CENTER);
     textSize(16);
-    fill(255, 255, 255);
-    text("FILTRADO", width/2, height/8);
-    fill(0, 255, 255);
-    text("GIROSCÓPIO", width/4, 7*height/8);
-    fill(255, 255, 0);
-    text("ACELERÔMETRO", width/2, 7*height/8);
-    fill(255, 0, 255);
-    text("MAGNETÔMETRO", 3*width/4, 7*height/8);
+    fill(j, k, l);
+    text("ATITUDE MATLAB", 6*width/8, height/8);
     
-    // INÍCIO ACELEROMETRO (meio baixo) ##############################################################################################################
+    // INICIO FILTRADO ##############################################################################################################
     pushMatrix();
     
-    translate(width / 2, 2 * height / 3);
-    criaCorpo(accx, accy, accz, 255, 255, 0);
-    
-    popMatrix();
-    // FIM ACELEROMETRO
-    
-    // INICIO GIROSCOPIO (esquerdo baixo) ##############################################################################################################
-    pushMatrix();
-    
-    translate(width / 4, 2 * height / 3);
-    criaCorpo(gyrx, gyry, gyrz, 0, 255, 255);
-    
-    popMatrix();
-    // FIM GIROSCOPIO
-    
-    // INICIO MAGNETOMETRO (direita baixo) ##############################################################################################################
-    pushMatrix();
-    
-    translate(3 * width / 4, 2 * height / 3);
-    criaCorpo(magx, magy, magz, 255, 0, 255);
-    
-    popMatrix();
-    // FIM MAGNETOMETRO
-    
-    // INICIO FILTRADO (meio cima) ##############################################################################################################
-    pushMatrix();
-    
-    translate(width / 2, height / 3);
+    translate(6*width/8, height/3);
     criaCorpo(kalx, kaly, kalz, 255, 255, 255);
     
     popMatrix();

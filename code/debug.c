@@ -228,7 +228,7 @@ int init_supervisory()
     }
     address_s.sin_family = AF_INET;
     address_s.sin_addr.s_addr = INADDR_ANY;
-    address_s.sin_port = htons( PORT_MATLAB );
+    address_s.sin_port = htons( PORT_SUPERV );
 
 	if (bind(server_fd_s, (struct sockaddr *)&address_s, sizeof(address_s))<0)
     {
@@ -247,7 +247,7 @@ int init_supervisory()
 }
 
 #define STRSIZE_MATLAB 72
-#define STRSIZE_SUPERV 72//corrigir valores do supervisório depois
+#define STRSIZE_SUPERV 41//corrigir valores do supervisório depois
 void send_matlab_message(struct debug_data* debug)
 {
 	char mess[STRSIZE_MATLAB];
@@ -276,19 +276,11 @@ void send_superv_message(struct debug_data* debug)
 
 	
 	snprintf(mess, STRSIZE_SUPERV,
-		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f",
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		0,
-		imu.yaw,
-		imu.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
-		imu.roll);
+		"%09f;%09f;%09f;%9lf;",
+		kalman.roll,
+		kalman.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
+		kalman.yaw,
+		dt);
 
 	write(new_socket_s , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
     ret = read(new_socket_s , buffer, 1024);
