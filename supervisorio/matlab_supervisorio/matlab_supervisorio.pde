@@ -72,14 +72,33 @@ void draw() {
   
     // mostra valores
     fill(255);
-    text("X", 10, 50);
-    text("Y", 10, 100);
-    text("Z", 10, 150);
-    text("dt", 10, 200);
-    text(dataSplit[0], 50, 50);
-    text(dataSplit[1], 50, 100);
-    text(dataSplit[2], 50, 150);
-    text(dataSplit[3], 50, 200);
+    text("Atitude", 130, 50);
+    text("Roll", 30, 100);
+    text("Pitch", 30, 150);
+    text("Yall", 30, 200);
+    text("dt", 30, 250);
+    text(dataSplit[0], 130, 100);
+    text(dataSplit[1], 130, 150);
+    text(dataSplit[2], 130, 200);
+    text(dataSplit[3], 130, 250);
+    text("X", 30, 350);
+    text("Y", 30, 400);
+    text("Z", 30, 450);
+    fill(255, 0, 255);
+    text("Gyro", 130, 300);
+    text("gX", 130, 350);
+    text("gY", 130, 400);
+    text("gZ", 130, 450);
+    fill(255, 255, 0);
+    text("Accel", 230, 300);
+    text("aX", 230, 350);
+    text("aY", 230, 400);
+    text("aZ", 230, 450);
+    fill(0, 255, 255);
+    text("Magnet", 330, 300);
+    text("mX", 330, 350);
+    text("mY", 330, 400);
+    text("mZ", 330, 450);
     
     // labels
     if (jf == 0) {
@@ -106,12 +125,12 @@ void draw() {
     textAlign(CENTER);
     textSize(16);
     fill(j, k, l);
-    text("ATITUDE MATLAB", 4*width/5, height/8);
+    text("ATITUDE MATLAB", 6*width/8, height/8);
     
     // INICIO FILTRADO ##############################################################################################################
     pushMatrix();
     
-    translate(4*width/5, height/3);
+    translate(6*width/8, height/3);
     criaCorpo(kalx, kaly, kalz, 255, 255, 255);
     
     popMatrix();
