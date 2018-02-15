@@ -42,17 +42,31 @@ void draw() {
     // black background
     background(0);
     
-    
     if (agora_eu_sou_o_mestre.available() > 0) {
         dataIn = agora_eu_sou_o_mestre.readString();
         dataSplit = dataIn.split(";");
       
-        kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
-        kaly = radians(-Float.parseFloat(dataSplit[0]));  
-        kalz = radians(-Float.parseFloat(dataSplit[2])+180);
-        dt = Float.parseFloat(dataSplit[3]);
-        for (i = 0; i < 4; i++){
-            pastData[i] = dataSplit[i];
+        if (dataSplit.length == 4)
+        {
+          kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+          kaly = radians(-Float.parseFloat(dataSplit[0]));  
+          kalz = radians(-Float.parseFloat(dataSplit[2])+180);
+          dt = Float.parseFloat(dataSplit[3]);
+          for (i = 0; i < 4; i++)
+          {
+              pastData[i] = dataSplit[i];
+          }
+        } 
+        else 
+        {
+          for(i = 0; i < 4; i++)
+          {
+              dataSplit[i] = pastData[i];
+          }
+          kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+          kaly = radians(-Float.parseFloat(dataSplit[0]));  
+          kalz = radians(-Float.parseFloat(dataSplit[2])+180);
+          dt = Float.parseFloat(dataSplit[3]);
         }
         
         agora_eu_sou_o_mestre.write("abacaxi");
