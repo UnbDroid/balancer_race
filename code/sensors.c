@@ -7,6 +7,7 @@
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
+#define BIGGER_THAN_G 1.3
 
 #define GYRO_X_OFFSET_HI 0x00
 #define GYRO_X_OFFSET_LO 0x09
@@ -127,6 +128,7 @@ double old_mag_treatedZ;
 double old_acc_treatedX;
 double old_acc_treatedY;
 double old_acc_treatedZ;
+double old_acc_magnitude;
 
 unsigned long long int now_time;
 double dt;
@@ -319,11 +321,21 @@ void update_imu()
 	old_acc_treatedX = imu.accel.treatedX;
 	old_acc_treatedY = imu.accel.treatedY;
 	old_acc_treatedZ = imu.accel.treatedZ;
+	old_acc_magnitude = imu.accel.magnitude;
 	// Unit corrections for the accelerometer
 	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
 	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
 	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
+
+	if (imu.accel.magnitude >= BIGGER_THAN_G)
+	{
+		imu.accel.treatedX = old_acc_treatedX;
+		imu.accel.treatedY = old_acc_treatedY;
+		imu.accel.treatedZ = old_acc_treatedZ;
+		imu.accel.magnitude = old_acc_magnitude;
+	}
+
 
 	old_mag_treatedX = imu.magnet.treatedX;
 	old_mag_treatedY = imu.magnet.treatedY;
