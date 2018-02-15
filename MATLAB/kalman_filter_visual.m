@@ -46,12 +46,12 @@ TriadY = str2num(datanum{5});
 TriadX = str2num(datanum{6});
 
 old_time = time;
-time = str2num(datanum{7})/1000000;
 
+time = str2num(datanum{7})/1000000;
+while time < old_time
+    time = time * 10;
+end
 dt = time - old_time;
-old_TriadX = TriadX;
-old_TriadY = TriadY;
-old_TriadZ = TriadZ;
 
 %valores iniciais das matrize do filtro de kalma
 T = eye(3)*dt;
@@ -64,6 +64,10 @@ Uk = [GyroX 0 0; 0 GyroY 0; 0 0 GyroZ];
 
 
 while 1
+    old_TriadX = TriadX;
+    old_TriadY = TriadY;
+    old_TriadZ = TriadZ;
+
     data = fread(t, 71);%recebendo os dados 
     fwrite(t, "ok!");%mandano a confirmação para o server
     tdata = char(data');%colocando os caracteres recebidos em vetor linha
@@ -77,6 +81,10 @@ while 1
 
     old_time = time;
     time = str2num(datanum{7})/1000000;
+
+    while time < old_time
+        time = time * 10;
+    end
 
     dt = time - old_time;
     %leituras
