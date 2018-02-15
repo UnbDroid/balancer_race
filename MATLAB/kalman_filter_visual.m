@@ -5,7 +5,7 @@ clc
 %pegando dados passados
 load('std_dev_14_feb_18.mat')
 
-Lbd = 0.5
+Lbd = 0.2
 
 clear GyroX
 clear GyroY
@@ -49,6 +49,9 @@ old_time = time;
 
 time = str2num(datanum{7})/1000000;
 while time < old_time
+    if time <= 0
+        time = 0.1;
+    end
     time = time * 10;
 end
 dt = time - old_time;
