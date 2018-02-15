@@ -5,7 +5,7 @@ clc
 %pegando dados passados
 load('std_dev_14_feb_18.mat')
 
-Lbd = 0
+Lbd = 0.5
 
 clear GyroX
 clear GyroY

@@ -47,16 +47,16 @@ void draw() {
         dataIn = client.readString();
         dataSplit = dataIn.split(";");
       
-        kalx = radians(Float.parseFloat(dataSplit[1]));   
-        kaly = radians(Float.parseFloat(dataSplit[0]));  
-        kalz = radians(-Float.parseFloat(dataSplit[2]));
+        kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+        kaly = radians(-Float.parseFloat(dataSplit[0]));  
+        kalz = radians(-Float.parseFloat(dataSplit[2])+180);
         dt = Float.parseFloat(dataSplit[3]);
         for (i = 0; i < 4; i++){
             pastData[i] = dataSplit[i];
         }
         
         agora_eu_sou_o_mestre.write("abacaxi");
-        delay(250);
+        delay(50);
     }
     else
     {
@@ -64,8 +64,8 @@ void draw() {
         {
             dataSplit[i] = pastData[i];
         }
-        kalx = radians(Float.parseFloat(dataSplit[1])-90);   
-        kaly = radians(Float.parseFloat(dataSplit[0]));  
+        kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+        kaly = radians(-Float.parseFloat(dataSplit[0]));  
         kalz = radians(-Float.parseFloat(dataSplit[2])+180);
         dt = Float.parseFloat(dataSplit[3]);
     }
