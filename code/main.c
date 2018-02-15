@@ -19,14 +19,12 @@ int keep_running = 1;	// end of program flag. it is controlled by the
 
 int main_finished = 1, led_finished = 1, joystick_finished = 1;
 int debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
+int matlab_thread_finished = 1;
 
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
 													// program knows what to
 													// do when finishing up.
-
-int supervisory_flag = 0, matlab_flag = 0;	// flags for remote
-											// debugging purposes
 
 /*
 This is the main thread. In it, we are supposed to put everything that doesn't
@@ -182,7 +180,7 @@ This is the supervisory system support thread. It runs separately from the
 debug thread although it shouldn't. The reason for that is that the socket
 server functions halt the program if there is no supervisory client running.
 */
-PI_THREAD(supervisory)
+PI_THREAD(supervisory_thread)
 {
 	piHiPri(0);
 	init_supervisory();
@@ -195,13 +193,31 @@ PI_THREAD(supervisory)
 		debug.ir = ir;
 		debug.imu = imu;
 		debug.led_state = led_state;
-		if(supervisory_flag)
-			send_superv_message(&debug, DEF_SUPERVISORY);
-		else if(matlab_flag)
-			send_superv_message(&debug, DEF_MATLAB);
+		
+		send_superv_message(&debug);
 		delay(10);
 	}
 	supervisory_finished = 1;
+}
+
+PI_THREAD(matlab_thread)
+{
+	piHiPri(0);
+	init_matlab();
+	matlab_thread_finished = 0;
+	while(keep_running)
+	{
+		debug.js = js;
+		debug.left_motor = left_motor;
+		debug.right_motor = right_motor;
+		debug.ir = ir;
+		debug.imu = imu;
+		debug.led_state = led_state;
+		
+		send_matlab_message(&debug);
+		delay(10);
+	}
+	matlab_thread_finished = 1;
 }
 
 int am_i_su()
@@ -241,20 +257,11 @@ int main(int argc, char* argv[])
 			if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0)
 			{
 				debug.debug_flag = 1;
-			} else if(strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--supervisory") == 0) {
-				supervisory_flag = 1;
-			} else if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--MATLAB") == 0) {
-				matlab_flag = 1;
-			} 
-			
+			} 	
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
-		}
-		if(supervisory_flag || matlab_flag)
-		{
-			piThreadCreate(supervisory);
 		}
 	}
 
@@ -272,6 +279,9 @@ int main(int argc, char* argv[])
 	piThreadCreate(sensors);
 	piThreadCreate(joystick);
 	piThreadCreate(led);
+
+	piThreadCreate(supervisory_thread);
+	piThreadCreate(matlab_thread);
 	
 	while(keep_running) delay(100);
 	clean_up();

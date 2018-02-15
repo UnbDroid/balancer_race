@@ -171,80 +171,90 @@ void print_message(char mess[], int num)
 
 /* Supervisory system portion of the code */
 
-#define PORT 9001 //Its Over 9000!!!
+#define PORT_SUPERV 9001 //Its Over 9000!!!
+#define PORT_MATLAB 9002 //Its Over 9000!!!
 
-int server_fd, new_socket;
-struct sockaddr_in address;
+int server_fd_s, new_socket_s;
+int server_fd_m, new_socket_m;
+struct sockaddr_in address_m;
+struct sockaddr_in address_s;
 int opt = 1;
-int addrlen = sizeof(address);
+int addrlen_m = sizeof(address_m);
+int addrlen_s = sizeof(address_s);
 
-void init_supervisory()
+int init_matlab()
 {
 	// Creating socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    if ((server_fd_m = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
+        return -1;//tratar erro depois
     }
     // Forcefully attaching socket to the port 9001
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    if (setsockopt(server_fd_m, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
+        return -1;//tratar erro depois
     }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
+    address_m.sin_family = AF_INET;
+    address_m.sin_addr.s_addr = INADDR_ANY;
+    address_m.sin_port = htons( PORT_MATLAB );
 
-	if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0)
+	if (bind(server_fd_m, (struct sockaddr *)&address_m, sizeof(address_m))<0)
     {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
+        return -1;//tratar erro depois
     }
     
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd_m, 3) < 0)
     {
-        perror("listen");
-        exit(EXIT_FAILURE);
+        return -1;//tratar erro depois
     }
 
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+    if ((new_socket_m = accept(server_fd_m, (struct sockaddr *)&address_m, (socklen_t*)&addrlen_m))<0)
     {
-        perror("accept");
-        exit(EXIT_FAILURE);
+        return -1;//tratar erro depois
     }
 }
 
-#define STRSIZE 72
-
-void send_superv_message(struct debug_data* debug, int option)
+int init_supervisory()
 {
-	char mess[STRSIZE];
+	// Creating socket file descriptor
+    if ((server_fd_s = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        return -1;//tratar erro depois
+    }
+    // Forcefully attaching socket to the port 9001
+    if (setsockopt(server_fd_s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        return -1;//tratar erro depois
+    }
+    address_s.sin_family = AF_INET;
+    address_s.sin_addr.s_addr = INADDR_ANY;
+    address_s.sin_port = htons( PORT_MATLAB );
+
+	if (bind(server_fd_s, (struct sockaddr *)&address_s, sizeof(address_s))<0)
+    {
+        return -1;//tratar erro depois
+    }
+    
+    if (listen(server_fd_s, 3) < 0)
+    {
+        return -1;//tratar erro depois
+    }
+
+    if ((new_socket_s = accept(server_fd_s, (struct sockaddr *)&address_s, (socklen_t*)&addrlen_s))<0)
+    {
+        return -1;//tratar erro depois
+    }
+}
+
+#define STRSIZE_MATLAB 72
+#define STRSIZE_SUPERV 72//corrigir valores do supervisório depois
+void send_matlab_message(struct debug_data* debug)
+{
+	char mess[STRSIZE_MATLAB];
 	char buffer[1024] = {0};
 	int ret;
 
-	if(option == DEF_SUPERVISORY)
-	{
-	// Format message to send data to the supervisory program
-		
-		snprintf(mess, STRSIZE,
-			"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f",
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			imu.yaw,
-			imu.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
-			imu.roll);
-		
-	} else if(option == DEF_MATLAB) {
-		
-		snprintf(mess, STRSIZE,
+	snprintf(mess, STRSIZE_MATLAB,
 			"%09f;%09f;%09f;%09f;%09f;%09f;%010d;",
 			debug->imu.gyro.treatedX,
 			debug->imu.gyro.treatedY,
@@ -253,10 +263,33 @@ void send_superv_message(struct debug_data* debug, int option)
 			debug->imu.pitch,
 			debug->imu.roll,
 			debug->imu.last_update);
-	} else { // in case the flag is set wrong, the function returns before sending the data
-		return;
-	}
-	write(new_socket , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
-    ret = read(new_socket , buffer, 1024);
 
+	write(new_socket_m , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
+    ret = read(new_socket_m , buffer, 1024);
+}
+
+void send_superv_message(struct debug_data* debug)
+{
+	char mess[STRSIZE_SUPERV];
+	char buffer[1024] = {0};
+	int ret;
+
+	
+	snprintf(mess, STRSIZE_SUPERV,
+		"%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f;%07.2f",
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		imu.yaw,
+		imu.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
+		imu.roll);
+
+	write(new_socket_s , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
+    ret = read(new_socket_s , buffer, 1024);
 }

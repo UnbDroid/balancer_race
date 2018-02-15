@@ -16,11 +16,11 @@ clear TriadZ
 clear dt
 
 %comunicação com o rasp
-t = tcpip('192.168.200.1', 9001, 'NetworkRole', 'client'); %criando o objeto tcpip com os parametros corretos para a comunicação com o rasp
+t = tcpip('192.168.200.1', 9002, 'NetworkRole', 'client'); %criando o objeto tcpip com os parametros corretos para a comunicação com o rasp
 fopen(t);%abrindo o  canal de comunicação
 
 %comunicação com processing
-t2 = tcpip('127.0.0.1', 9002, 'NetworkRole', 'client'); %criando o objeto tcpip com os parametros corretos para a comunicação com o rasp
+t2 = tcpip('127.0.0.1', 9003, 'NetworkRole', 'client'); %criando o objeto tcpip com os parametros corretos para a comunicação com o rasp
 fopen(t2);%abrindo o  canal de comunicação
 
 
