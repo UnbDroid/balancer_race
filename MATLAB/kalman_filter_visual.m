@@ -61,6 +61,7 @@ Pk = R;
 Wk = [varGyroX 0 0; 0 varGyroY 0; 0 0 varGyroZ];
 Qk = Wk + Lbd*eye(3);
 Uk = [GyroX 0 0; 0 GyroY 0; 0 0 GyroZ];
+K = eye(3);
 
 
 while 1
@@ -99,7 +100,7 @@ while 1
     Pi = Pk + Qk*T^2;
 
 	%correção
-	if (old_TriadX != TriadX) || (old_TriadY != TriadY) || (old_TriadZ != TriadZ)
+	if (old_TriadX ~= TriadX) | (old_TriadY ~= TriadY) | (old_TriadZ ~= TriadZ)
         K = Pi/(Pi + R);
         Xk = Xk + K*(Yk - Xk);
     	%atualizar covariancia
