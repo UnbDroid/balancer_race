@@ -64,6 +64,7 @@ int main()
 
     wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x01);
     wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x00);
+    wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG, 0x00);
 
 	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x40);
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x08);
