@@ -5,6 +5,7 @@ Client agora_eu_sou_o_mestre;
 String dataIn;
 String[] dataSplit = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 String[] pastData = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
+String seguranca = "0;0;0;0";
 
 float kalx, kaly, kalz;
 float dt;
@@ -56,9 +57,11 @@ void draw() {
           {
               pastData[i] = dataSplit[i];
           }
+          agora_eu_sou_o_mestre.write("If");
         } 
         else 
         {
+          dataSplit = seguranca.split(";");
           for(i = 0; i < 4; i++)
           {
               dataSplit[i] = pastData[i];
@@ -67,10 +70,11 @@ void draw() {
           kaly = radians(-Float.parseFloat(dataSplit[0]));  
           kalz = radians(-Float.parseFloat(dataSplit[2])+180);
           dt = Float.parseFloat(dataSplit[3]);
+          agora_eu_sou_o_mestre.write("Else");
         }
         
-        agora_eu_sou_o_mestre.write("abacaxi");
-        delay(50);
+        //agora_eu_sou_o_mestre.write("Ok!");
+        //delay(50);
     }
     else
     {
