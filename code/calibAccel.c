@@ -36,8 +36,8 @@ double mag_mean = 0, mag_std;
 
 int main()
 {
-	printf("Please make sure that the robot is at rest (its attitude doesn't matter as long\n
-			as it is not moving or subject to strong vibrations) and press enter.");
+	printf("Please make sure that the robot is at rest (its attitude doesn't matter as long\n");
+	printf("as it is not moving or subject to strong vibrations) and press enter.");
 	getchar();
 	while(getchar() != '\n');
 
@@ -89,7 +89,7 @@ int main()
 		accel_val[i][0] = ACCEL_GAIN*(int16_t)(((int16_t)data[0] << 8) | data[1]);
 		accel_val[i][1] = ACCEL_GAIN*(int16_t)(((int16_t)data[2] << 8) | data[3]);
 		accel_val[i][2] = ACCEL_GAIN*(int16_t)(((int16_t)data[4] << 8) | data[5]);
-		accel_mag[i] = sqrt(pow(accel_val[0], 2) + pow(accel_val[1], 2) + pow(accel_val[2], 2));
+		accel_mag[i] = sqrt(pow(accel_val[i][0], 2) + pow(accel_val[i][1], 2) + pow(accel_val[i][2], 2));
 		mag_mean += accel_mag[i];
 	}
 	
