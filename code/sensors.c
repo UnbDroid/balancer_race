@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define LBD 1.0
+#define LBD 0
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
-#define BIGGER_THAN_G 1.1
+#define ACC_TOLERANCE 0.00045//0.00033
+#define GRAVITY 0.9833
 
 #define STD_DEV_GYRO_X 0.1628
 #define STD_DEV_GYRO_Y 0.2210
@@ -95,6 +96,7 @@ struct accel {
 	double treatedY;
 	double treatedZ;
 	double magnitude;
+	int freeze;
 };
 
 struct magnet {
@@ -402,12 +404,17 @@ void update_imu()
 	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
-	if (imu.accel.magnitude >= BIGGER_THAN_G)
+	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
 	{
 		imu.accel.treatedX = old_acc_treatedX;
 		imu.accel.treatedY = old_acc_treatedY;
 		imu.accel.treatedZ = old_acc_treatedZ;
 		imu.accel.magnitude = old_acc_magnitude;
+		imu.accel.freeze = 1;
+	}
+	else
+	{
+		imu.accel.freeze = 0;
 	}
 
 
