@@ -253,9 +253,9 @@ void initMPU9250()
 	// [2:0] - DLPF_CFG - Differential Low Pass Filter Configuration. Check page 13 of the register map
 	wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x03);
 
-	// set sample rate to 200Hz
+	// set sample rate to 1kHz
 	// sample rate defined by 1000/(1+SMPLRT_DIV)
-	wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x09);
+	wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x00);
 
 	// set gyro max range to 500 degrees/second
 	// GYRO_CONFIG
@@ -398,6 +398,7 @@ void update_imu()
 	old_acc_treatedY = imu.accel.treatedY;
 	old_acc_treatedZ = imu.accel.treatedZ;
 	old_acc_magnitude = imu.accel.magnitude;
+	
 	// Unit corrections for the accelerometer
 	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
 	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
@@ -417,7 +418,6 @@ void update_imu()
 		imu.accel.freeze = 0;
 	}
 
-
 	old_mag_treatedX = imu.magnet.treatedX;
 	old_mag_treatedY = imu.magnet.treatedY;
 	old_mag_treatedZ = imu.magnet.treatedZ;
@@ -432,6 +432,8 @@ void update_imu()
 	if(!(wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08))
 	{
 		imu.magnet.overflow = 1;
+		imu.update = 0;
+		return;
 	} else {
 		imu.magnet.overflow = 0;
 	}

@@ -18,8 +18,8 @@ int keep_running = 1;	// end of program flag. it is controlled by the
 						// the main program can clean everything up and end.
 
 int main_finished = 1, led_finished = 1, joystick_finished = 1;
-int debug_finished = 1, sensors_finished = 1, supervisory_finished = 1;
-int matlab_thread_finished = 1;
+int debug_finished = 1, sensors_finished = 1;
+int matlab_finished = 1, supervisory_finished = 1;
 
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
@@ -157,7 +157,6 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-
 #define SENSORS_UPDATE_RATE 20 // defined in milliseconds
 PI_THREAD(sensors)
 {
@@ -176,7 +175,6 @@ PI_THREAD(sensors)
 		} else {
 			delay(5);
 		}
-		
 	}
 	sensors_finished = 1;
 }
@@ -212,7 +210,7 @@ This is the supervisory system support thread. It runs separately from the
 debug thread although it shouldn't. The reason for that is that the socket
 server functions halt the program if there is no supervisory client running.
 */
-PI_THREAD(supervisory_thread)
+PI_THREAD(supervisory)
 {
 	piHiPri(0);
 	while(keep_running)
@@ -233,11 +231,11 @@ PI_THREAD(supervisory_thread)
 	}	
 }
 
-PI_THREAD(matlab_thread)
+PI_THREAD(matlab)
 {
 	piHiPri(0);
 	init_matlab();
-	matlab_thread_finished = 0;
+	matlab_finished = 0;
 	while(keep_running)
 	{
 		debug.js = js;
@@ -250,7 +248,7 @@ PI_THREAD(matlab_thread)
 		send_matlab_message(&debug);
 		delay(10);
 	}
-	matlab_thread_finished = 1;
+	matlab_finished = 1;
 }
 
 int am_i_su()
@@ -304,6 +302,11 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
+	system("gpio load i2c 350");	// Setting i2c frequency to 350kHz.
+									// Raspberry Pi max is 150MHz
+									// MPU9250 max is 400kHz
+									// AK8963 max is 400kHz in fast-mode
+									// PCA9685 max is 1MHz
     wiringPiSetupPhys();
 	init_motors();
 	init_sensors();
@@ -313,8 +316,8 @@ int main(int argc, char* argv[])
 	piThreadCreate(joystick);
 	piThreadCreate(led);
 
-	piThreadCreate(supervisory_thread);
-	piThreadCreate(matlab_thread);
+	piThreadCreate(supervisory);
+	piThreadCreate(matlab);
 	
 	while(keep_running) delay(100);
 	clean_up();
