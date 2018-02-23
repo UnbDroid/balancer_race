@@ -80,12 +80,6 @@ struct gyro {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
-	double posX;
-	double posY;
-	double posZ;
-	double velX;
-	double velY;
-	double velZ;
 };
 
 struct accel {
@@ -115,7 +109,7 @@ struct imu {
 	struct accel accel;
 	struct magnet magnet;
 	double yaw, pitch, roll;
-	unsigned long int dt;
+	double dt;
 	unsigned long long int last_update;
 	int update;
 };
@@ -153,63 +147,11 @@ double old_acc_treatedZ;
 double old_acc_magnitude;
 
 unsigned long long int now_time;
-double dt;
 
 void update_imu();
 
-void init_kalman()
-{
-	kalman.R[0] = STD_DEV_TRIAD_X;
-	kalman.R[1] = STD_DEV_TRIAD_Y;
-	kalman.R[2] = STD_DEV_TRIAD_Z;
-	kalman.Wk[0] = STD_DEV_GYRO_X;
-	kalman.Wk[1] = STD_DEV_GYRO_Y;
-	kalman.Wk[2] = STD_DEV_GYRO_Z;
-
-	kalman.Xk[0] = imu.roll;
-	kalman.Xk[1] = imu.pitch;
-	kalman.Xk[2] = imu.yaw;
-
-	kalman.Pk[0] = kalman.R[0];
-	kalman.Pk[1] = kalman.R[1];
-	kalman.Pk[2] = kalman.R[2];
-
-	kalman.Qk[0] = kalman.Wk[0] + LBD;
-	kalman.Qk[1] = kalman.Wk[1] + LBD;
-	kalman.Qk[2] = kalman.Wk[2] + LBD;
-}
-
-void update_kalman()
-{
-	//predição
-	kalman.Xk[0] = kalman.Xk[0] + dt*imu.gyro.treatedX;
-	kalman.Xk[1] = kalman.Xk[1] + dt*imu.gyro.treatedY;
-	kalman.Xk[2] = kalman.Xk[2] + dt*imu.gyro.treatedZ;
-
-	kalman.Pk[0] = kalman.Pk[0] + kalman.Qk[0];
-	kalman.Pk[1] = kalman.Pk[1] + kalman.Qk[1];
-	kalman.Pk[2] = kalman.Pk[2] + kalman.Qk[2];
-	
-	if(imu.update)
-	{
-		//correção
-		kalman.K[0] = kalman.Pk[0] / (kalman.Pk[0]+kalman.R[0]);
-		kalman.K[1] = kalman.Pk[1] / (kalman.Pk[1]+kalman.R[1]);
-		kalman.K[2] = kalman.Pk[2] / (kalman.Pk[2]+kalman.R[2]);
-
-		kalman.Xk[0] = kalman.Xk[0] + kalman.K[0] * (imu.roll - kalman.Xk[0]);
-		kalman.Xk[1] = kalman.Xk[1] + kalman.K[1] * (imu.pitch - kalman.Xk[1]);
-		kalman.Xk[2] = kalman.Xk[2] + kalman.K[2] * (imu.yaw - kalman.Xk[2]);
-
-		kalman.Pk[0] = (1-kalman.K[0])*kalman.Pk[0]*(1 - kalman.K[0]) + kalman.K[0]*kalman.R[0]*kalman.K[0];
-		kalman.Pk[1] = (1-kalman.K[1])*kalman.Pk[1]*(1 - kalman.K[1]) + kalman.K[1]*kalman.R[1]*kalman.K[1];
-		kalman.Pk[2] = (1-kalman.K[2])*kalman.Pk[2]*(1 - kalman.K[2]) + kalman.K[2]*kalman.R[2]*kalman.K[2];
-	}
-
-	kalman.roll = kalman.Xk[0];
-	kalman.pitch = kalman.Xk[1];
-	kalman.yaw = kalman.Xk[2];
-}
+void init_kalman();
+void update_kalman();
 
 void initMPU9250()
 {
@@ -316,10 +258,6 @@ void initMPU9250()
 		k_n[c] = 0;
 	}
 	update_imu();
-
-	imu.gyro.posZ = imu.yaw; 
-	imu.gyro.posY = imu.pitch; 
-	imu.gyro.posX = imu.roll; 
 }
 
 void init_sensors()
@@ -333,11 +271,10 @@ void init_sensors()
 void update_imu()
 {
 	now_time = micros();
-	imu.dt = now_time - imu.last_update;
-	dt = (double)imu.dt/1000000.0;
+	imu.dt = (now_time - imu.last_update)/1000000.0;
 	imu.last_update = now_time;
 
-	// reading gyroscope
+	// Reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
@@ -350,7 +287,7 @@ void update_imu()
     gyrZlo = wiringPiI2CReadReg8(MPU9250addr, 0x48);
 	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
-	// reading accelerometer
+	// Reading accelerometer
 	accXhi = wiringPiI2CReadReg8(MPU9250addr, 0x3b);
     accXlo = wiringPiI2CReadReg8(MPU9250addr, 0x3c);
     imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
@@ -363,7 +300,7 @@ void update_imu()
     accZlo = wiringPiI2CReadReg8(MPU9250addr, 0x40);
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
-    // reading magnetometer
+    // Reading magnetometer
 	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
     magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
     imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
@@ -380,19 +317,6 @@ void update_imu()
 	imu.gyro.treatedX = GYRO_GAIN*(double)imu.gyro.rawX;
 	imu.gyro.treatedY = GYRO_GAIN*(double)imu.gyro.rawY;
 	imu.gyro.treatedZ = GYRO_GAIN*(double)imu.gyro.rawZ;
-
-	// Gyroscope integration
-	imu.gyro.posX += imu.gyro.treatedX*dt;
-	if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
-	else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
-	
-	imu.gyro.posY += imu.gyro.treatedY*dt;
-	if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
-	else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
-	
-	imu.gyro.posZ += imu.gyro.treatedZ*dt;
-	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
-	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;
 
 	old_acc_treatedX = imu.accel.treatedX;
 	old_acc_treatedY = imu.accel.treatedY;
@@ -547,6 +471,61 @@ void update_imu()
 								sqrt(1-pow(rot_matrix[2][0], 2) - pow(rot_matrix[2][1], 2)));
 
 
+}
+
+void init_kalman()
+{
+	kalman.R[0] = STD_DEV_TRIAD_X;
+	kalman.R[1] = STD_DEV_TRIAD_Y;
+	kalman.R[2] = STD_DEV_TRIAD_Z;
+	kalman.Wk[0] = STD_DEV_GYRO_X;
+	kalman.Wk[1] = STD_DEV_GYRO_Y;
+	kalman.Wk[2] = STD_DEV_GYRO_Z;
+
+	kalman.Xk[0] = imu.roll;
+	kalman.Xk[1] = imu.pitch;
+	kalman.Xk[2] = imu.yaw;
+
+	kalman.Pk[0] = kalman.R[0];
+	kalman.Pk[1] = kalman.R[1];
+	kalman.Pk[2] = kalman.R[2];
+
+	kalman.Qk[0] = kalman.Wk[0] + LBD;
+	kalman.Qk[1] = kalman.Wk[1] + LBD;
+	kalman.Qk[2] = kalman.Wk[2] + LBD;
+}
+
+
+void update_kalman()
+{
+	// Prediction
+	kalman.Xk[0] = kalman.Xk[0] + imu.dt*imu.gyro.treatedX;
+	kalman.Xk[1] = kalman.Xk[1] + imu.dt*imu.gyro.treatedY;
+	kalman.Xk[2] = kalman.Xk[2] + imu.dt*imu.gyro.treatedZ;
+
+	kalman.Pk[0] = kalman.Pk[0] + kalman.Qk[0];
+	kalman.Pk[1] = kalman.Pk[1] + kalman.Qk[1];
+	kalman.Pk[2] = kalman.Pk[2] + kalman.Qk[2];
+	
+	if(imu.update)
+	{
+		// Correction
+		kalman.K[0] = kalman.Pk[0] / (kalman.Pk[0]+kalman.R[0]);
+		kalman.K[1] = kalman.Pk[1] / (kalman.Pk[1]+kalman.R[1]);
+		kalman.K[2] = kalman.Pk[2] / (kalman.Pk[2]+kalman.R[2]);
+
+		kalman.Xk[0] = kalman.Xk[0] + kalman.K[0] * (imu.roll - kalman.Xk[0]);
+		kalman.Xk[1] = kalman.Xk[1] + kalman.K[1] * (imu.pitch - kalman.Xk[1]);
+		kalman.Xk[2] = kalman.Xk[2] + kalman.K[2] * (imu.yaw - kalman.Xk[2]);
+
+		kalman.Pk[0] = (1-kalman.K[0])*kalman.Pk[0]*(1 - kalman.K[0]) + kalman.K[0]*kalman.R[0]*kalman.K[0];
+		kalman.Pk[1] = (1-kalman.K[1])*kalman.Pk[1]*(1 - kalman.K[1]) + kalman.K[1]*kalman.R[1]*kalman.K[1];
+		kalman.Pk[2] = (1-kalman.K[2])*kalman.Pk[2]*(1 - kalman.K[2]) + kalman.K[2]*kalman.R[2]*kalman.K[2];
+	}
+
+	kalman.roll = kalman.Xk[0];
+	kalman.pitch = kalman.Xk[1];
+	kalman.yaw = kalman.Xk[2];
 }
 
 void update_ir()

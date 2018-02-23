@@ -46,7 +46,7 @@ PI_THREAD(main_thread)
 		teta_linha = imu.gyro.treatedY;
 		if(imu.accel.freeze)
 		{
-			teta += teta_linha*dt;
+			teta += teta_linha*imu.dt;
 		}
 		else
 		{

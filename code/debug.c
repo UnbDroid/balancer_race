@@ -299,7 +299,7 @@ int send_superv_message(struct debug_data* debug)
 		kalman.roll,
 		kalman.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
 		kalman.yaw,
-		dt);
+		imu.dt);
 
 	//printf("3\n");
 
