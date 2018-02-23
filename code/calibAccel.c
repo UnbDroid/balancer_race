@@ -27,18 +27,24 @@
 #define YG_OFFSET_L 0X16
 #define ZG_OFFSET_H 0X17
 #define ZG_OFFSET_L 0X18
+#define XA_OFFSET_H 0X77
+#define XA_OFFSET_L 0X78
+#define YA_OFFSET_H 0X7a
+#define YA_OFFSET_L 0X7b
+#define ZA_OFFSET_H 0X7d
+#define ZA_OFFSET_L 0X7e
 
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 
 double accel_val[100][3];
 double accel_mag[100];
 double mag_mean = 0, mag_std;
+double accel_mean[3] = {0, 0, 0};
 
 int main()
 {
 	printf("Please make sure that the robot is at rest (its attitude doesn't matter as long\n");
 	printf("as it is not moving or subject to strong vibrations) and press enter.");
-	getchar();
 	while(getchar() != '\n');
 
 	int MPU9250addr;
@@ -50,6 +56,13 @@ int main()
 
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
 	delay(100);
+
+	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_L, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_L, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_H, 0x00);
+	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_L, 0x00);
 
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x01);
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_2, 0x00);
@@ -64,7 +77,7 @@ int main()
 
     wiringPiI2CWriteReg8(MPU9250addr, CONFIG, 0x01);
     wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x00);
-    wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG, 0x00);
+    wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG, 0x18);
 
 	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x40);
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x08);
@@ -94,16 +107,25 @@ int main()
 	}
 	
 	mag_mean /= packet_count;
-	
+
 	for(i = 0; i < packet_count; ++i)
 	{
 		mag_std += pow((accel_mag[i] - mag_mean), 2);
+		accel_mean[0] += accel_val[i][0];
+		accel_mean[1] += accel_val[i][1];
+		accel_mean[2] += accel_val[i][2];
 	}
 
 	mag_std = sqrt(mag_std/(packet_count-1));
+	accel_mean[0] /= packet_count;
+	accel_mean[1] /= packet_count;
+	accel_mean[2] /= packet_count;
+
+	printf("X, Y, Z, Magnitude\n");
+	printf("%f, %f, %f, %f\n", accel_mean[0], accel_mean[1], accel_mean[2], mag_mean);
 
 	printf("#define GRAVITY %f\n", mag_mean);
-	printf("#define ACC_TOLERANCE %f\n", mag_std);
+	printf("#define ACC_TOLERANCE %f\n", 3*mag_std);
 
 	return 0;
 }

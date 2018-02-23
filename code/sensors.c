@@ -8,8 +8,9 @@
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
-#define ACC_TOLERANCE 0.00045//0.00033
-#define GRAVITY 0.9833
+
+#define GRAVITY 0.908451
+#define ACC_TOLERANCE 0.002928
 
 #define STD_DEV_GYRO_X 0.1628
 #define STD_DEV_GYRO_Y 0.2210
@@ -50,6 +51,12 @@
 #define YG_OFFSET_L 0x16
 #define ZG_OFFSET_H 0x17
 #define ZG_OFFSET_L 0x18
+#define XA_OFFSET_H 0X77
+#define XA_OFFSET_L 0X78
+#define YA_OFFSET_H 0X7a
+#define YA_OFFSET_L 0X7b
+#define ZA_OFFSET_H 0X7d
+#define ZA_OFFSET_L 0X7e
 #define CNTL1 0x0a
 #define CNTL2 0x0b
 #define ASAX 0x10

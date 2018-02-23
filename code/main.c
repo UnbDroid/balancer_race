@@ -31,8 +31,8 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
-float KP = 32.7;
-float KD = 0.9;
+float KP = 175;
+float KD = 0;
 float teta, teta_linha;
 int pot;
 
@@ -40,17 +40,21 @@ PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
+	
 	while(keep_running)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
 		if(imu.accel.freeze)
 		{
-			teta += teta_linha*imu.dt;
+			teta += teta_linha*imu.dt; 
+			set_led_state(GREENLIGHT, OFF);
 		}
 		else
 		{
 			teta = RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-94.9215);
+			set_led_state(GREENLIGHT, ON);
+			printf("leitura boa\n");
 		}
 
 		 
@@ -59,7 +63,7 @@ PI_THREAD(main_thread)
 
 		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
 		
-		printf("%f\n", teta);
+		//printf("%f\n", teta);
 
 		//pot = 0;
 		if(pot < 0)
@@ -87,8 +91,7 @@ PI_THREAD(main_thread)
 		}
 		delay(10);
 	}
-	Coast(LMOTOR);
-	Coast(RMOTOR);
+	set_led_state(GREENLIGHT, OFF);
 	main_finished = 1;
 }
 
@@ -148,7 +151,7 @@ PI_THREAD(led)
 	while(keep_running)
 	{
 		update_led();
-		delay(50);
+		delay(10);
 	}
 	led_finished = 1;
 }
@@ -260,6 +263,8 @@ int am_i_su()
 
 void clean_up()
 {
+	Coast(LMOTOR);
+	Coast(RMOTOR);
 	set_color(RED, 255);
 	light_rgb();
 	while(!led_finished);
