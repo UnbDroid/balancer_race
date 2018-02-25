@@ -3,7 +3,6 @@
 #include <wiringPiI2C.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <pca9685pwmcontrol.c>
 
 // Ports used by the RBG LED on the PCA9685 board

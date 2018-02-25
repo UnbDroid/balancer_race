@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <string.h>
 
 #define LBD 0
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
@@ -261,13 +264,26 @@ void initMPU9250()
 	wiringPiI2CReadReg8(AK8963addr, 0x09); // Clear register for first magnetometer reading.
 	delay(10);
 
-	int c;
-	for(c = 0; c < 3; ++c)
+	FILE* fp;
+
+	int i, j, c;
+	if(fp = fopen("triad.calib", "r"))
 	{
-		i_n[c] = 0;
-		j_n[c] = 0;
-		k_n[c] = 0;
+		for(c = 0; c < 3; ++c)
+		{
+			fread(&i_n[c], sizeof(double), 1, fp);
+			fread(&j_n[c], sizeof(double), 1, fp);
+			fread(&k_n[c], sizeof(double), 1, fp);
+		}
+	} else {
+		for(c = 0; c < 3; ++c)
+		{
+			i_n[c] = 0;
+			j_n[c] = 0;
+			k_n[c] = 0;
+		}
 	}
+
 	update_imu();
 }
 
@@ -370,7 +386,6 @@ void update_imu()
 	{
 		imu.magnet.overflow = 1;
 		imu.update = 0;
-		return;
 	} else {
 		imu.magnet.overflow = 0;
 	}
@@ -458,7 +473,6 @@ void update_imu()
 			}
 		*/
 	}
-
 
 	// Calculating the rotation matrix from the navigational coordinate
 	// system to the robot coordinate system using the TRIAD algorithm.
