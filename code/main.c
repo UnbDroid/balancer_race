@@ -31,38 +31,60 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
-float KP = 150;
+#define DEV_ACC_Z_OVER_X 97.1256
+float KP = 500;
 float KD = 0;
 float teta, teta_linha;
 int pot = 0;
+float GK;
+int dev_teta;
 
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
 	
+	dev_teta = 0;
+
 	while(keep_running)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
-		if(imu.accel.freeze)
+		if(1+imu.accel.freeze)
 		{
-			teta += teta_linha*imu.dt; 
 			set_led_state(GREENLIGHT, OFF);
+			
+			//kalman
+			teta += teta_linha*imu.dt; 
+			
+			dev_teta += STD_DEV_GYRO_Y;
+
 		}
 		else
 		{
-			teta = RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416);
-			//teta = imu.pitch;
 			set_led_state(GREENLIGHT, ON);
-			printf("%f\n", teta);
+
+
+			//kalman
+			dev_teta += STD_DEV_GYRO_Y;
+			GK = dev_teta / (dev_teta + DEV_ACC_Z_OVER_X);
+
+			teta += teta_linha*imu.dt;
+			teta += GK*((RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416)) - teta);
+			
+			dev_teta = dev_teta*(1-GK) + GK*DEV_ACC_Z_OVER_X;
+
+
+			//teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			//printf("%f\n", teta);
+			//printf("%f\n", GK);		
 		}
 
 		pot = (int)(teta*KP + teta_linha*KD);
 		//pot = 0;
 
 		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
-		
+		printf("%f\t%f\n", teta, GK);	
 		//printf("%f\n", teta);
 
 		int dz = 25;
