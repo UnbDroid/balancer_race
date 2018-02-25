@@ -347,10 +347,12 @@ void update_imu()
 		imu.accel.treatedZ = old_acc_treatedZ;
 		imu.accel.magnitude = old_acc_magnitude;
 		imu.accel.freeze = 1;
+		imu.update = 0;
 	}
 	else
 	{
 		imu.accel.freeze = 0;
+		imu.update = 0;
 	}
 
 	old_mag_treatedX = imu.magnet.treatedX;
@@ -377,13 +379,12 @@ void update_imu()
 	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
 	{
 		imu.update = 0;
-		return;
 	}
 	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
 	{
 		imu.update = 0;
-		return;
 	}
+	if(!imu.update) return;
 
 	imu.update = 1;
 	// TRIAD algorithm code

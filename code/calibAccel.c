@@ -34,12 +34,33 @@
 #define ZA_OFFSET_H 0X7d
 #define ZA_OFFSET_L 0X7e
 
-#define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
+#define ACCEL_X_OFFSET_HI 0x00
+#define ACCEL_X_OFFSET_LO 0x00
+#define ACCEL_Y_OFFSET_HI 0x00
+#define ACCEL_Y_OFFSET_LO 0x00
+#define ACCEL_Z_OFFSET_HI 0x00
+#define ACCEL_Z_OFFSET_LO 0x00
 
-double accel_val[100][3];
-double accel_mag[100];
+#define ACCELX_BIAS 0.016481
+#define ACCELY_BIAS 0.020262
+#define ACCELZ_BIAS 0.11054
+#define ACCEL_GAIN 1/2048.0 // 0.00006103515 // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
+
+double accel_val[500][3];
+double accel_mag[500];
 double mag_mean = 0, mag_std;
 double accel_mean[3] = {0, 0, 0};
+
+int16_t convertTo15bit(int16_t n)
+{
+	int i;
+	int16_t bit[16];
+	bit[0] = 0x0001;
+	for(i = 1; i <= 15; ++i)
+	{
+
+	}
+}
 
 int main()
 {
@@ -55,14 +76,16 @@ int main()
 	MPU9250addr = wiringPiI2CSetup(0x68);
 
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x80); // reset MPU9250 registers to default configurations
-	delay(100);
+	delay(200);
 
-	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_H, 0x00);
-	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_L, 0x00);
-	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_H, 0x00);
-	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_L, 0x00);
-	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_H, 0x00);
-	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_L, 0x00);
+	/*
+	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_H, ACCEL_X_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, XA_OFFSET_L, ACCEL_X_OFFSET_LO);
+	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_H, ACCEL_Y_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, YA_OFFSET_L, ACCEL_Y_OFFSET_LO);
+	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_H, ACCEL_Z_OFFSET_HI);
+	wiringPiI2CWriteReg8(MPU9250addr, ZA_OFFSET_L, ACCEL_Z_OFFSET_LO);
+	*/
 
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_1, 0x01);
 	wiringPiI2CWriteReg8(MPU9250addr, PWR_MGMT_2, 0x00);
@@ -79,34 +102,44 @@ int main()
     wiringPiI2CWriteReg8(MPU9250addr, SMPLRT_DIV, 0x00);
     wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG, 0x18);
 
+	printf("Waiting for sensor to take the measurements...\n");
+
 	wiringPiI2CWriteReg8(MPU9250addr, USER_CTRL, 0x40);
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x08);
+	
 	delay(80);
 
 	wiringPiI2CWriteReg8(MPU9250addr, FIFO_EN, 0x00);
+	delay(80);
 
 	data[0] = wiringPiI2CReadReg8(MPU9250addr, FIFO_COUNTH);
 	data[1] = wiringPiI2CReadReg8(MPU9250addr, FIFO_COUNTL);
 	fifo_count = ((uint16_t)data[0] << 8) | data[1];
 	packet_count = fifo_count/6;
 
+	printf("%d measurements taken.\n", packet_count);
+
+	printf("Fetching packets from sensor memory...\n");
+
 	for(i = 0; i < packet_count; ++i)
 	{
-		int16_t gyro_temp[3] = {0, 0, 0};
 		data[0] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		data[1] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		data[2] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		data[3] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		data[4] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
 		data[5] = wiringPiI2CReadReg8(MPU9250addr, FIFO_R_W);
-		accel_val[i][0] = ACCEL_GAIN*(int16_t)(((int16_t)data[0] << 8) | data[1]);
-		accel_val[i][1] = ACCEL_GAIN*(int16_t)(((int16_t)data[2] << 8) | data[3]);
-		accel_val[i][2] = ACCEL_GAIN*(int16_t)(((int16_t)data[4] << 8) | data[5]);
+		accel_val[i][0] = (ACCEL_GAIN*(int16_t)(((int16_t)data[0] << 8) | data[1]))-ACCELX_BIAS;
+		accel_val[i][1] = (ACCEL_GAIN*(int16_t)(((int16_t)data[2] << 8) | data[3]))-ACCELY_BIAS;
+		accel_val[i][2] = (ACCEL_GAIN*(int16_t)(((int16_t)data[4] << 8) | data[5]))-ACCELZ_BIAS;
 		accel_mag[i] = sqrt(pow(accel_val[i][0], 2) + pow(accel_val[i][1], 2) + pow(accel_val[i][2], 2));
 		mag_mean += accel_mag[i];
+		//printf("Fetched packet number %d.\n", i+1);
 	}
 	
 	mag_mean /= packet_count;
+
+	printf("Calculating standard deviation and mean values.\n");
 
 	for(i = 0; i < packet_count; ++i)
 	{
@@ -121,8 +154,7 @@ int main()
 	accel_mean[1] /= packet_count;
 	accel_mean[2] /= packet_count;
 
-	printf("X, Y, Z, Magnitude\n");
-	printf("%f, %f, %f, %f\n", accel_mean[0], accel_mean[1], accel_mean[2], mag_mean);
+	printf("X: %f Y: %f Z: %f Magnitude: %f\n", accel_mean[0], accel_mean[1], accel_mean[2], mag_mean);
 
 	printf("#define GRAVITY %f\n", mag_mean);
 	printf("#define ACC_TOLERANCE %f\n", 3*mag_std);

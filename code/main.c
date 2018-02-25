@@ -31,10 +31,10 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
-float KP = 175;
+float KP = 150;
 float KD = 0;
 float teta, teta_linha;
-int pot;
+int pot = 0;
 
 PI_THREAD(main_thread)
 {
@@ -52,12 +52,12 @@ PI_THREAD(main_thread)
 		}
 		else
 		{
-			teta = RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-94.9215);
+			teta = RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416);
+			//teta = imu.pitch;
 			set_led_state(GREENLIGHT, ON);
-			printf("leitura boa\n");
+			printf("%f\n", teta);
 		}
 
-		 
 		pot = (int)(teta*KP + teta_linha*KD);
 		//pot = 0;
 
@@ -65,11 +65,11 @@ PI_THREAD(main_thread)
 		
 		//printf("%f\n", teta);
 
-		//pot = 0;
+		int dz = 25;
 		if(pot < 0)
 		{
-			pot = 150 + 0.853372*(-pot);//tirando a zona morta dos motores
-			if(pot<=150)//levando em conta a saturação dos motores
+			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
+			if(pot<=dz)//levando em conta a saturação dos motores
 				pot = 0;
 			if(pot>1023)
 				pot = 1023;	
@@ -77,8 +77,8 @@ PI_THREAD(main_thread)
 			OnFwd(RMOTOR, pot);
 		} else if(pot > 0)
 		{
-			pot = 150 + 0.853372*(pot);
-			if(pot<=150)
+			pot = dz + ((1023.0-dz)/1023.0)*(pot);
+			if(pot<=dz)
 				pot = 0;
 			if(pot>1023)
 				pot = 1023;	
@@ -307,11 +307,6 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	system("gpio load i2c 350");	// Setting i2c frequency to 350kHz.
-									// Raspberry Pi max is 150MHz
-									// MPU9250 max is 400kHz
-									// AK8963 max is 400kHz in fast-mode
-									// PCA9685 max is 1MHz
     wiringPiSetupPhys();
 	init_motors();
 	init_sensors();
