@@ -9,8 +9,8 @@
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
 
-#define GRAVITY 0.908451
-#define ACC_TOLERANCE 0.002928
+#define GRAVITY 1.039682
+#define ACC_TOLERANCE 0.011163
 
 #define STD_DEV_GYRO_X 0.1628
 #define STD_DEV_GYRO_Y 0.2210
@@ -29,6 +29,10 @@
 #define MAGX_BIAS 18
 #define MAGY_BIAS 73
 #define MAGZ_BIAS -246.5
+
+#define ACCELX_BIAS 0.016481
+#define ACCELY_BIAS 0.020262
+#define ACCELZ_BIAS 0.11054
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -331,9 +335,9 @@ void update_imu()
 	old_acc_magnitude = imu.accel.magnitude;
 	
 	// Unit corrections for the accelerometer
-	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
-	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
-	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
+	imu.accel.treatedX = (ACCEL_GAIN*(double)imu.accel.rawX)-ACCELX_BIAS;
+	imu.accel.treatedY = (ACCEL_GAIN*(double)imu.accel.rawY)-ACCELY_BIAS;
+	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
 	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
