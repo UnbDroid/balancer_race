@@ -55,11 +55,7 @@ void draw() {
           {
               pastData[i] = dataSplit[i];
           }
-<<<<<<< HEAD
           myClient.write("If");
-=======
-          agora_eu_sou_o_mestre.write("If");
->>>>>>> d7ffca7732a93f94cef2a3e5ce822135f1085ea4
         } 
         else 
         {
@@ -72,17 +68,10 @@ void draw() {
           kaly = radians(-Float.parseFloat(dataSplit[0]));  
           kalz = radians(-Float.parseFloat(dataSplit[2])+180);
           dt = Float.parseFloat(dataSplit[3]);
-<<<<<<< HEAD
           myClient.write("Else");
         }
         
         //myClient.write("Ok!");
-=======
-          agora_eu_sou_o_mestre.write("Else");
-        }
-        
-        //agora_eu_sou_o_mestre.write("Ok!");
->>>>>>> d7ffca7732a93f94cef2a3e5ce822135f1085ea4
         //delay(50);
     }
     else

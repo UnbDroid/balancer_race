@@ -15,9 +15,10 @@
 #define OFF 0
 
 // LED state constant values
-#define BLUETOOTH 0
-#define STANDBY 1
-#define NUM_STATES 2
+#define GREENLIGHT 0
+#define BLUETOOTH 1
+#define STANDBY 2
+#define NUM_STATES 3
 
 // Color constant values
 #define OFF_COLOR 0
@@ -178,6 +179,10 @@ void update_led()
 		last_led_update = millis();
 		switch(led_state)
 		{
+			case GREENLIGHT:
+				led_delay = 10;
+				set_color(GREEN, 255);
+				break;
 			case STANDBY:
 				led_delay = 600;
 				if(led_state_flag)

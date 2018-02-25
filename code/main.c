@@ -31,50 +31,67 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
-float KP = 6.7;
-int pot;
+float KP = 150;
+float KD = 0;
+float teta, teta_linha;
+int pot = 0;
 
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
+	
 	while(keep_running)
 	{		
 		//brincando de controle
-		pot = (int)(abs(kalman.pitch)*KP);
-		
-		//tirando a zona morta dos motores
-		pot = 150 + 0.853372*pot;
-
-		//levando em conta a saturação dos motores
-		if(pot<100)
-			pot = 0;
-		if(pot>1023)
-			pot = 1023;
-
-
-
-		if(imu.pitch < 0)
+		teta_linha = imu.gyro.treatedY;
+		if(imu.accel.freeze)
 		{
+			teta += teta_linha*imu.dt; 
+			set_led_state(GREENLIGHT, OFF);
+		}
+		else
+		{
+			teta = RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416);
+			//teta = imu.pitch;
+			set_led_state(GREENLIGHT, ON);
+			printf("%f\n", teta);
+		}
+
+		pot = (int)(teta*KP + teta_linha*KD);
+		//pot = 0;
+
+		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
+		
+		//printf("%f\n", teta);
+
+		int dz = 25;
+		if(pot < 0)
+		{
+			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
+			if(pot<=dz)//levando em conta a saturação dos motores
+				pot = 0;
+			if(pot>1023)
+				pot = 1023;	
 			OnFwd(LMOTOR, pot);
 			OnFwd(RMOTOR, pot);
-		}
-
-		if(imu.pitch > 0)
+		} else if(pot > 0)
 		{
+			pot = dz + ((1023.0-dz)/1023.0)*(pot);
+			if(pot<=dz)
+				pot = 0;
+			if(pot>1023)
+				pot = 1023;	
 			OnRev(LMOTOR, pot);
 			OnRev(RMOTOR, pot);
-		}
-
-		if(imu.pitch == 0)
+		} else if(pot == 0)
 		{
 			Brake(RMOTOR);
 			Brake(LMOTOR);
 		}
 		delay(10);
 	}
-	Coast(LMOTOR);
-	Coast(RMOTOR);
+	set_led_state(GREENLIGHT, OFF);
 	main_finished = 1;
 }
 
@@ -134,7 +151,7 @@ PI_THREAD(led)
 	while(keep_running)
 	{
 		update_led();
-		delay(50);
+		delay(10);
 	}
 	led_finished = 1;
 }
@@ -199,21 +216,22 @@ server functions halt the program if there is no supervisory client running.
 PI_THREAD(supervisory)
 {
 	piHiPri(0);
-	init_supervisory();
-	supervisory_finished = 0;
 	while(keep_running)
 	{
-		debug.js = js;
-		debug.left_motor = left_motor;
-		debug.right_motor = right_motor;
-		debug.ir = ir;
-		debug.imu = imu;
-		debug.led_state = led_state;
-		
-		send_superv_message(&debug);
-		delay(10);
-	}
+		init_supervisory();
+		supervisory_finished = 0;
+		do{
+			delay(10);
+			
+			debug.js = js;
+			debug.left_motor = left_motor;
+			debug.right_motor = right_motor;
+			debug.ir = ir;
+			debug.imu = imu;
+			debug.led_state = led_state;		
+		}while(keep_running && (send_superv_message(&debug) != -1));
 	supervisory_finished = 1;
+	}	
 }
 
 PI_THREAD(matlab)
@@ -245,6 +263,8 @@ int am_i_su()
 
 void clean_up()
 {
+	Coast(LMOTOR);
+	Coast(RMOTOR);
 	set_color(RED, 255);
 	light_rgb();
 	while(!led_finished);
@@ -287,11 +307,6 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	system("gpio load i2c 350");	// Setting i2c frequency to 350kHz.
-									// Raspberry Pi max is 150MHz
-									// MPU9250 max is 400kHz
-									// AK8963 max is 400kHz in fast-mode
-									// PCA9685 max is 1MHz
     wiringPiSetupPhys();
 	init_motors();
 	init_sensors();

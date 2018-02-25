@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "./socket.h"
+#include "./poll.h"
 
 #define DEF_SUPERVISORY 0
 #define DEF_MATLAB 1
@@ -217,33 +218,45 @@ int init_matlab()
 int init_supervisory()
 {
 	// Creating socket file descriptor
+    //printf("0.1\n");
     if ((server_fd_s = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
+        //printf("0.1.1\n");
         return -1;//tratar erro depois
     }
     // Forcefully attaching socket to the port 9001
+    
+   // printf("0.2\n");
     if (setsockopt(server_fd_s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
+        //printf("0.2.1\n");
         return -1;//tratar erro depois
     }
     address_s.sin_family = AF_INET;
     address_s.sin_addr.s_addr = INADDR_ANY;
     address_s.sin_port = htons( PORT_SUPERV );
 
+	//printf("0.3\n");
 	if (bind(server_fd_s, (struct sockaddr *)&address_s, sizeof(address_s))<0)
     {
+        //printf("0.3.1\n");
         return -1;//tratar erro depois
     }
     
+   // printf("0.4\n");
     if (listen(server_fd_s, 3) < 0)
     {
+        //printf("0.4.1\n");
         return -1;//tratar erro depois
     }
 
+    //printf("0.5\n");
     if ((new_socket_s = accept(server_fd_s, (struct sockaddr *)&address_s, (socklen_t*)&addrlen_s))<0)
     {
+        //printf("0.5.1\n");
         return -1;//tratar erro depois
     }
+    //printf("0.6\n");
 }
 
 #define STRSIZE_MATLAB 72
@@ -268,20 +281,57 @@ void send_matlab_message(struct debug_data* debug)
     ret = read(new_socket_m , buffer, 1024);
 }
 
-void send_superv_message(struct debug_data* debug)
+int send_superv_message(struct debug_data* debug)
 {
 	char mess[STRSIZE_SUPERV];
 	char buffer[1024] = {0};
 	int ret;
 
+	//printf("1\n");
+
+	struct pollfd fd;
+	int rv;
 	
+	//printf("2\n");
+
 	snprintf(mess, STRSIZE_SUPERV,
 		"%09f;%09f;%09f;%9lf;",
 		kalman.roll,
 		kalman.pitch,	// Zeroes to be replaced by Kalman Filter output when we implement it
 		kalman.yaw,
-		dt);
+		imu.dt);
+
+	//printf("3\n");
 
 	write(new_socket_s , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
-    ret = read(new_socket_s , buffer, 1024);
+    
+	//printf("4\n");
+
+	fd.fd = new_socket_s;
+	fd.events = POLLIN;
+
+	//printf("5\n");
+
+	rv = poll(&fd, 1, 1000); // 1 second for timeout
+
+  	//printf("6\n");
+
+  	
+
+  	//printf("7 - %d\n", rv);
+
+  	if(rv == -1)
+		return -1; /* an error accured */
+	else if(rv == 0)
+		return -1;  /* a timeout occured */
+
+	//printf("8\n");
+
+	ret = read(new_socket_s , buffer, 1024); /* there was data to read */
+    
+    //printf("%s\n", buffer);
+
+    //printf("9\n");
+
+    return 0;
 }

@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define LBD 1.0
+#define LBD 0
 #define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
-#define BIGGER_THAN_G 1.1
+
+#define GRAVITY 1.039682
+#define ACC_TOLERANCE 0.011163
 
 #define STD_DEV_GYRO_X 0.1628
 #define STD_DEV_GYRO_Y 0.2210
@@ -27,6 +29,10 @@
 #define MAGX_BIAS 18
 #define MAGY_BIAS 73
 #define MAGZ_BIAS -246.5
+
+#define ACCELX_BIAS 0.016481
+#define ACCELY_BIAS 0.020262
+#define ACCELZ_BIAS 0.11054
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -49,6 +55,12 @@
 #define YG_OFFSET_L 0x16
 #define ZG_OFFSET_H 0x17
 #define ZG_OFFSET_L 0x18
+#define XA_OFFSET_H 0X77
+#define XA_OFFSET_L 0X78
+#define YA_OFFSET_H 0X7a
+#define YA_OFFSET_L 0X7b
+#define ZA_OFFSET_H 0X7d
+#define ZA_OFFSET_L 0X7e
 #define CNTL1 0x0a
 #define CNTL2 0x0b
 #define ASAX 0x10
@@ -79,12 +91,6 @@ struct gyro {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
-	double posX;
-	double posY;
-	double posZ;
-	double velX;
-	double velY;
-	double velZ;
 };
 
 struct accel {
@@ -95,6 +101,7 @@ struct accel {
 	double treatedY;
 	double treatedZ;
 	double magnitude;
+	int freeze;
 };
 
 struct magnet {
@@ -113,7 +120,7 @@ struct imu {
 	struct accel accel;
 	struct magnet magnet;
 	double yaw, pitch, roll;
-	unsigned long int dt;
+	double dt;
 	unsigned long long int last_update;
 	int update;
 };
@@ -151,63 +158,11 @@ double old_acc_treatedZ;
 double old_acc_magnitude;
 
 unsigned long long int now_time;
-double dt;
 
 void update_imu();
 
-void init_kalman()
-{
-	kalman.R[0] = STD_DEV_TRIAD_X;
-	kalman.R[1] = STD_DEV_TRIAD_Y;
-	kalman.R[2] = STD_DEV_TRIAD_Z;
-	kalman.Wk[0] = STD_DEV_GYRO_X;
-	kalman.Wk[1] = STD_DEV_GYRO_Y;
-	kalman.Wk[2] = STD_DEV_GYRO_Z;
-
-	kalman.Xk[0] = imu.roll;
-	kalman.Xk[1] = imu.pitch;
-	kalman.Xk[2] = imu.yaw;
-
-	kalman.Pk[0] = kalman.R[0];
-	kalman.Pk[1] = kalman.R[1];
-	kalman.Pk[2] = kalman.R[2];
-
-	kalman.Qk[0] = kalman.Wk[0] + LBD;
-	kalman.Qk[1] = kalman.Wk[1] + LBD;
-	kalman.Qk[2] = kalman.Wk[2] + LBD;
-}
-
-void update_kalman()
-{
-	//predição
-	kalman.Xk[0] = kalman.Xk[0] + dt*imu.gyro.treatedX;
-	kalman.Xk[1] = kalman.Xk[1] + dt*imu.gyro.treatedY;
-	kalman.Xk[2] = kalman.Xk[2] + dt*imu.gyro.treatedZ;
-
-	kalman.Pk[0] = kalman.Pk[0] + kalman.Qk[0];
-	kalman.Pk[1] = kalman.Pk[1] + kalman.Qk[1];
-	kalman.Pk[2] = kalman.Pk[2] + kalman.Qk[2];
-	
-	if(imu.update)
-	{
-		//correção
-		kalman.K[0] = kalman.Pk[0] / (kalman.Pk[0]+kalman.R[0]);
-		kalman.K[1] = kalman.Pk[1] / (kalman.Pk[1]+kalman.R[1]);
-		kalman.K[2] = kalman.Pk[2] / (kalman.Pk[2]+kalman.R[2]);
-
-		kalman.Xk[0] = kalman.Xk[0] + kalman.K[0] * (imu.roll - kalman.Xk[0]);
-		kalman.Xk[1] = kalman.Xk[1] + kalman.K[1] * (imu.pitch - kalman.Xk[1]);
-		kalman.Xk[2] = kalman.Xk[2] + kalman.K[2] * (imu.yaw - kalman.Xk[2]);
-
-		kalman.Pk[0] = (1-kalman.K[0])*kalman.Pk[0]*(1 - kalman.K[0]) + kalman.K[0]*kalman.R[0]*kalman.K[0];
-		kalman.Pk[1] = (1-kalman.K[1])*kalman.Pk[1]*(1 - kalman.K[1]) + kalman.K[1]*kalman.R[1]*kalman.K[1];
-		kalman.Pk[2] = (1-kalman.K[2])*kalman.Pk[2]*(1 - kalman.K[2]) + kalman.K[2]*kalman.R[2]*kalman.K[2];
-	}
-
-	kalman.roll = kalman.Xk[0];
-	kalman.pitch = kalman.Xk[1];
-	kalman.yaw = kalman.Xk[2];
-}
+void init_kalman();
+void update_kalman();
 
 void initMPU9250()
 {
@@ -314,10 +269,6 @@ void initMPU9250()
 		k_n[c] = 0;
 	}
 	update_imu();
-
-	imu.gyro.posZ = imu.yaw; 
-	imu.gyro.posY = imu.pitch; 
-	imu.gyro.posX = imu.roll; 
 }
 
 void init_sensors()
@@ -331,11 +282,10 @@ void init_sensors()
 void update_imu()
 {
 	now_time = micros();
-	imu.dt = now_time - imu.last_update;
-	dt = (double)imu.dt/1000000.0;
+	imu.dt = (now_time - imu.last_update)/1000000.0;
 	imu.last_update = now_time;
 
-	// reading gyroscope
+	// Reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
 	imu.gyro.rawX = (int16_t)((int16_t)gyrXhi<<8 | gyrXlo);
@@ -348,7 +298,7 @@ void update_imu()
     gyrZlo = wiringPiI2CReadReg8(MPU9250addr, 0x48);
 	imu.gyro.rawZ = (int16_t)((int16_t)gyrZhi<<8 | gyrZlo);
 
-	// reading accelerometer
+	// Reading accelerometer
 	accXhi = wiringPiI2CReadReg8(MPU9250addr, 0x3b);
     accXlo = wiringPiI2CReadReg8(MPU9250addr, 0x3c);
     imu.accel.rawX = (int16_t)((int16_t)accXhi<<8 | accXlo);
@@ -361,7 +311,7 @@ void update_imu()
     accZlo = wiringPiI2CReadReg8(MPU9250addr, 0x40);
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
-    // reading magnetometer
+    // Reading magnetometer
 	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
     magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
     imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
@@ -379,36 +329,30 @@ void update_imu()
 	imu.gyro.treatedY = GYRO_GAIN*(double)imu.gyro.rawY;
 	imu.gyro.treatedZ = GYRO_GAIN*(double)imu.gyro.rawZ;
 
-	// Gyroscope integration
-	imu.gyro.posX += imu.gyro.treatedX*dt;
-	if(imu.gyro.posX > 180) imu.gyro.posX -= 360;
-	else if(imu.gyro.posX < -180) imu.gyro.posX += 360;
-	
-	imu.gyro.posY += imu.gyro.treatedY*dt;
-	if(imu.gyro.posY > 180) imu.gyro.posY -= 360;
-	else if(imu.gyro.posY < -180) imu.gyro.posY += 360;
-	
-	imu.gyro.posZ += imu.gyro.treatedZ*dt;
-	if(imu.gyro.posZ > 180) imu.gyro.posZ -= 360;
-	else if(imu.gyro.posZ < -180) imu.gyro.posZ += 360;
-
 	old_acc_treatedX = imu.accel.treatedX;
 	old_acc_treatedY = imu.accel.treatedY;
 	old_acc_treatedZ = imu.accel.treatedZ;
 	old_acc_magnitude = imu.accel.magnitude;
 	
 	// Unit corrections for the accelerometer
-	imu.accel.treatedX = ACCEL_GAIN*(double)imu.accel.rawX;
-	imu.accel.treatedY = ACCEL_GAIN*(double)imu.accel.rawY;
-	imu.accel.treatedZ = ACCEL_GAIN*(double)imu.accel.rawZ;
+	imu.accel.treatedX = (ACCEL_GAIN*(double)imu.accel.rawX)-ACCELX_BIAS;
+	imu.accel.treatedY = (ACCEL_GAIN*(double)imu.accel.rawY)-ACCELY_BIAS;
+	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
-	if (imu.accel.magnitude >= BIGGER_THAN_G)
+	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
 	{
 		imu.accel.treatedX = old_acc_treatedX;
 		imu.accel.treatedY = old_acc_treatedY;
 		imu.accel.treatedZ = old_acc_treatedZ;
 		imu.accel.magnitude = old_acc_magnitude;
+		imu.accel.freeze = 1;
+		imu.update = 0;
+	}
+	else
+	{
+		imu.accel.freeze = 0;
+		imu.update = 0;
 	}
 
 	old_mag_treatedX = imu.magnet.treatedX;
@@ -435,13 +379,12 @@ void update_imu()
 	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
 	{
 		imu.update = 0;
-		return;
 	}
 	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
 	{
 		imu.update = 0;
-		return;
 	}
+	if(!imu.update) return;
 
 	imu.update = 1;
 	// TRIAD algorithm code
@@ -540,6 +483,61 @@ void update_imu()
 								sqrt(1-pow(rot_matrix[2][0], 2) - pow(rot_matrix[2][1], 2)));
 
 
+}
+
+void init_kalman()
+{
+	kalman.R[0] = STD_DEV_TRIAD_X;
+	kalman.R[1] = STD_DEV_TRIAD_Y;
+	kalman.R[2] = STD_DEV_TRIAD_Z;
+	kalman.Wk[0] = STD_DEV_GYRO_X;
+	kalman.Wk[1] = STD_DEV_GYRO_Y;
+	kalman.Wk[2] = STD_DEV_GYRO_Z;
+
+	kalman.Xk[0] = imu.roll;
+	kalman.Xk[1] = imu.pitch;
+	kalman.Xk[2] = imu.yaw;
+
+	kalman.Pk[0] = kalman.R[0];
+	kalman.Pk[1] = kalman.R[1];
+	kalman.Pk[2] = kalman.R[2];
+
+	kalman.Qk[0] = kalman.Wk[0] + LBD;
+	kalman.Qk[1] = kalman.Wk[1] + LBD;
+	kalman.Qk[2] = kalman.Wk[2] + LBD;
+}
+
+
+void update_kalman()
+{
+	// Prediction
+	kalman.Xk[0] = kalman.Xk[0] + imu.dt*imu.gyro.treatedX;
+	kalman.Xk[1] = kalman.Xk[1] + imu.dt*imu.gyro.treatedY;
+	kalman.Xk[2] = kalman.Xk[2] + imu.dt*imu.gyro.treatedZ;
+
+	kalman.Pk[0] = kalman.Pk[0] + kalman.Qk[0];
+	kalman.Pk[1] = kalman.Pk[1] + kalman.Qk[1];
+	kalman.Pk[2] = kalman.Pk[2] + kalman.Qk[2];
+	
+	if(imu.update)
+	{
+		// Correction
+		kalman.K[0] = kalman.Pk[0] / (kalman.Pk[0]+kalman.R[0]);
+		kalman.K[1] = kalman.Pk[1] / (kalman.Pk[1]+kalman.R[1]);
+		kalman.K[2] = kalman.Pk[2] / (kalman.Pk[2]+kalman.R[2]);
+
+		kalman.Xk[0] = kalman.Xk[0] + kalman.K[0] * (imu.roll - kalman.Xk[0]);
+		kalman.Xk[1] = kalman.Xk[1] + kalman.K[1] * (imu.pitch - kalman.Xk[1]);
+		kalman.Xk[2] = kalman.Xk[2] + kalman.K[2] * (imu.yaw - kalman.Xk[2]);
+
+		kalman.Pk[0] = (1-kalman.K[0])*kalman.Pk[0]*(1 - kalman.K[0]) + kalman.K[0]*kalman.R[0]*kalman.K[0];
+		kalman.Pk[1] = (1-kalman.K[1])*kalman.Pk[1]*(1 - kalman.K[1]) + kalman.K[1]*kalman.R[1]*kalman.K[1];
+		kalman.Pk[2] = (1-kalman.K[2])*kalman.Pk[2]*(1 - kalman.K[2]) + kalman.K[2]*kalman.R[2]*kalman.K[2];
+	}
+
+	kalman.roll = kalman.Xk[0];
+	kalman.pitch = kalman.Xk[1];
+	kalman.yaw = kalman.Xk[2];
 }
 
 void update_ir()
