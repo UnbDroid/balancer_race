@@ -1,13 +1,16 @@
 import processing.net.*; 
 import java.net.*;
 
-Client agora_eu_sou_o_mestre; 
+Client myClient; 
 String dataIn;
 String[] dataSplit = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
 String[] pastData = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
+String seguranca = "0;0;0;0";
 
 float kalx, kaly, kalz;
 float dt;
+
+int success = 0;
 
 int i = 0;
 int j = 0;
@@ -32,18 +35,14 @@ void setup() {
     // Connect to the local machine at port 9001.
     // This example will not run if you haven't
     // previously started a server on this port.
-    agora_eu_sou_o_mestre = new Client(this, "192.168.200.1",9001);
+    myClient = new Client(this, "192.168.200.1",9001);
 }
 
 void draw() {
-    // muda tipo de perspectiva para ortho
-    ortho();
-    
-    // black background
-    background(0);
-    
-    if (agora_eu_sou_o_mestre.available() > 0) {
-        dataIn = agora_eu_sou_o_mestre.readString();
+    // CONEXAO SOCKET E ENTRADA DE DADOS ##############################################################################################################
+    /*
+    if (myClient.available() > 0) {
+        dataIn = myClient.readString();
         dataSplit = dataIn.split(";");
       
         if (dataSplit.length == 4)
@@ -56,9 +55,11 @@ void draw() {
           {
               pastData[i] = dataSplit[i];
           }
+          myClient.write("If");
         } 
         else 
         {
+          dataSplit = seguranca.split(";");
           for(i = 0; i < 4; i++)
           {
               dataSplit[i] = pastData[i];
@@ -67,10 +68,11 @@ void draw() {
           kaly = radians(-Float.parseFloat(dataSplit[0]));  
           kalz = radians(-Float.parseFloat(dataSplit[2])+180);
           dt = Float.parseFloat(dataSplit[3]);
+          myClient.write("Else");
         }
         
-        agora_eu_sou_o_mestre.write("abacaxi");
-        delay(50);
+        //myClient.write("Ok!");
+        //delay(50);
     }
     else
     {
@@ -83,7 +85,53 @@ void draw() {
         kalz = radians(-Float.parseFloat(dataSplit[2])+180);
         dt = Float.parseFloat(dataSplit[3]);
     }
-  
+    */
+    
+    do 
+    {
+      if (myClient.available() > 0)
+      {
+        dataIn = myClient.readString();
+        dataSplit = dataIn.split(";");
+        
+        if (dataSplit.length == 4)
+        {
+          if ((dataSplit[0] != null && dataSplit[0].length() > 0)&&(dataSplit[1] != null && dataSplit[1].length() > 0)&&(dataSplit[2] != null && dataSplit[2].length() > 0)&&(dataSplit[3] != null && dataSplit[3].length() > 0))
+          { 
+            kalx = radians(-Float.parseFloat(dataSplit[1])-90);   
+            kaly = radians(-Float.parseFloat(dataSplit[0]));  
+            kalz = radians(-Float.parseFloat(dataSplit[2])+180);
+            dt = Float.parseFloat(dataSplit[3]);
+            
+            success = 1;
+            myClient.write("Success\n");
+          }
+          else 
+          {
+            success = 0;
+            myClient.write("                        Empty\n"); 
+          }
+        } 
+        else 
+        {
+          success = 0;
+          myClient.write("                         Element\n");
+        }
+      }
+      else
+      {
+        success = -1;
+      }
+      delay(30);
+    } while(success != 1);
+    
+    // CRIACAO DE IMAGEM ##############################################################################################################
+    // muda tipo de perspectiva para ortho
+    ortho();
+    
+    // black background
+    background(0);
+    
     // mostra valores
     fill(255);
     text("Atitude", 130, 50);
@@ -100,7 +148,7 @@ void draw() {
     text("Z", 30, 450);
     fill(255, 0, 255);
     text("Gyro", 130, 300);
-    text("gX", 130, 350);
+    text(success, 130, 350);
     text("gY", 130, 400);
     text("gZ", 130, 450);
     fill(255, 255, 0);
@@ -139,9 +187,9 @@ void draw() {
     textAlign(CENTER);
     textSize(16);
     fill(j, k, l);
-    text("ATITUDE MATLAB", 6*width/8, height/8);
+    text("ATITUDE C", 6*width/8, height/8);
     
-    // INICIO FILTRADO ##############################################################################################################
+    // INICIO FILTRADO
     pushMatrix();
     
     translate(6*width/8, height/3);
