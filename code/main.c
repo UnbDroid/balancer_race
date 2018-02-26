@@ -25,7 +25,7 @@ int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 int plot_flag = 0;
 long plot_time = 10;
 
-int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
+int shutdown_flag = 0, reboot = 0, call_watcher=0;	// flags set by joystick
 													// commands so that the
 													// program knows what to
 													// do when finishing up.
@@ -36,25 +36,27 @@ belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
 #define DEV_ACC_Z_OVER_X 97.1256
-float KP = 150;
+float KP = 200;
 float KD = 0;
 float teta, teta_linha;
 int pot = 0;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
+double plotvar1, plotvar2;
 
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
-	
+
 	dev_teta = 0;
 
 	while(keep_running)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
+		plotvar1 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
 		if(imu.accel.freeze)
 		{
 			set_led_state(GREENLIGHT, OFF);
@@ -65,15 +67,15 @@ PI_THREAD(main_thread)
 				temp = imu.last_update;
 				teta += teta_linha*imu.dt; 
 			}
-			dev_teta += STD_DEV_GYRO_Y;
-
+			//dev_teta += STD_DEV_GYRO_Y;
+			
 		}
 		else
 		{
 			set_led_state(GREENLIGHT, ON);
+			plotvar2 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
 
-
-			//kalman
+			/*//kalman
 			dev_teta += STD_DEV_GYRO_Y;
 			GK = dev_teta / (dev_teta + DEV_ACC_Z_OVER_X);
 
@@ -85,11 +87,11 @@ PI_THREAD(main_thread)
 			teta += GK*((RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416)) - teta);
 			
 			dev_teta = dev_teta*(1-GK) + GK*DEV_ACC_Z_OVER_X;
+			*/
 
-
-			//teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
 			//printf("%f\n", teta);
-			//printf("%f\n", GK);		
+			//printf("%f\n", GK);
 		}
 
 		pot = (int)(teta*KP + teta_linha*KD);
@@ -97,7 +99,7 @@ PI_THREAD(main_thread)
 
 		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
 		//printf("%f\t%f\t%f\n", teta, dev_teta, GK);	
-		printf("%lf\n", imu.pitch);
+		//printf("%lf\n", imu.pitch);
 
 		int dz = 25;
 		if(pot < 0)
@@ -145,7 +147,7 @@ PI_THREAD(joystick)
     init_joystick(&js, devname);
     set_led_state(BLUETOOTH, OFF);
 
-    while(!(js.select && js.start)) // START+SELECT finishes the program
+    while((!(js.select && js.start)) && (keep_running)) // START+SELECT finishes the program
     {
         if(js.disconnect)
         {
@@ -165,8 +167,8 @@ PI_THREAD(joystick)
 	if(js.dpad.down) shutdown_flag = 1;
 	// UP+START+SELECT: reboots the Raspberry Pi Zero W
 	if(js.dpad.up) reboot = 1;
-	// LEFT+START+SELECT: finished the program instead of calling the watcher
-	if(js.dpad.left) close_program = 1;
+	// LEFT+START+SELECT: calls the watcher program
+	if(js.dpad.left) call_watcher = 1;
 
 	keep_running = 0;
 	joystick_finished = 1;
@@ -264,8 +266,8 @@ PI_THREAD(supervisory)
 			debug.imu = imu;
 			debug.led_state = led_state;		
 		}while(keep_running && (send_superv_message(&debug) != -1));
-	supervisory_finished = 1;
 	}
+	supervisory_finished = 1;
 }
 
 PI_THREAD(plot)
@@ -280,7 +282,7 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			//fprintf(fp, "%lld %f %f %f %f\n", imu.last_update, plotvar1, plotvar2, plotvar3, plotvar4);
+			fprintf(fp, "%lld %f %f;\n", imu.last_update, plotvar1, plotvar2);
 		}
 		if(imu.last_update > plot_time*1000000) keep_running = 0;
 	}
@@ -323,13 +325,13 @@ void clean_up()
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished));
+	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished));
 	set_color(WHITE, 255);
 	light_rgb();
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program) 
+	else if (call_watcher) 
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d");
 		else system("sudo /home/pi/ccdir/watcher&");
@@ -338,6 +340,14 @@ void clean_up()
 
 int main(int argc, char* argv[])
 {
+	if(!am_i_su()) 
+	{
+		printf("Restricted area. Super users only.\n");
+		return 0;
+	}
+
+	wiringPiSetupPhys();
+
 	debug.debug_flag = 0;
 	if(argc > 1)
 	{
@@ -367,19 +377,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if(!am_i_su()) 
-	{
-		printf("Restricted area. Super users only.\n");
-		return 0;
-	}
-
-    wiringPiSetupPhys();
 	init_motors();
 	init_sensors();
 
 	piThreadCreate(main_thread);
 	piThreadCreate(sensors);
-	piThreadCreate(joystick);
+	if(!plot_flag) piThreadCreate(joystick);
 	piThreadCreate(led);
 
 	piThreadCreate(supervisory);
