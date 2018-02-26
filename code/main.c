@@ -36,6 +36,7 @@ belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
 #define DEV_ACC_Z_OVER_X 97.1256
+#define ALPHA 0.5
 float KP = 200;
 float KD = 0;
 float teta, teta_linha;
@@ -43,7 +44,7 @@ int pot = 0;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
-double plotvar1, plotvar2;
+double plotvar[10];
 
 PI_THREAD(main_thread)
 {
@@ -56,7 +57,13 @@ PI_THREAD(main_thread)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
-		plotvar1 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+		//plotvar1 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+		plotvar[0] = imu.accel.treatedX;
+		plotvar[1] = imu.accel.treatedY;
+		plotvar[2] = imu.accel.treatedZ;
+		plotvar[3] = ALPHA*plotvar[0]+(1-ALPHA)*imu.accel.treatedX;
+		plotvar[4] = ALPHA*plotvar[1]+(1-ALPHA)*imu.accel.treatedY;
+		plotvar[5] = ALPHA*plotvar[2]+(1-ALPHA)*imu.accel.treatedZ;
 		if(imu.accel.freeze)
 		{
 			set_led_state(GREENLIGHT, OFF);
@@ -73,7 +80,7 @@ PI_THREAD(main_thread)
 		else
 		{
 			set_led_state(GREENLIGHT, ON);
-			plotvar2 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			//plotvar2 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
 
 			/*//kalman
 			dev_teta += STD_DEV_GYRO_Y;
@@ -265,7 +272,7 @@ PI_THREAD(supervisory)
 			debug.ir = ir;
 			debug.imu = imu;
 			debug.led_state = led_state;		
-		}while(keep_running && (send_superv_message(&debug) != -1));
+		} while(keep_running && (send_superv_message(&debug) != -1));
 	}
 	supervisory_finished = 1;
 }
@@ -275,14 +282,20 @@ PI_THREAD(plot)
 	plot_finished = 0;
 	FILE *fp;
 	unsigned long long int last_fprintf = 0;
-	fp = fopen("plot_data", "w");
+	int i = 0;
+	char fname[15];
+	do {
+		snprintf(fname, 15, "plot_data_%03d", i);
+		++i;
+	} while(exists(fname));
+	fp = fopen(fname, "w");
 	if(imu.last_update > plot_time*1000000) keep_running = 0; 
 	while(keep_running)
 	{
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			fprintf(fp, "%lld %f %f;\n", imu.last_update, plotvar1, plotvar2);
+			fprintf(fp, "%lld %f %f %f %f %f %f;\n", imu.last_update, plotvar[0], plotvar[1], plotvar[2], plotvar[3], plotvar[4], plotvar[5]);
 		}
 		if(imu.last_update > plot_time*1000000) keep_running = 0;
 	}
