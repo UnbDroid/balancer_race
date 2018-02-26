@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include "jstick.c"
 #include "led.c"
 #include "motor.c"
@@ -36,7 +37,8 @@ belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
 #define DEV_ACC_Z_OVER_X 97.1256
-#define ALPHA 0.5
+#define ALPHA1 0.9
+#define ALPHA2 0.95
 float KP = 200;
 float KD = 0;
 float teta, teta_linha;
@@ -44,7 +46,8 @@ int pot = 0;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
-double plotvar[10];
+#define NPLOTVARS 10
+double plotvar[NPLOTVARS] = {};
 
 PI_THREAD(main_thread)
 {
@@ -58,12 +61,6 @@ PI_THREAD(main_thread)
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
 		//plotvar1 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-		plotvar[0] = imu.accel.treatedX;
-		plotvar[1] = imu.accel.treatedY;
-		plotvar[2] = imu.accel.treatedZ;
-		plotvar[3] = ALPHA*plotvar[0]+(1-ALPHA)*imu.accel.treatedX;
-		plotvar[4] = ALPHA*plotvar[1]+(1-ALPHA)*imu.accel.treatedY;
-		plotvar[5] = ALPHA*plotvar[2]+(1-ALPHA)*imu.accel.treatedZ;
 		if(imu.accel.freeze)
 		{
 			set_led_state(GREENLIGHT, OFF);
@@ -295,10 +292,42 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			fprintf(fp, "%lld %f %f %f %f %f %f;\n", imu.last_update, plotvar[0], plotvar[1], plotvar[2], plotvar[3], plotvar[4], plotvar[5]);
+			plotvar[0] = imu.accel.treatedX;
+			plotvar[1] = imu.accel.treatedY;
+			plotvar[2] = imu.accel.treatedZ;
+			if(plotvar[3] == plotvar[3] || plotvar[4] == plotvar[4] || plotvar[5] == plotvar[5])
+			{
+				plotvar[3] = ALPHA1*plotvar[3]+(1-ALPHA1)*plotvar[0];
+				plotvar[4] = ALPHA1*plotvar[4]+(1-ALPHA1)*plotvar[1];
+				plotvar[5] = ALPHA1*plotvar[5]+(1-ALPHA1)*plotvar[2];
+			} else {
+				plotvar[3] = plotvar[0];
+				plotvar[4] = plotvar[1];
+				plotvar[5] = plotvar[2];
+			}
+			if(plotvar[6] == plotvar[6] || plotvar[7] == plotvar[7] || plotvar[8] == plotvar[8])
+			{
+				plotvar[6] = ALPHA2*plotvar[6]+(1-ALPHA2)*plotvar[0];
+				plotvar[7] = ALPHA2*plotvar[7]+(1-ALPHA2)*plotvar[1];
+				plotvar[8] = ALPHA2*plotvar[8]+(1-ALPHA2)*plotvar[2];
+			} else {
+				plotvar[6] = plotvar[0];
+				plotvar[7] = plotvar[1];
+				plotvar[8] = plotvar[2];
+			}
+			fprintf(fp, "%lld ", imu.last_update);
+			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+			{
+				fprintf(fp, "% f ", plotvar[i]);
+			}
+			if(plotvar[i] == plotvar[i])
+			{
+				fprintf(fp, "% f;\n", plotvar[i]);
+			}
 		}
 		if(imu.last_update > plot_time*1000000) keep_running = 0;
 	}
+	printf("Saved data to file %s\n", fname);
 	plot_finished = 1;
 }
 
@@ -386,6 +415,10 @@ int main(int argc, char* argv[])
 		}
 		if(plot_flag)
 		{
+			for(i = 0; i < NPLOTVARS; ++i)
+			{
+				plotvar[i] = sqrt(-1);
+			}
 			piThreadCreate(plot);
 		}
 	}
