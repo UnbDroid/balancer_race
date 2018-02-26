@@ -32,12 +32,13 @@ belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
 #define DEV_ACC_Z_OVER_X 97.1256
-float KP = 500;
+float KP = 150;
 float KD = 0;
 float teta, teta_linha;
 int pot = 0;
 float GK;
-int dev_teta;
+float dev_teta;
+unsigned long long int temp = 0;
 
 PI_THREAD(main_thread)
 {
@@ -50,13 +51,16 @@ PI_THREAD(main_thread)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
-		if(1+imu.accel.freeze)
+		if(imu.accel.freeze)
 		{
 			set_led_state(GREENLIGHT, OFF);
 			
 			//kalman
-			teta += teta_linha*imu.dt; 
-			
+			if(temp != imu.last_update)
+			{
+				temp = imu.last_update;
+				teta += teta_linha*imu.dt; 
+			}
 			dev_teta += STD_DEV_GYRO_Y;
 
 		}
@@ -69,7 +73,11 @@ PI_THREAD(main_thread)
 			dev_teta += STD_DEV_GYRO_Y;
 			GK = dev_teta / (dev_teta + DEV_ACC_Z_OVER_X);
 
-			teta += teta_linha*imu.dt;
+			if(temp != imu.last_update)
+			{
+				temp = imu.last_update;
+				teta += teta_linha*imu.dt; 
+			}
 			teta += GK*((RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416)) - teta);
 			
 			dev_teta = dev_teta*(1-GK) + GK*DEV_ACC_Z_OVER_X;
@@ -84,8 +92,8 @@ PI_THREAD(main_thread)
 		//pot = 0;
 
 		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
-		printf("%f\t%f\n", teta, GK);	
-		//printf("%f\n", teta);
+		//printf("%f\t%f\t%f\n", teta, dev_teta, GK);	
+		printf("%lf\n", imu.pitch);
 
 		int dz = 25;
 		if(pot < 0)
