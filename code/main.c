@@ -3,6 +3,7 @@
 #include <wiringPi.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 #include "jstick.c"
 #include "led.c"
 #include "motor.c"
@@ -19,7 +20,10 @@ int keep_running = 1;	// end of program flag. it is controlled by the
 
 int main_finished = 1, led_finished = 1, joystick_finished = 1;
 int debug_finished = 1, sensors_finished = 1;
-int matlab_finished = 1, supervisory_finished = 1;
+int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
+
+int plot_flag = 0;
+long plot_time = 10;
 
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
@@ -231,7 +235,26 @@ PI_THREAD(supervisory)
 			debug.led_state = led_state;		
 		}while(keep_running && (send_superv_message(&debug) != -1));
 	supervisory_finished = 1;
-	}	
+	}
+}
+
+PI_THREAD(plot)
+{
+	plot_finished = 0;
+	FILE *fp;
+	unsigned long long int last_fprintf = 0;
+	fp = fopen("plot_data", "w");
+	if(imu.last_update > plot_time*1000000) keep_running = 0; 
+	while(keep_running)
+	{
+		if(imu.last_update != last_fprintf)
+		{
+			last_fprintf = imu.last_update;
+			//fprintf(fp, "%lld %f %f %f %f\n", imu.last_update, plotvar1, plotvar2, plotvar3, plotvar4);
+		}
+		if(imu.last_update > plot_time*1000000) keep_running = 0;
+	}
+	plot_finished = 1;
 }
 
 PI_THREAD(matlab)
@@ -293,11 +316,24 @@ int main(int argc, char* argv[])
 			if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0)
 			{
 				debug.debug_flag = 1;
-			} 	
+			} 
+			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
+			{
+				long temp;
+				if(i + 1 < argc && (temp = atol(argv[i + 1])))
+				{
+					plot_time = temp;
+				}
+				plot_flag = 1;
+			}	
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
+		}
+		if(plot_flag)
+		{
+			piThreadCreate(plot);
 		}
 	}
 
