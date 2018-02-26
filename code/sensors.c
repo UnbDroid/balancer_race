@@ -340,6 +340,8 @@ void update_imu()
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
 
+	imu.update = 1;
+
 	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
 	{
 		imu.accel.treatedX = old_acc_treatedX;
@@ -348,11 +350,11 @@ void update_imu()
 		imu.accel.magnitude = old_acc_magnitude;
 		imu.accel.freeze = 1;
 		imu.update = 0;
+		//printf("1\n");
 	}
 	else
 	{
 		imu.accel.freeze = 0;
-		imu.update = 0;
 	}
 
 	old_mag_treatedX = imu.magnet.treatedX;
@@ -366,11 +368,11 @@ void update_imu()
 	imu.magnet.magnitude = sqrt(pow(imu.magnet.treatedX, 2) + pow(imu.magnet.treatedY, 2) + pow(imu.magnet.treatedZ, 2));
 
 	// Reading magnetometer status to check for magnetometer overflow.
-	if(!(wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08))
+	if((wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08))
 	{
 		imu.magnet.overflow = 1;
 		imu.update = 0;
-		return;
+		//printf("2\n");
 	} else {
 		imu.magnet.overflow = 0;
 	}
@@ -379,16 +381,18 @@ void update_imu()
 	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
 	{
 		imu.update = 0;
+		//printf("3\n");
 	}
 	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
 	{
 		imu.update = 0;
+		//printf("4\n");
 	}
 	if(!imu.update) return;
 
-	imu.update = 1;
+	
 	// TRIAD algorithm code
-
+	//printf("Batata!!!!\n");
 	// Defining u and v vectors.
 	// These are unit vectors corresponding to gravitational force and magnetic field respectively.
 	u[0] = imu.accel.treatedX/imu.accel.magnitude;
