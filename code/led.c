@@ -15,8 +15,8 @@
 #define OFF 0
 
 // LED state constant values
-#define GREENLIGHT 0
-#define BLUETOOTH 1
+#define BLUETOOTH 0
+#define GREENLIGHT 1
 #define STANDBY 2
 #define NUM_STATES 3
 

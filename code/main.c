@@ -40,15 +40,13 @@ new features using the joystick controller.
 #define ALPHA1 0.9
 #define ALPHA2 0.95
 float KP = 200;
-float KD = 0;
-float teta, teta_linha;
+float KD = 20;
+float teta = 0, teta_linha;
 int pot = 0;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
-#define NPLOTVARS 10
-double plotvar[NPLOTVARS] = {};
-
+double offset;
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
@@ -60,68 +58,34 @@ PI_THREAD(main_thread)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
-		//plotvar1 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-		if(imu.accel.freeze)
+		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
+
+		if(temp != imu.last_update)
 		{
-			set_led_state(GREENLIGHT, OFF);
-			
-			//kalman
-			if(temp != imu.last_update)
+			if(temp = 0)
 			{
-				temp = imu.last_update;
-				teta += teta_linha*imu.dt; 
+				offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
-			//dev_teta += STD_DEV_GYRO_Y;
-			
+			temp = imu.last_update;
+			teta = teta+teta_linha*imu.dt;
 		}
-		else
-		{
-			set_led_state(GREENLIGHT, ON);
-			//plotvar2 = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-
-			/*//kalman
-			dev_teta += STD_DEV_GYRO_Y;
-			GK = dev_teta / (dev_teta + DEV_ACC_Z_OVER_X);
-
-			if(temp != imu.last_update)
-			{
-				temp = imu.last_update;
-				teta += teta_linha*imu.dt; 
-			}
-			teta += GK*((RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416)) - teta);
-			
-			dev_teta = dev_teta*(1-GK) + GK*DEV_ACC_Z_OVER_X;
-			*/
-
-			teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-			//printf("%f\n", teta);
-			//printf("%f\n", GK);
-		}
-
 		pot = (int)(teta*KP + teta_linha*KD);
 		//pot = 0;
 
-		//printf("teta = %f  teta_linha = %f mag_Acc = %f\n", teta, teta_linha, imu.accel.magnitude);
-		//printf("%f\t%f\t%f\n", teta, dev_teta, GK);	
-		//printf("%lf\n", imu.pitch);
-
 		int dz = 25;
+		
 		if(pot < 0)
 		{
 			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
 			if(pot<=dz)//levando em conta a saturação dos motores
-				pot = 0;
-			if(pot>1023)
-				pot = 1023;	
+				pot = 0;	
 			OnFwd(LMOTOR, pot);
 			OnFwd(RMOTOR, pot);
 		} else if(pot > 0)
 		{
 			pot = dz + ((1023.0-dz)/1023.0)*(pot);
 			if(pot<=dz)
-				pot = 0;
-			if(pot>1023)
-				pot = 1023;	
+				pot = 0;	
 			OnRev(LMOTOR, pot);
 			OnRev(RMOTOR, pot);
 		} else if(pot == 0)
@@ -131,7 +95,6 @@ PI_THREAD(main_thread)
 		}
 		delay(10);
 	}
-	set_led_state(GREENLIGHT, OFF);
 	main_finished = 1;
 }
 
@@ -200,7 +163,7 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 20 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 25 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
@@ -274,6 +237,9 @@ PI_THREAD(supervisory)
 	supervisory_finished = 1;
 }
 
+
+#define NPLOTVARS 15
+double plotvar[NPLOTVARS] = {};
 PI_THREAD(plot)
 {
 	plot_finished = 0;
@@ -292,29 +258,9 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[0] = imu.accel.treatedX;
-			plotvar[1] = imu.accel.treatedY;
-			plotvar[2] = imu.accel.treatedZ;
-			if(plotvar[3] == plotvar[3] || plotvar[4] == plotvar[4] || plotvar[5] == plotvar[5])
-			{
-				plotvar[3] = ALPHA1*plotvar[3]+(1-ALPHA1)*plotvar[0];
-				plotvar[4] = ALPHA1*plotvar[4]+(1-ALPHA1)*plotvar[1];
-				plotvar[5] = ALPHA1*plotvar[5]+(1-ALPHA1)*plotvar[2];
-			} else {
-				plotvar[3] = plotvar[0];
-				plotvar[4] = plotvar[1];
-				plotvar[5] = plotvar[2];
-			}
-			if(plotvar[6] == plotvar[6] || plotvar[7] == plotvar[7] || plotvar[8] == plotvar[8])
-			{
-				plotvar[6] = ALPHA2*plotvar[6]+(1-ALPHA2)*plotvar[0];
-				plotvar[7] = ALPHA2*plotvar[7]+(1-ALPHA2)*plotvar[1];
-				plotvar[8] = ALPHA2*plotvar[8]+(1-ALPHA2)*plotvar[2];
-			} else {
-				plotvar[6] = plotvar[0];
-				plotvar[7] = plotvar[1];
-				plotvar[8] = plotvar[2];
-			}
+			plotvar[0] = teta;
+			plotvar[1] = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			plotvar[2] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -375,7 +321,7 @@ void clean_up()
 	else if(reboot) system("sudo shutdown -r now&");
 	else if (call_watcher) 
 	{
-		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d");
+		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
 	}
 }

@@ -33,6 +33,7 @@
 #define ACCELX_BIAS 0.016481
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
+#define ACCEL_ALPHA 0.7
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -100,8 +101,10 @@ struct accel {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
+	double filteredX;
+	double filteredY;
+	double filteredZ;
 	double magnitude;
-	int freeze;
 };
 
 struct magnet {
@@ -269,6 +272,10 @@ void initMPU9250()
 		k_n[c] = 0;
 	}
 	update_imu();
+
+	imu.accel.filteredX = imu.accel.treatedX;
+	imu.accel.filteredY = imu.accel.treatedY;
+	imu.accel.filteredZ = imu.accel.treatedZ;	
 }
 
 void init_sensors()
@@ -338,20 +345,13 @@ void update_imu()
 	imu.accel.treatedX = (ACCEL_GAIN*(double)imu.accel.rawX)-ACCELX_BIAS;
 	imu.accel.treatedY = (ACCEL_GAIN*(double)imu.accel.rawY)-ACCELY_BIAS;
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
-	imu.accel.magnitude = sqrt(pow(imu.accel.treatedX, 2) + pow(imu.accel.treatedY, 2) + pow(imu.accel.treatedZ, 2));
+	
+	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.treatedX;
+	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.treatedY;
+	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.treatedZ;	
+	imu.accel.magnitude = sqrt(pow(imu.accel.filteredX, 2) + pow(imu.accel.filteredY, 2) + pow(imu.accel.filteredZ, 2));
 
 	imu.update = 1;
-
-	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
-	{
-		imu.accel.freeze = 1;
-		imu.update = 0;
-		//printf("1\n");
-	}
-	else
-	{
-		imu.accel.freeze = 0;
-	}
 
 	old_mag_treatedX = imu.magnet.treatedX;
 	old_mag_treatedY = imu.magnet.treatedY;
@@ -368,7 +368,6 @@ void update_imu()
 	{
 		imu.magnet.overflow = 1;
 		imu.update = 0;
-		//printf("2\n");
 	} else {
 		imu.magnet.overflow = 0;
 	}
@@ -377,12 +376,10 @@ void update_imu()
 	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
 	{
 		imu.update = 0;
-		//printf("3\n");
 	}
 	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
 	{
 		imu.update = 0;
-		//printf("4\n");
 	}
 	if(!imu.update) return;
 
@@ -391,9 +388,9 @@ void update_imu()
 	//printf("Batata!!!!\n");
 	// Defining u and v vectors.
 	// These are unit vectors corresponding to gravitational force and magnetic field respectively.
-	u[0] = imu.accel.treatedX/imu.accel.magnitude;
-	u[1] = imu.accel.treatedY/imu.accel.magnitude;
-	u[2] = imu.accel.treatedZ/imu.accel.magnitude;
+	u[0] = imu.accel.filteredX/imu.accel.magnitude;
+	u[1] = imu.accel.filteredY/imu.accel.magnitude;
+	u[2] = imu.accel.filteredZ/imu.accel.magnitude;
 	
 	v[0] = imu.magnet.treatedX/imu.magnet.magnitude;
 	v[1] = imu.magnet.treatedY/imu.magnet.magnitude;
