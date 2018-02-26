@@ -344,10 +344,6 @@ void update_imu()
 
 	if (imu.accel.magnitude > GRAVITY+ACC_TOLERANCE || imu.accel.magnitude < GRAVITY-ACC_TOLERANCE)
 	{
-		imu.accel.treatedX = old_acc_treatedX;
-		imu.accel.treatedY = old_acc_treatedY;
-		imu.accel.treatedZ = old_acc_treatedZ;
-		imu.accel.magnitude = old_acc_magnitude;
 		imu.accel.freeze = 1;
 		imu.update = 0;
 		//printf("1\n");
