@@ -1,0 +1,3 @@
+Função da matriz de covariância que "não existe"
+Como fazer o alpha do filtro passa-baixa de acordo com a frequência de amostragem
+
