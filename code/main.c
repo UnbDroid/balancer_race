@@ -39,8 +39,8 @@ new features using the joystick controller.
 #define DEV_ACC_Z_OVER_X 97.1256
 #define ALPHA1 0.9
 #define ALPHA2 0.95
-float KP = 200;
-float KD = 20;
+float KP = 170;
+float KD = 0;
 float teta = 0, teta_linha;
 int pot = 0;
 float GK;
@@ -58,16 +58,16 @@ PI_THREAD(main_thread)
 	{		
 		//brincando de controle
 		teta_linha = imu.gyro.treatedY;
-		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
+		teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
 
 		if(temp != imu.last_update)
 		{
 			if(temp = 0)
 			{
-				offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
+				//offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
 			temp = imu.last_update;
-			teta = teta+teta_linha*imu.dt;
+			//teta = //teta+teta_linha*imu.dt;
 		}
 		pot = (int)(teta*KP + teta_linha*KD);
 		//pot = 0;
