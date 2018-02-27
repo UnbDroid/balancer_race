@@ -34,6 +34,7 @@
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
 #define ACCEL_ALPHA 0.7
+#define ACCEL_MEDIAN_SIZE 5
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -101,6 +102,9 @@ struct accel {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
+	double Xvec[ACCEL_MEDIAN_SIZE];
+	double Yvec[ACCEL_MEDIAN_SIZE];
+	double Zvec[ACCEL_MEDIAN_SIZE];
 	double filteredX;
 	double filteredY;
 	double filteredZ;
@@ -119,6 +123,7 @@ struct magnet {
 };
 
 struct imu {
+	unsigned long int n_measurements;
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
@@ -166,6 +171,7 @@ void update_imu();
 
 void init_kalman();
 void update_kalman();
+void QuickSort(double array[], unsigned size);
 
 void initMPU9250()
 {
@@ -271,6 +277,23 @@ void initMPU9250()
 		j_n[c] = 0;
 		k_n[c] = 0;
 	}
+
+	imu.n_measurements = 0;
+
+	// Preparing the windows for median filter
+	imu.accel.Xvec[1] = -2;
+	imu.accel.Yvec[1] = -2;
+	imu.accel.Zvec[1] = -2;
+	imu.accel.Xvec[2] = 2;
+	imu.accel.Yvec[2] = 2;
+	imu.accel.Zvec[2] = 2;
+	imu.accel.Xvec[3] = -2;
+	imu.accel.Yvec[3] = -2;
+	imu.accel.Zvec[3] = -2;
+	imu.accel.Xvec[4] = 2;
+	imu.accel.Yvec[4] = 2;
+	imu.accel.Zvec[4] = 2;
+
 	update_imu();
 
 	imu.accel.filteredX = imu.accel.treatedX;
@@ -346,9 +369,19 @@ void update_imu()
 	imu.accel.treatedY = (ACCEL_GAIN*(double)imu.accel.rawY)-ACCELY_BIAS;
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	
-	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.treatedX;
-	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.treatedY;
-	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.treatedZ;	
+	imu.accel.Xvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
+	imu.accel.Yvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
+	imu.accel.Zvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
+
+	QuickSort(imu.accel.Xvec, ACCEL_MEDIAN_SIZE);
+	QuickSort(imu.accel.Yvec, ACCEL_MEDIAN_SIZE);
+	QuickSort(imu.accel.Zvec, ACCEL_MEDIAN_SIZE);
+
+
+
+	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xvec[ACCEL_MEDIAN_SIZE/2];
+	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Yvec[ACCEL_MEDIAN_SIZE/2];
+	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zvec[ACCEL_MEDIAN_SIZE/2];
 	imu.accel.magnitude = sqrt(pow(imu.accel.filteredX, 2) + pow(imu.accel.filteredY, 2) + pow(imu.accel.filteredZ, 2));
 
 	imu.update = 1;
@@ -381,6 +414,9 @@ void update_imu()
 	{
 		imu.update = 0;
 	}
+	
+	++(imu.n_measurements);
+
 	if(!imu.update) return;
 
 	
@@ -541,4 +577,38 @@ void update_ir()
 {
 	ir.left = !digitalRead(IR_LEFT);
 	ir.right = !digitalRead(IR_RIGHT);
+}
+
+// Abdullah's QuickSort implementation for usage with the Median Filter
+unsigned Partition(double array[], unsigned f, unsigned l, double pivot)
+{
+    unsigned i = f-1, j = l+1;
+    while(1)
+    {
+        while(pivot < array[--j]);
+        while(array[++i] < pivot);
+        if(i<j)
+        {
+            double tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+        else
+            return j;
+    }
+}
+
+void QuickSortImpl(double array[], unsigned f, unsigned l)
+{
+    while(f < l)
+    {
+        unsigned m = Partition(array, f, l, array[f]);
+        QuickSortImpl(array, f, m);
+        f = m+1;
+    }
+}
+
+void QuickSort(double array[], unsigned size)
+{
+    QuickSortImpl(array, 0, size-1);
 }
