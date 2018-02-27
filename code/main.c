@@ -36,31 +36,80 @@ This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
 new features using the joystick controller.
 */
+
+/*
+//Buttherworth Filter - A manteiga que vale
+#define A0 1.000000000000000
+#define A1 -1.968427786938518
+#define A2 1.735860709208886
+#define A3 -0.724470829507362
+#define A4 0.120389599896245
+#define B0 0.010209480791203
+#define B1 0.040837923164813
+#define B2 0.061256884747219
+#define B3 0.040837923164813
+#define B4 0.010209480791203
+
+double A[5] = {A0, A1, A2, A3, A4};
+double B[5] = {B0, B1, B2, B3, B4};
+double bw_filtered[4];
+double bw_raw[5];
+*/
+
 #define DEV_ACC_Z_OVER_X 97.1256
 #define ALPHA1 0.9
 #define ALPHA2 0.95
 float KP = 170;
 float KD = 0;
-float teta = 0, teta_linha;
+float teta = 0, teta_linha, teta_raw;
 int pot = 0;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
 double offset;
+
+
 PI_THREAD(main_thread)
 {
+	int i ;
+
 	main_finished = 0;
 	piHiPri(0);
 
 	dev_teta = 0;
 
+	//filtro do geovanny
+	//inicializando os valores do vetor de leituras
+	/*for(i = 0; i<4; i++)
+	{
+		bw_raw[i] = 0.0;
+		bw_filtered[i] = 0.0;
+	}
+	bw_raw[4] = 0;*/
 	while(keep_running)
 	{		
-		//brincando de controle
-		teta_linha = imu.gyro.treatedY;
-		teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
+		//lendo o acell com filtro
+		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
+		
+		//filtro do geovanny
+		/*teta_raw = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)/*- (-95.416)//);
+		teta = 0;
+		for (i = 0; i < 4; ++i)
+			teta += -(A[i]*bw_filtered[i+1])+(B[i]*bw_raw[i]);
+		teta += (B[i]*bw_raw[i]);
+		for (i = 0; i < 3; ++i)
+		{
+			bw_raw[i+1] = bw_raw[i];
+			bw_filtered[i+1] = bw_filtered[i];
+		}
+		bw_raw[i+1] = bw_raw[i];
+		bw_raw[0] = teta_raw;
+		bw_filtered[0] = teta;
+		printf("%f\n", teta);
+		//lendo o gyro
+		teta_linha = imu.gyro.treatedY;*/
 
-		if(temp != imu.last_update)
+		/*if(temp != imu.last_update)
 		{
 			if(temp = 0)
 			{
@@ -68,7 +117,8 @@ PI_THREAD(main_thread)
 			}
 			temp = imu.last_update;
 			//teta = //teta+teta_linha*imu.dt;
-		}
+		}*/
+		teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)) - (-95.416);
 		pot = (int)(teta*KP + teta_linha*KD);
 		//pot = 0;
 
