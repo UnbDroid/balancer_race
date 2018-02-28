@@ -33,7 +33,7 @@
 #define ACCELX_BIAS 0.016481
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
-#define ACCEL_ALPHA 0.9
+#define ACCEL_ALPHA 0.7
 #define ACCEL_MEDIAN_SIZE 5
 
 #define PWR_MGMT_1 0x6b
@@ -247,7 +247,7 @@ void initMPU9250()
 	// [7:4] - Reserved
 	// [3] - ACCEL_FCHOICE_B - Inverse of ACCEL_FCHOICE.
 	// [2:0] - Accel DLPF bandwidth configuration. (4 - 21.2Hz; 5 - 10.2Hz; 6 - 5.05Hz)
-	wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG2, 0x05);
+	wiringPiI2CWriteReg8(MPU9250addr, ACCEL_CONFIG2, 0x06);
 
 	// soft reset magnetometer
 	// CNTL2
