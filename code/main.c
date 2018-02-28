@@ -59,9 +59,10 @@ double bw_raw[5];
 #define DEV_ACC_Z_OVER_X 97.1256
 #define ALPHA1 0.9
 #define ALPHA2 0.95
-float KP = 170;
-float KD = 0;
+float KP = 375; //325;
+float KD = 10; //10;
 float teta = 0, teta_linha, teta_raw;
+float gyroIntegrate = 0;
 int pot = 0;
 float GK;
 float dev_teta;
@@ -107,21 +108,22 @@ PI_THREAD(main_thread)
 		bw_filtered[0] = teta;
 		printf("%f\n", teta);
 		//lendo o gyro
-		teta_linha = imu.gyro.treatedY;*/
+		*/
+		teta_linha = imu.gyro.treatedY;
 
-		/*if(temp != imu.last_update)
+		if(temp != imu.last_update)
 		{
-			if(temp = 0)
+			if(temp == 0)
 			{
 				//offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
 			temp = imu.last_update;
-			//teta = //teta+teta_linha*imu.dt;
-		}*/
-		teta = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)) - (-95.416);
-		pot = (int)(teta*KP + teta_linha*KD);
+			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
+		}
+		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.916);
+		//pot = (int)(teta*KP + teta_linha*KD);
+		pot = (int)(gyroIntegrate*KP + teta_linha*KD);
 		//pot = 0;
-
 		int dz = 25;
 		
 		if(pot < 0)
@@ -143,7 +145,8 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 			Brake(LMOTOR);
 		}
-		delay(10);
+		printf("%f   |   %d\n", teta, pot);
+		delay(1);
 	}
 	main_finished = 1;
 }
@@ -213,7 +216,7 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 25 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 1 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
@@ -229,7 +232,7 @@ PI_THREAD(sensors)
 			update_imu();
 			update_kalman();
 		} else {
-			delay(5);
+			delay(1);
 		}
 	}
 	sensors_finished = 1;
@@ -309,8 +312,8 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			plotvar[0] = teta;
-			plotvar[1] = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-			plotvar[2] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
+			plotvar[1] = gyroIntegrate;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			//plotvar[2] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
