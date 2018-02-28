@@ -161,7 +161,7 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%06d\n", 38, 20, debug->imu.accel.rawZ);
 	printf("\033[%d;%dH%06d\n", 38, 32, debug->imu.magnet.rawZ);
 	
-	printf("\033[%d;%dH%06ld\n", 39, 13, debug->imu.dt);
+	printf("\033[%d;%dH%08.6f\n", 39, 13, debug->imu.dt);
 }
 
 void print_message(char mess[], int num)

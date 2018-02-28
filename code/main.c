@@ -24,7 +24,7 @@ int debug_finished = 1, sensors_finished = 1;
 int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 
 int plot_flag = 0;
-long plot_time = 10;
+long plot_time = 5;
 
 int shutdown_flag = 0, reboot = 0, call_watcher=0;	// flags set by joystick
 													// commands so that the
@@ -57,9 +57,7 @@ double bw_raw[5];
 */
 
 #define DEV_ACC_Z_OVER_X 97.1256
-#define ALPHA1 0.9
-#define ALPHA2 0.95
-float KP = 375; //325;
+float KP = 325; //325;
 float KD = 10; //10;
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0;
@@ -87,6 +85,9 @@ PI_THREAD(main_thread)
 		bw_filtered[i] = 0.0;
 	}
 	bw_raw[4] = 0;*/
+	delay(30);
+	teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.716);
+	gyroIntegrate = teta;
 	while(keep_running)
 	{		
 		//lendo o acell com filtro
@@ -109,7 +110,7 @@ PI_THREAD(main_thread)
 		printf("%f\n", teta);
 		//lendo o gyro
 		*/
-		teta_linha = imu.gyro.treatedY;
+		teta_linha = imu.gyro.treatedY - (-0.13954);
 
 		if(temp != imu.last_update)
 		{
@@ -121,6 +122,7 @@ PI_THREAD(main_thread)
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
 		}
 		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.916);
+		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 		pot = (int)(gyroIntegrate*KP + teta_linha*KD);
 		//pot = 0;
@@ -145,8 +147,9 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 			Brake(LMOTOR);
 		}
-		printf("%f   |   %d\n", teta, pot);
-		delay(1);
+		//printf("%f   |   %d\n", teta, pot);
+		//printf("%f\n", imu.dt);
+		delay(5);
 	}
 	main_finished = 1;
 }
@@ -216,23 +219,23 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 1 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 4 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
-	unsigned long int last_update, now_time;
+	unsigned long long int last_update, now_time;
 	piHiPri(0);
 	while(keep_running)
 	{
-		now_time = millis();
-		if(now_time - last_update > SENSORS_UPDATE_RATE)
+		now_time = micros();
+		if(now_time - last_update > 1000*SENSORS_UPDATE_RATE)
 		{
 			last_update = now_time;
 			update_ir();
 			update_imu();
 			update_kalman();
 		} else {
-			delay(1);
+			delayMicroseconds(100);
 		}
 	}
 	sensors_finished = 1;
@@ -311,9 +314,11 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[0] = teta;
-			plotvar[1] = gyroIntegrate;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-			//plotvar[2] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.416));
+			//plotvar[0] = teta;
+			//plotvar[1] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.916));
+			//plotvar[2] = gyroIntegrate;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			plotvar[0] = teta_linha;
+			plotvar[1] = 0;
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -326,6 +331,7 @@ PI_THREAD(plot)
 		}
 		if(imu.last_update > plot_time*1000000) keep_running = 0;
 	}
+	fclose(fp);
 	printf("Saved data to file %s\n", fname);
 	plot_finished = 1;
 }
