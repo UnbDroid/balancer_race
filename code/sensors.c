@@ -4,7 +4,7 @@
 #include <math.h>
 
 #define LBD 0
-#define GYRO_GAIN 0.01526717557 //(1.0/65.5)	// gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
+#define GYRO_GAIN 1.0/131.0 // gyro values ratio for 500 º/s full scale range. If in doubt consult datasheet page 8
 #define ACCEL_GAIN 0.00006103515 //(1.0/16384.0) // accel values ratio for 2048 g full scale range. If in doubt consult datasheet page 9
 #define MAGNET_GAIN 0.15 // magnet values ratio for 16-bit output.
 #define RAD2DEG 57.2957
@@ -20,11 +20,11 @@
 #define STD_DEV_TRIAD_Z 0.5645
 
 #define GYRO_X_OFFSET_HI 0x00
-#define GYRO_X_OFFSET_LO 0x09
-#define GYRO_Y_OFFSET_HI 0xff
-#define GYRO_Y_OFFSET_LO 0xfb
+#define GYRO_X_OFFSET_LO 0x00
+#define GYRO_Y_OFFSET_HI 0x00
+#define GYRO_Y_OFFSET_LO 0x00
 #define GYRO_Z_OFFSET_HI 0x00
-#define GYRO_Z_OFFSET_LO 0x04
+#define GYRO_Z_OFFSET_LO 0x00
 
 #define MAGX_BIAS 18
 #define MAGY_BIAS 73
@@ -175,6 +175,8 @@ void QuickSort(double array[], unsigned size);
 
 void initMPU9250()
 {
+	FILE *fp;
+	uint8_t data[6];
 	MPU9250addr = wiringPiI2CSetup(0x68);
 
 	// set PWR_MGMT_1 register
@@ -225,15 +227,27 @@ void initMPU9250()
 	// [4:3] - Gyro full scale value (250, 500, 1000, 2000 degrees/second)
 	// [2] - Reserved
 	// [1:0] - Setting to bypass DLPF(Differential Low Pass Filter). Disable with 00.
-	wiringPiI2CWriteReg8(MPU9250addr, GYRO_CONFIG, 0x08);
+	wiringPiI2CWriteReg8(MPU9250addr, GYRO_CONFIG, 0x00);
 
 	// set gyro offset registers (0x13 to 0x18) to values obtained by the calibGyro.c program
-	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_H, GYRO_X_OFFSET_HI);
-	wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_L, GYRO_X_OFFSET_LO);
-	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_H, GYRO_Y_OFFSET_HI);
-	wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_L, GYRO_Y_OFFSET_LO);
-	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_H, GYRO_Z_OFFSET_HI);
-	wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_L, GYRO_Z_OFFSET_LO);
+	if(fp = fopen("gyro.calib", "r"))
+	{
+		fread(data, sizeof(uint8_t), 6, fp);
+		wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_H, data[0]);
+		wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_L, data[1]);
+		wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_H, data[2]);
+		wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_L, data[3]);
+		wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_H, data[4]);
+		wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_L, data[5]);
+	} else {
+		wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_H, GYRO_X_OFFSET_HI);
+		wiringPiI2CWriteReg8(MPU9250addr, XG_OFFSET_L, GYRO_X_OFFSET_LO);
+		wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_H, GYRO_Y_OFFSET_HI);
+		wiringPiI2CWriteReg8(MPU9250addr, YG_OFFSET_L, GYRO_Y_OFFSET_LO);
+		wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_H, GYRO_Z_OFFSET_HI);
+		wiringPiI2CWriteReg8(MPU9250addr, ZG_OFFSET_L, GYRO_Z_OFFSET_LO);
+	}
+	
 
 	// set accel max range to 2 g
 	// ACCEL_CONFIG
