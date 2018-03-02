@@ -33,7 +33,7 @@
 #define ACCELX_BIAS 0.016481
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
-#define ACCEL_ALPHA 0.7
+#define ACCEL_ALPHA 0
 #define ACCEL_MEDIAN_SIZE 5
 
 #define PWR_MGMT_1 0x6b
@@ -96,6 +96,7 @@ struct gyro {
 };
 
 struct accel {
+	unsigned long int n_measurements;
 	int16_t rawX;
 	int16_t rawY;
 	int16_t rawZ;
@@ -112,6 +113,7 @@ struct accel {
 };
 
 struct magnet {
+	int data_ready;
 	int overflow;
 	int16_t rawX;
 	int16_t rawY;
@@ -123,7 +125,6 @@ struct magnet {
 };
 
 struct imu {
-	unsigned long int n_measurements;
 	struct gyro gyro;
 	struct accel accel;
 	struct magnet magnet;
@@ -156,14 +157,6 @@ uint8_t mag_data_ready;
 uint8_t magXhi, magXlo;
 uint8_t magYhi, magYlo;
 uint8_t magZhi, magZlo;
-
-double old_mag_treatedX;
-double old_mag_treatedY;
-double old_mag_treatedZ;
-double old_acc_treatedX;
-double old_acc_treatedY;
-double old_acc_treatedZ;
-double old_acc_magnitude;
 
 unsigned long long int now_time;
 
@@ -363,84 +356,65 @@ void update_imu()
     imu.accel.rawZ = (int16_t)((int16_t)accZhi<<8 | accZlo);
 
     // Reading magnetometer
-	magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
-    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
-    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
+	imu.magnet.data_ready = (wiringPiI2CReadReg8(AK8963addr, 0x02) & 0x01);
+	if(imu.magnet.data_ready)
+	{
+		magXlo = wiringPiI2CReadReg8(AK8963addr, 0x03);
+	    magXhi = wiringPiI2CReadReg8(AK8963addr, 0x04);
+	    imu.magnet.rawX = (int16_t)((int16_t)magXhi<<8 | magXlo);
+	    
+	    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
+		magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
+		imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
 
-    magYlo = wiringPiI2CReadReg8(AK8963addr, 0x05);
-	magYhi = wiringPiI2CReadReg8(AK8963addr, 0x06);
-	imu.magnet.rawY = (int16_t)((int16_t)magYhi<<8 | magYlo);
-
-    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
-	magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
-	imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
+	    magZlo = wiringPiI2CReadReg8(AK8963addr, 0x07);
+		magZhi = wiringPiI2CReadReg8(AK8963addr, 0x08);
+		imu.magnet.rawZ = (int16_t)((int16_t)magZhi<<8 | magZlo);
+		
+		imu.magnet.overflow = (wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08);
+	}
 
     // Unit corrections for the gyroscope
 	imu.gyro.treatedX = GYRO_GAIN*(double)imu.gyro.rawX;
 	imu.gyro.treatedY = GYRO_GAIN*(double)imu.gyro.rawY;
 	imu.gyro.treatedZ = GYRO_GAIN*(double)imu.gyro.rawZ;
 
-	old_acc_treatedX = imu.accel.treatedX;
-	old_acc_treatedY = imu.accel.treatedY;
-	old_acc_treatedZ = imu.accel.treatedZ;
-	old_acc_magnitude = imu.accel.magnitude;
-	
 	// Unit corrections for the accelerometer
 	imu.accel.treatedX = (ACCEL_GAIN*(double)imu.accel.rawX)-ACCELX_BIAS;
 	imu.accel.treatedY = (ACCEL_GAIN*(double)imu.accel.rawY)-ACCELY_BIAS;
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	
+	// Median and low-pass filtering for the accelerometer
 	imu.accel.Xvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
 	imu.accel.Yvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
 	imu.accel.Zvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
-
 	QuickSort(imu.accel.Xvec, ACCEL_MEDIAN_SIZE);
 	QuickSort(imu.accel.Yvec, ACCEL_MEDIAN_SIZE);
 	QuickSort(imu.accel.Zvec, ACCEL_MEDIAN_SIZE);
-
 	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xvec[ACCEL_MEDIAN_SIZE/2];
 	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Yvec[ACCEL_MEDIAN_SIZE/2];
 	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zvec[ACCEL_MEDIAN_SIZE/2];
+	++(imu.accel.n_measurements);
+
+	// Calculating acceleration magnitude
 	imu.accel.magnitude = sqrt(pow(imu.accel.filteredX, 2) + pow(imu.accel.filteredY, 2) + pow(imu.accel.filteredZ, 2));
 
-	imu.update = 1;
-
-	old_mag_treatedX = imu.magnet.treatedX;
-	old_mag_treatedY = imu.magnet.treatedY;
-	old_mag_treatedZ = imu.magnet.treatedZ;
 	// Axis inversions and unit corrections for the magnetometer.
 	// For some reason it is mounted to the MPU9250 module with X and Y axis switched and Z axis inverted.
 	imu.magnet.treatedX = ((double)imu.magnet.rawY-MAGY_BIAS)*magsensY;
 	imu.magnet.treatedY = ((double)imu.magnet.rawX-MAGX_BIAS)*magsensX;
 	imu.magnet.treatedZ = (MAGZ_BIAS-(double)imu.magnet.rawZ)*magsensZ;
 	imu.magnet.magnitude = sqrt(pow(imu.magnet.treatedX, 2) + pow(imu.magnet.treatedY, 2) + pow(imu.magnet.treatedZ, 2));
-
-	// Reading magnetometer status to check for magnetometer overflow.
-	if((wiringPiI2CReadReg8(AK8963addr, 0x09) & 0x08))
-	{
-		imu.magnet.overflow = 1;
-		imu.update = 0;
-	} else {
-		imu.magnet.overflow = 0;
-	}
-
-	// Check if the magnetometer and accelerometer has been updated, if not we don't update the values for our TRIAD algorithm input.
-	if ((imu.magnet.treatedX == old_mag_treatedX)&&(imu.magnet.treatedY == old_mag_treatedY)&&(imu.magnet.treatedZ == old_mag_treatedZ))
-	{
-		imu.update = 0;
-	}
-	if ((imu.accel.treatedX == old_acc_treatedX)&&(imu.accel.treatedY == old_acc_treatedY)&&(imu.accel.treatedZ == old_acc_treatedZ))
-	{
-		imu.update = 0;
-	}
 	
-	++(imu.n_measurements);
+	imu.update = 1;
+	
+	// Conditions for changing the value of imu.update should be put in here
 
 	if(!imu.update) return;
 
 	
 	// TRIAD algorithm code
-	//printf("Batata!!!!\n");
+
 	// Defining u and v vectors.
 	// These are unit vectors corresponding to gravitational force and magnetic field respectively.
 	u[0] = imu.accel.filteredX/imu.accel.magnitude;
