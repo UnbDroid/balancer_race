@@ -57,8 +57,9 @@ double bw_raw[5];
 */
 
 #define DEV_ACC_Z_OVER_X 97.1256
-float KP = 325; //325;
-float KD = 10; //10;
+float KP = 385; //325;
+float KD = 15; //10;
+float KI = 20;
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0;
 int pot = 0;
@@ -66,6 +67,7 @@ float GK;
 float dev_teta;
 unsigned long long int temp = 0;
 double offset;
+float tetaIntegrat = 0;
 
 
 PI_THREAD(main_thread)
@@ -86,8 +88,10 @@ PI_THREAD(main_thread)
 	}
 	bw_raw[4] = 0;*/
 	delay(30);
-	teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.716);
+	teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX))- (-97.045494);
+	//printf("%f\n", teta);
 	gyroIntegrate = teta;
+	//gyroIntegrate = 0;
 	while(keep_running)
 	{		
 		//lendo o acell com filtro
@@ -110,7 +114,7 @@ PI_THREAD(main_thread)
 		printf("%f\n", teta);
 		//lendo o gyro
 		*/
-		teta_linha = imu.gyro.treatedY - (-0.13954);
+		teta_linha = imu.gyro.treatedY - (-0.132567);
 
 		if(temp != imu.last_update)
 		{
@@ -124,7 +128,15 @@ PI_THREAD(main_thread)
 		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.916);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
-		pot = (int)(gyroIntegrate*KP + teta_linha*KD);
+		if (0.0001>gyroIntegrate && gyroIntegrate>-0.0001)
+		{
+			tetaIntegrat = 0;
+		}
+		else
+		{
+			tetaIntegrat += gyroIntegrate;
+		}
+		pot = (int)(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
 		//pot = 0;
 		int dz = 25;
 		
@@ -152,6 +164,48 @@ PI_THREAD(main_thread)
 		delay(5);
 	}
 	main_finished = 1;
+}
+
+#define NPLOTVARS 15
+double plotvar[NPLOTVARS] = {};
+PI_THREAD(plot)
+{
+	plot_finished = 0;
+	FILE *fp;
+	unsigned long long int last_fprintf = 0;
+	int i = 0;
+	char fname[15];
+	do {
+		snprintf(fname, 15, "plot_data_%03d", i);
+		++i;
+	} while(exists(fname));
+	fp = fopen(fname, "w");
+	if(imu.last_update > plot_time*1000000) keep_running = 0; 
+	while(keep_running)
+	{
+		if(imu.last_update != last_fprintf)
+		{
+			last_fprintf = imu.last_update;
+			plotvar[2] = teta;
+			//plotvar[1] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.916));
+			//plotvar[2] = teta_linha;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
+			plotvar[0] = gyroIntegrate;
+			plotvar[1] = 0;
+			fprintf(fp, "%lld ", imu.last_update);
+			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+			{
+				fprintf(fp, "% f ", plotvar[i]);
+			}
+			if(plotvar[i] == plotvar[i])
+			{
+				fprintf(fp, "% f;\n", plotvar[i]);
+			}
+		}
+		if(imu.last_update > plot_time*1000000) keep_running = 0;
+	}
+	fclose(fp);
+	printf("Saved data to file %s\n", fname);
+	plot_finished = 1;
 }
 
 /*
@@ -291,49 +345,6 @@ PI_THREAD(supervisory)
 		} while(keep_running && (send_superv_message(&debug) != -1));
 	}
 	supervisory_finished = 1;
-}
-
-
-#define NPLOTVARS 15
-double plotvar[NPLOTVARS] = {};
-PI_THREAD(plot)
-{
-	plot_finished = 0;
-	FILE *fp;
-	unsigned long long int last_fprintf = 0;
-	int i = 0;
-	char fname[15];
-	do {
-		snprintf(fname, 15, "plot_data_%03d", i);
-		++i;
-	} while(exists(fname));
-	fp = fopen(fname, "w");
-	if(imu.last_update > plot_time*1000000) keep_running = 0; 
-	while(keep_running)
-	{
-		if(imu.last_update != last_fprintf)
-		{
-			last_fprintf = imu.last_update;
-			//plotvar[0] = teta;
-			//plotvar[1] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.916));
-			//plotvar[2] = gyroIntegrate;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
-			plotvar[0] = teta_linha;
-			plotvar[1] = 0;
-			fprintf(fp, "%lld ", imu.last_update);
-			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
-			{
-				fprintf(fp, "% f ", plotvar[i]);
-			}
-			if(plotvar[i] == plotvar[i])
-			{
-				fprintf(fp, "% f;\n", plotvar[i]);
-			}
-		}
-		if(imu.last_update > plot_time*1000000) keep_running = 0;
-	}
-	fclose(fp);
-	printf("Saved data to file %s\n", fname);
-	plot_finished = 1;
 }
 
 PI_THREAD(matlab)

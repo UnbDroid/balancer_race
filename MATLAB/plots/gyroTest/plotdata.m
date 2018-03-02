@@ -1,4 +1,4 @@
-filename = "plot_data_000"
+filename = "plot_data_008"
 grname = "Off Motor"
 fname = load(filename)
 n_measurements = size(fname, 1);
