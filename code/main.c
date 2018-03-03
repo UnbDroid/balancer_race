@@ -69,11 +69,11 @@ float KI = 0.7;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
-int pot = 0;
+int pot = 0, dir;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
-double offset;
+int flag;
 float tetaIntegrat = 0;
 
 PI_THREAD(main_thread)
@@ -153,6 +153,7 @@ PI_THREAD(main_thread)
 		
 		if(pot < 0)
 		{
+			dir = -1;
 			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
 			if(pot<=dz)//levando em conta a saturação dos motores
 				pot = 0;	
@@ -160,6 +161,7 @@ PI_THREAD(main_thread)
 			OnFwd(RMOTOR, pot);
 		} else if(pot > 0)
 		{
+			dir = 1;
 			pot = dz + ((1023.0-dz)/1023.0)*(pot);
 			if(pot<=dz)
 				pot = 0;	
@@ -206,6 +208,23 @@ PI_THREAD(main_thread)
 		OnFwd(RMOTOR, pot);
 		delay(200);
 */
+/*
+		if(pot >= 1024)
+		{
+			flag = 0;
+		} else if(pot <= 0) {
+			flag = 1;
+		}
+		if(flag)
+		{
+			++pot;
+		} else {
+			--pot;
+		}
+		OnRev(LMOTOR, pot);
+		OnRev(RMOTOR, pot);
+		delay(10);
+*/
 	}
 	main_finished = 1;
 }
@@ -230,8 +249,10 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[0] = gyroIntegrate - teta;
-			plotvar[1] = ((RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494));
+			plotvar[0] = gyroIntegrate;
+			plotvar[1] = pot*dir;
+			plotvar[2] = left_motor.tickFreq;
+			plotvar[3] = right_motor.tickFreq;
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
