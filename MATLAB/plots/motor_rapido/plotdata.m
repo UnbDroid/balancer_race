@@ -1,6 +1,6 @@
-filename = "plot_data_000"
+filename = "plot_data_005"
 
-system("sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_* ./");
+system("sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_005 ./");
 
 grname = "On Motor Off Encoder"
 fname = load(filename)
