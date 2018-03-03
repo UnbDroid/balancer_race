@@ -96,8 +96,8 @@ PI_THREAD(main_thread)
 	delay(30);
 	teta = (RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494);
 	printf("%f\n", teta);
-	gyroIntegrate = teta;
-	//gyroIntegrate = 0;
+	//gyroIntegrate = teta;
+	gyroIntegrate = 0;
 	while(keep_running)
 	{		
 		//lendo o acell com filtro
@@ -133,7 +133,7 @@ PI_THREAD(main_thread)
 			old_gyroIntegrate = gyroIntegrate;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
 		}
-		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
+		//teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 
@@ -230,7 +230,7 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[0] = gyroIntegrate;
+			plotvar[0] = gyroIntegrate - teta;
 			plotvar[1] = ((RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494));
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
