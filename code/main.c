@@ -115,7 +115,7 @@ PI_THREAD(main_thread)
 		//lendo o gyro
 		*/
 		
-		
+/*		
 		teta_linha = imu.gyro.treatedY - (-0.132567);
 
 		if(temp != imu.last_update)
@@ -166,8 +166,8 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		delay(5);
-		
-		/*
+*/		
+//*		
 		if(js.lanalog.up)
 		{
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -186,7 +186,7 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 		}
 		delay(20);
-		*/
+//*/
 	}
 	main_finished = 1;
 }
