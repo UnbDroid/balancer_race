@@ -1,3 +1,9 @@
-Função da matriz de covariância que "não existe"
-Como fazer o alpha do filtro passa-baixa de acordo com a frequência de amostragem
+//Função da matriz de covariância que "não existe"
+//Como fazer o alpha do filtro passa-baixa de acordo com a frequência de amostragem
 
+
+- Fazer a modelagem, para colocar na predição do filtro de kalman
+	- Controle de velocidade das rodas?
+	- Giroscópio funciona bem, dois problemas principais que devem ser sesolvidos com uma referencia obsolua(vinda deo filtro de kalman por exemplo):
+		- Valor inicial de teta
+		- Driffit
