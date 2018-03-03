@@ -88,7 +88,7 @@ PI_THREAD(main_thread)
 	}
 	bw_raw[4] = 0;*/
 	delay(30);
-	teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX))- (-97.045494);
+	teta = (RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494);
 	//printf("%f\n", teta);
 	gyroIntegrate = teta;
 	//gyroIntegrate = 0;
@@ -114,6 +114,8 @@ PI_THREAD(main_thread)
 		printf("%f\n", teta);
 		//lendo o gyro
 		*/
+		
+		/*
 		teta_linha = imu.gyro.treatedY - (-0.132567);
 
 		if(temp != imu.last_update)
@@ -125,7 +127,7 @@ PI_THREAD(main_thread)
 			temp = imu.last_update;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
 		}
-		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-95.916);
+		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 		if (0.0001>gyroIntegrate && gyroIntegrate>-0.0001)
@@ -162,6 +164,26 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		delay(5);
+		*/
+
+		if(js.lanalog.up)
+		{
+			OnFwd(LMOTOR, js.lanalog.up);
+		} else if (js.lanalog.down) {
+			OnRev(LMOTOR, js.lanalog.down);
+		} else {
+			Brake(LMOTOR);
+		}
+
+		if(js.ranalog.up)
+		{
+			OnFwd(RMOTOR, js.ranalog.up);
+		} else if (js.ranalog.down) {
+			OnRev(RMOTOR, js.ranalog.down);
+		} else {
+			Brake(RMOTOR);
+		}
+		delay(20);
 	}
 	main_finished = 1;
 }
@@ -186,11 +208,8 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[2] = teta;
-			//plotvar[1] = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX) - (-95.916));
-			//plotvar[2] = teta_linha;//(RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX) - (-95.416));
 			plotvar[0] = gyroIntegrate;
-			plotvar[1] = 0;
+			plotvar[1] = ((RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494));
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -273,7 +292,7 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 4 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 5 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;

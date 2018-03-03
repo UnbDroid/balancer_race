@@ -292,7 +292,7 @@ void initMPU9250()
 		k_n[c] = 0;
 	}
 
-	imu.n_measurements = 0;
+	imu.accel.n_measurements = 0;
 
 	// Preparing the windows for median filter
 	imu.accel.Xvec[1] = -2;
@@ -385,9 +385,9 @@ void update_imu()
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	
 	// Median and low-pass filtering for the accelerometer
-	imu.accel.Xvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
-	imu.accel.Yvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
-	imu.accel.Zvec[imu.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
+	imu.accel.Xvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
+	imu.accel.Yvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
+	imu.accel.Zvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
 	QuickSort(imu.accel.Xvec, ACCEL_MEDIAN_SIZE);
 	QuickSort(imu.accel.Yvec, ACCEL_MEDIAN_SIZE);
 	QuickSort(imu.accel.Zvec, ACCEL_MEDIAN_SIZE);
