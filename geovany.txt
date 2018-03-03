@@ -4,7 +4,10 @@
 
 6 de março
 - Fazer a modelagem, para colocar na predição do filtro de kalman
+	- Ainda cabe o uso da TRIAD?
 	- Controle de velocidade das rodas?
-	- Giroscópio funciona bem, dois problemas principais que devem ser sesolvidos com uma referencia obsolua(vinda deo filtro de kalman por exemplo):
+	- Giroscópio funciona bem, dois problemas principais que devem
+	ser resolvidos com uma referencia absoluta (vinda do filtro
+	de kalman por exemplo):
 		- Valor inicial de teta
-		- Driffit
+		- Drift

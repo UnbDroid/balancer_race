@@ -26,7 +26,7 @@ int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 int plot_flag = 0;
 long plot_time = 5;
 
-int shutdown_flag = 0, reboot = 0, call_watcher=0;	// flags set by joystick
+int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
 													// program knows what to
 													// do when finishing up.
@@ -57,9 +57,16 @@ double bw_raw[5];
 */
 
 #define DEV_ACC_Z_OVER_X 97.1256
-float KP = 385; //325;
-float KD = 15; //10;
-float KI = 20;
+// motor grande
+//float KP = 385; //325;
+//float KD = 15; //10;
+//float KI = 20;
+
+// motor pequeno
+float KP = 125; //325;
+float KD = 2.5;
+float KI = 0.7;
+
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
 int pot = 0;
@@ -68,7 +75,6 @@ float dev_teta;
 unsigned long long int temp = 0;
 double offset;
 float tetaIntegrat = 0;
-
 
 PI_THREAD(main_thread)
 {
@@ -87,9 +93,9 @@ PI_THREAD(main_thread)
 		bw_filtered[i] = 0.0;
 	}
 	bw_raw[4] = 0;*/
-	//delay(30);
+	delay(30);
 	teta = (RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494);
-	//printf("%f\n", teta);
+	printf("%f\n", teta);
 	gyroIntegrate = teta;
 	//gyroIntegrate = 0;
 	while(keep_running)
@@ -114,9 +120,8 @@ PI_THREAD(main_thread)
 		printf("%f\n", teta);
 		//lendo o gyro
 		*/
-		
-/*		
-		teta_linha = imu.gyro.treatedY - (-0.132567);
+				
+		teta_linha = imu.gyro.treatedY - (-0.131567);
 
 		if(temp != imu.last_update)
 		{
@@ -134,7 +139,8 @@ PI_THREAD(main_thread)
 
 		if (old_gyroIntegrate/(abs(old_gyroIntegrate)) != gyroIntegrate/(abs(gyroIntegrate)))
 		{
-			tetaIntegrat = 0;
+			//tetaIntegrat = 0;
+			tetaIntegrat += gyroIntegrate;
 		}
 		else
 		{
@@ -142,7 +148,8 @@ PI_THREAD(main_thread)
 		}
 		pot = (int)(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
 		//pot = 0;
-		int dz = 25;
+		//int dz = 25;
+		int dz = 230;
 		
 		if(pot < 0)
 		{
@@ -165,9 +172,10 @@ PI_THREAD(main_thread)
 		}
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
-		delay(5);
-*/		
-//*		
+		//printf("%f\n", gyroIntegrate);
+		delay(1);
+
+/*		
 		if(js.lanalog.up)
 		{
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -186,7 +194,18 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 		}
 		delay(20);
-//*/
+*/
+/*
+		if(js.LB)
+		{
+			++pot;
+		} else if (js.RB) {
+			--pot;
+		}
+		OnFwd(LMOTOR, pot);
+		OnFwd(RMOTOR, pot);
+		delay(200);
+*/
 	}
 	main_finished = 1;
 }
@@ -199,9 +218,9 @@ PI_THREAD(plot)
 	FILE *fp;
 	unsigned long long int last_fprintf = 0;
 	int i = 0;
-	char fname[15];
+	char fname[40];
 	do {
-		snprintf(fname, 15, "plot_data_%03d", i);
+		snprintf(fname, 40, "/home/pi/datalog/plot_data_%03d", i);
 		++i;
 	} while(exists(fname));
 	fp = fopen(fname, "w");
@@ -266,8 +285,8 @@ PI_THREAD(joystick)
 	if(js.dpad.down) shutdown_flag = 1;
 	// UP+START+SELECT: reboots the Raspberry Pi Zero W
 	if(js.dpad.up) reboot = 1;
-	// LEFT+START+SELECT: calls the watcher program
-	if(js.dpad.left) call_watcher = 1;
+	// LEFT+START+SELECT: closes the program, not calling the watcher
+	if(js.dpad.left) close_program = 1;
 
 	keep_running = 0;
 	joystick_finished = 1;
@@ -411,7 +430,7 @@ void clean_up()
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (call_watcher) 
+	else if (!close_program && !plot_flag) 
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
