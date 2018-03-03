@@ -61,7 +61,7 @@ float KP = 385; //325;
 float KD = 15; //10;
 float KI = 20;
 float teta = 0, teta_linha, teta_raw;
-float gyroIntegrate = 0;
+float gyroIntegrate = 0, old_gyroIntegrate = 0;
 int pot = 0;
 float GK;
 float dev_teta;
@@ -87,7 +87,7 @@ PI_THREAD(main_thread)
 		bw_filtered[i] = 0.0;
 	}
 	bw_raw[4] = 0;*/
-	delay(30);
+	//delay(30);
 	teta = (RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494);
 	//printf("%f\n", teta);
 	gyroIntegrate = teta;
@@ -115,7 +115,7 @@ PI_THREAD(main_thread)
 		//lendo o gyro
 		*/
 		
-		/*
+		
 		teta_linha = imu.gyro.treatedY - (-0.132567);
 
 		if(temp != imu.last_update)
@@ -125,12 +125,14 @@ PI_THREAD(main_thread)
 				//offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
 			temp = imu.last_update;
+			old_gyroIntegrate = gyroIntegrate;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
 		}
 		teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
-		if (0.0001>gyroIntegrate && gyroIntegrate>-0.0001)
+
+		if (old_gyroIntegrate/(abs(old_gyroIntegrate)) != gyroIntegrate/(abs(gyroIntegrate)))
 		{
 			tetaIntegrat = 0;
 		}
@@ -164,8 +166,8 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		delay(5);
-		*/
-
+		
+		/*
 		if(js.lanalog.up)
 		{
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -184,6 +186,7 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 		}
 		delay(20);
+		*/
 	}
 	main_finished = 1;
 }
