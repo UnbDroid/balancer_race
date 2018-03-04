@@ -3,8 +3,8 @@ clear
 clc
 close all
 
-%system('rm -f ../MATLAB/plots/fastplot/*');
-%system('sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_* ../MATLAB/plots/fastplot/');
+system('rm -f ../MATLAB/plots/fastplot/*');
+system('sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_* ../MATLAB/plots/fastplot/');
 
 i = 0;
 fname = sprintf('../MATLAB/plots/fastplot/plot_data_%03d', i);
