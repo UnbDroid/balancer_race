@@ -1,8 +1,14 @@
-system('rm -f ../MATLAB/plots/fastplot/*');
-system('sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_* ../MATLAB/plots/fastplot/');
+%limpando a bagunça
+clear
+clc
+close all
+
+%system('rm -f ../MATLAB/plots/fastplot/*');
+%system('sshpass -p godroidgo scp pi@192.168.200.1:/home/pi/datalog/plot_data_* ../MATLAB/plots/fastplot/');
 
 i = 0;
-while(exist(fname = sprintf('../MATLAB/plots/fastplot/plot_data_%03d', i)))
+fname = sprintf('../MATLAB/plots/fastplot/plot_data_%03d', i);
+while(exist(fname))
 	data = load(fname);
 	n_measurements = size(data, 1);
 	n_vals = size(data, 2);
@@ -10,14 +16,17 @@ while(exist(fname = sprintf('../MATLAB/plots/fastplot/plot_data_%03d', i)))
 	figure(i+1);
 	clf
 	hold on;
-	for i = 2:n_vals;
-		d = data(2:end, i);
+	for j = 2:n_vals;
+		d = data(2:end, j);
 		plot(t, d);
 	end
 	xlabel('Time (us)');
 	ylabel('Angle (°)');
-	title(fname);
+	titulo = sprintf('file %03d', i);
+	title(titulo);
+	legend();
 	i = i+1;
+	fname = sprintf('../MATLAB/plots/fastplot/plot_data_%03d', i);
 end
 
 %
