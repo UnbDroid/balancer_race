@@ -69,12 +69,14 @@ float KI = 0.7;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
-int pot = 0, dir;
+int pot = 1023, dir;
 float GK;
 float dev_teta;
 unsigned long long int temp = 0;
 int flag;
 float tetaIntegrat = 0;
+
+double speed;
 
 PI_THREAD(main_thread)
 {
@@ -93,6 +95,7 @@ PI_THREAD(main_thread)
 		bw_filtered[i] = 0.0;
 	}
 	bw_raw[4] = 0;*/
+
 	delay(30);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	//printf("%f\n", teta);
@@ -120,7 +123,8 @@ PI_THREAD(main_thread)
 		printf("%f\n", teta);
 		//lendo o gyro
 		*/
-				
+
+/*				
 		teta_linha = imu.gyro.treatedY - (-0.131567);
 
 		if(temp != imu.last_update)
@@ -177,7 +181,7 @@ PI_THREAD(main_thread)
 		//printf("%f\n", imu.dt);
 		//printf("%f\n", gyroIntegrate);
 		delay(1);
-
+*/
 /*		
 		if(js.lanalog.up)
 		{
@@ -226,6 +230,10 @@ PI_THREAD(main_thread)
 		OnFwd(RMOTOR, pot);
 		delay(10);
 */
+		speed = 1;
+		setMotorSpeed(LMOTOR, speed);
+		setMotorSpeed(RMOTOR, speed);
+		delay(10000);
 	}
 	main_finished = 1;
 }
@@ -251,10 +259,11 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = 9.8*imu.accel.filteredX;
-			plotvar[1] = 9.8*imu.accel.filteredZ;
-			plotvar[2] = (left_motor.accel + right_motor.accel)/2.0;
-			plotvar[3] = 0;
+			plotvar[0] = speed;
+			plotvar[1] = left_motor.filtered_speed;
+			plotvar[2] = right_motor.filtered_speed;
+			plotvar[3] = left_motor.displacement;
+			plotvar[4] = right_motor.displacement;
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -351,7 +360,6 @@ PI_THREAD(sensors)
 			last_update = now_time;
 			update_ir();
 			update_imu();
-			update_motors();
 			update_kalman();
 		} else {
 			delayMicroseconds(100);
@@ -363,12 +371,16 @@ PI_THREAD(sensors)
 PI_THREAD(motors)
 {
 	motors_finished = 0;
+	piHiPri(10);
 	while(keep_running)
 	{
-
+		update_motors();
+		delay(5);
 	}
 	motors_finished = 1;
 }
+
+
 
 /*
 This is the debug thread. It runs the debug screen code and is only run if the
@@ -457,7 +469,7 @@ void clean_up()
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished));
+	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished && motors_finished));
 	set_color(WHITE, 255);
 	light_rgb();
 
@@ -517,6 +529,7 @@ int main(int argc, char* argv[])
 	init_sensors();
 
 	piThreadCreate(main_thread);
+	piThreadCreate(motors);
 	piThreadCreate(sensors);
 	if(!plot_flag) piThreadCreate(joystick);
 	piThreadCreate(led);

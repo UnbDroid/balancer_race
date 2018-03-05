@@ -33,6 +33,7 @@ struct motor {
 	volatile long long int posCounter;
 	double displacement, raw_speed, filtered_speed, accel;
 	double last_pos;
+	double set_speed;
 	unsigned long int last_update;
 };
 
@@ -92,6 +93,46 @@ void init_motors()
 	right_motor.last_update = now;
 }
 
+void Brake(int motor)
+{
+	if(motor == LMOTOR)
+	{
+		digitalWrite(M_LEFT_A, HIGH);
+		digitalWrite(M_LEFT_B, HIGH);
+		pwmWrite(PWM_LEFT, 0);
+		left_motor.a_port = 1;
+    	left_motor.b_port = 1;
+    	left_motor.pwm = 0;
+	} else if (motor == RMOTOR) {
+		digitalWrite(M_RIGHT_A, HIGH);
+		digitalWrite(M_RIGHT_B, HIGH);
+		pwmWrite(PWM_RIGHT, 0);
+		right_motor.a_port = 1;
+    	right_motor.b_port = 1;
+    	right_motor.pwm = 0;
+	}
+}
+
+void Coast(int motor)
+{
+	if(motor == LMOTOR)
+	{
+		digitalWrite(M_LEFT_A, LOW);
+		digitalWrite(M_LEFT_B, LOW);
+		pwmWrite(PWM_LEFT, 0);
+		left_motor.a_port = 0;
+    	left_motor.b_port = 0;
+    	left_motor.pwm = 0;
+	} else if (motor == RMOTOR) {
+		digitalWrite(M_RIGHT_A, LOW);
+		digitalWrite(M_RIGHT_B, LOW);
+		pwmWrite(PWM_RIGHT, 0);
+		right_motor.a_port = 0;
+    	right_motor.b_port = 0;
+    	right_motor.pwm = 0;
+	}
+}
+
 void OnFwd(int motor, int power)
 {
 	if(power >= 0)
@@ -137,7 +178,7 @@ void OnFwd(int motor, int power)
 
 void OnRev(int motor, int power)
 {
-	if(power >= 0)
+	if(power > 0)
 	{
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
@@ -156,7 +197,7 @@ void OnRev(int motor, int power)
 	    	right_motor.b_port = 0;
 	    	right_motor.pwm = power;
 		}
-	} else {
+	} else if(power < 0) {
 		power = -power;
 		if(power > 1023) power = 1023;
 		if(motor == LMOTOR)
@@ -175,47 +216,39 @@ void OnRev(int motor, int power)
 	    	right_motor.b_port = 1;
 	    	right_motor.pwm = power;
 		}
+	} else {
+		if(motor == LMOTOR)
+		{
+			Brake(LMOTOR);
+		} else if(motor == RMOTOR) {
+			Brake(RMOTOR);
+		}
 	}
 }
 
-void Brake(int motor)
+void setMotorSpeed(int motor, double speed)
 {
 	if(motor == LMOTOR)
 	{
-		digitalWrite(M_LEFT_A, HIGH);
-		digitalWrite(M_LEFT_B, HIGH);
-		pwmWrite(PWM_LEFT, 0);
-		left_motor.a_port = 1;
-    	left_motor.b_port = 1;
-    	left_motor.pwm = 0;
+		left_motor.set_speed = speed;
 	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, HIGH);
-		digitalWrite(M_RIGHT_B, HIGH);
-		pwmWrite(PWM_RIGHT, 0);
-		right_motor.a_port = 1;
-    	right_motor.b_port = 1;
-    	right_motor.pwm = 0;
+		right_motor.set_speed = speed;
 	}
 }
 
-void Coast(int motor)
+void speedControl()
 {
-	if(motor == LMOTOR)
-	{
-		digitalWrite(M_LEFT_A, LOW);
-		digitalWrite(M_LEFT_B, LOW);
-		pwmWrite(PWM_LEFT, 0);
-		left_motor.a_port = 0;
-    	left_motor.b_port = 0;
-    	left_motor.pwm = 0;
-	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, LOW);
-		digitalWrite(M_RIGHT_B, LOW);
-		pwmWrite(PWM_RIGHT, 0);
-		right_motor.a_port = 0;
-    	right_motor.b_port = 0;
-    	right_motor.pwm = 0;
-	}
+	double err;
+	int pot;
+	double KP = 500;
+
+	err = (left_motor.set_speed - left_motor.filtered_speed);
+	pot = KP*err;
+	OnFwd(LMOTOR, pot);
+
+	err = (right_motor.set_speed - right_motor.filtered_speed);
+	pot = KP*err;
+	OnFwd(RMOTOR, pot);
 }
 
 void update_motors()
@@ -247,4 +280,6 @@ void update_motors()
 
 	right_motor.last_pos = right_motor.displacement;
 	right_motor.last_update = now;
+
+	speedControl();
 }
