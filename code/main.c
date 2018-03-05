@@ -20,7 +20,7 @@ int keep_running = 1;	// end of program flag. it is controlled by the
 						// the main program can clean everything up and end.
 
 int main_finished = 1, led_finished = 1, joystick_finished = 1;
-int debug_finished = 1, sensors_finished = 1;
+int debug_finished = 1, sensors_finished = 1, motors_finished = 1;
 int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 
 int plot_flag = 0;
@@ -38,7 +38,7 @@ new features using the joystick controller.
 */
 
 /*
-//Buttherworth Filter - A manteiga que vale
+//Butterworth Filter - A manteiga que vale
 #define A0 1.000000000000000
 #define A1 -1.968427786938518
 #define A2 1.735860709208886
@@ -94,12 +94,12 @@ PI_THREAD(main_thread)
 	}
 	bw_raw[4] = 0;*/
 	delay(30);
-	teta = (RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX)) - (-97.045494);
-	printf("%f\n", teta);
+	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
+	//printf("%f\n", teta);
 	//gyroIntegrate = teta;
 	gyroIntegrate = 0;
 	while(keep_running)
-	{		
+	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
 		
@@ -132,6 +132,7 @@ PI_THREAD(main_thread)
 			temp = imu.last_update;
 			old_gyroIntegrate = gyroIntegrate;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
+			teta = teta+teta_linha*imu.dt;
 		}
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
@@ -209,10 +210,10 @@ PI_THREAD(main_thread)
 		delay(200);
 */
 /*
-		if(pot >= 1024)
+		if(pot > 1023)
 		{
 			flag = 0;
-		} else if(pot <= 0) {
+		} else if(pot < -1023) {
 			flag = 1;
 		}
 		if(flag)
@@ -221,8 +222,8 @@ PI_THREAD(main_thread)
 		} else {
 			--pot;
 		}
-		OnRev(LMOTOR, pot);
-		OnRev(RMOTOR, pot);
+		OnFwd(LMOTOR, pot);
+		OnFwd(RMOTOR, pot);
 		delay(10);
 */
 	}
@@ -249,10 +250,11 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			plotvar[0] = gyroIntegrate;
-			plotvar[1] = pot*dir;
-			plotvar[2] = left_motor.tickFreq;
-			plotvar[3] = right_motor.tickFreq;
+			//plotvar[0] = gyroIntegrate;
+			plotvar[0] = 9.8*imu.accel.filteredX;
+			plotvar[1] = 9.8*imu.accel.filteredZ;
+			plotvar[2] = (left_motor.accel + right_motor.accel)/2.0;
+			plotvar[3] = 0;
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -349,12 +351,23 @@ PI_THREAD(sensors)
 			last_update = now_time;
 			update_ir();
 			update_imu();
+			update_motors();
 			update_kalman();
 		} else {
 			delayMicroseconds(100);
 		}
 	}
 	sensors_finished = 1;
+}
+
+PI_THREAD(motors)
+{
+	motors_finished = 0;
+	while(keep_running)
+	{
+
+	}
+	motors_finished = 1;
 }
 
 /*
@@ -369,7 +382,6 @@ PI_THREAD(debug_thread)
 	init_debug();
 	while(keep_running)
 	{
-		update_motors();
 		debug.js = js;
 		debug.left_motor = left_motor;
 		debug.right_motor = right_motor;
