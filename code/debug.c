@@ -102,10 +102,10 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%09lld\n", 23, 49, debug->right_motor.posCounter);
 	printf("\033[%d;%dH%011.3f\n", 24, 29, debug->left_motor.displacement);
 	printf("\033[%d;%dH%011.3f\n", 24, 47, debug->right_motor.displacement);
-	printf("\033[%d;%dH%010ld\n", 25, 30, debug->left_motor.tickFreq);
-	printf("\033[%d;%dH%010ld\n", 25, 48, debug->right_motor.tickFreq);
-	printf("\033[%d;%dH%09.3f\n", 26, 31, debug->left_motor.speed);
-	printf("\033[%d;%dH%09.3f\n", 26, 49, debug->right_motor.speed);
+	printf("\033[%d;%dH%010ld\n", 25, 30, 0); // We're not calculating tickFreq anymore so this line is free.
+	printf("\033[%d;%dH%010ld\n", 25, 48, 0);
+	//printf("\033[%d;%dH%09.3f\n", 26, 31, debug->left_motor.speed);
+	//printf("\033[%d;%dH%09.3f\n", 26, 49, debug->right_motor.speed);
 	if(debug->ir.left)
 		printf("\033[%d;%dHOn \n", 27, 17);
 	else

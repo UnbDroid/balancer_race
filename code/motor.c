@@ -25,40 +25,37 @@
 #define WHEEL_RADIUS 0.05
 #define TICKS2METERS 0.00078539816 //WHEEL_RADIUS*3.14159265358979323846/200
 
+#define ALPHA_MOTORS 0.9
+
 struct motor {
 	int a_port, b_port;
 	int pwm;
 	volatile long long int posCounter;
-	volatile unsigned long int tickFreq;
-	volatile unsigned long int lastTick;
-	volatile unsigned long int currTick;
-	double displacement, speed;
+	double displacement, raw_speed, filtered_speed, accel;
+	double last_pos;
+	unsigned long int last_update;
 };
 
 struct motor left_motor, right_motor;
 
-void encoderInterruptLeft(void) {
+void encoderInterruptLeft(void)
+{
   if(digitalRead(DIR_PIN_LEFT))
   {
-    left_motor.posCounter += 1;
+    ++left_motor.posCounter;
   } else {
-    left_motor.posCounter -= 1;
+    --left_motor.posCounter;
   }
-  left_motor.currTick = micros();
-  left_motor.tickFreq = 1000000/(left_motor.currTick-left_motor.lastTick);
-  left_motor.lastTick = left_motor.currTick;
 }
 
-void encoderInterruptRight(void) {
+void encoderInterruptRight(void)
+{
   if(digitalRead(DIR_PIN_RIGHT))
   {
-    right_motor.posCounter -= 1;
+    --right_motor.posCounter;
   } else {
-    right_motor.posCounter += 1;
+    ++right_motor.posCounter;
   }
-  right_motor.currTick = micros();
-  right_motor.tickFreq = 1000000/(right_motor.currTick-right_motor.lastTick);
-  right_motor.lastTick = right_motor.currTick;
 }
 
 void init_motors()
@@ -76,6 +73,23 @@ void init_motors()
 	pwmSetMode(PWM_MODE_MS);
 	pwmSetRange(1023);
 	pwmSetClock(2);
+	pwmWrite(PWM_LEFT, 0);
+	pwmWrite(PWM_RIGHT, 0);
+	unsigned long int now = micros();
+	left_motor.pwm = 0;
+	left_motor.posCounter = 0;
+	left_motor.displacement = 0;
+	left_motor.raw_speed = 0;
+	left_motor.filtered_speed = 0;
+	left_motor.last_pos = 0;
+	left_motor.last_update = now;
+	right_motor.pwm = 0;
+	right_motor.posCounter = 0;
+	right_motor.displacement = 0;
+	right_motor.raw_speed = 0;
+	right_motor.filtered_speed = 0;
+	right_motor.last_pos = 0;
+	right_motor.last_update = now;
 }
 
 void OnFwd(int motor, int power)
@@ -204,36 +218,33 @@ void Coast(int motor)
 	}
 }
 
-int TachoCount(int motor)
-{
-	if(motor == LMOTOR)
-	{
-		return left_motor.posCounter;
-	} else if(motor == RMOTOR)
-	{
-		return right_motor.posCounter;
-	} else {
-		return 0;
-	}
-}
-
-int TachoSpeed(int motor)
-{
-	if(motor == LMOTOR)
-	{
-		return left_motor.tickFreq;
-	} else if(motor == RMOTOR)
-	{
-		return right_motor.tickFreq;
-	} else {
-		return 0;
-	}
-}
-
 void update_motors()
 {
+	unsigned long int now;
+	double last_speed;
+
+	now = micros();
 	left_motor.displacement = left_motor.posCounter*TICKS2METERS;
-	left_motor.speed = left_motor.tickFreq*TICKS2METERS;
+	
+	last_speed = left_motor.filtered_speed;
+	left_motor.raw_speed = 1000000.0*(left_motor.displacement - left_motor.last_pos)/(now - left_motor.last_update);
+	left_motor.filtered_speed = ALPHA_MOTORS*left_motor.filtered_speed + (1-ALPHA_MOTORS)*left_motor.raw_speed;
+	
+	left_motor.accel = 1000000.0*(left_motor.filtered_speed - last_speed)/(now - left_motor.last_update);
+
+	left_motor.last_pos = left_motor.displacement;
+	left_motor.last_update = now;
+
+
+	now = micros();
 	right_motor.displacement = right_motor.posCounter*TICKS2METERS;
-	right_motor.speed = right_motor.tickFreq*TICKS2METERS;
+	
+	last_speed = right_motor.filtered_speed;
+	right_motor.raw_speed = 1000000.0*(right_motor.displacement - right_motor.last_pos)/(now - right_motor.last_update);
+	right_motor.filtered_speed = ALPHA_MOTORS*right_motor.filtered_speed + (1-ALPHA_MOTORS)*right_motor.raw_speed;
+	
+	right_motor.accel = 1000000.0*(right_motor.filtered_speed - last_speed)/(now - right_motor.last_update);
+
+	right_motor.last_pos = right_motor.displacement;
+	right_motor.last_update = now;
 }
