@@ -236,18 +236,32 @@ void setMotorSpeed(int motor, double speed)
 	}
 }
 
+unsigned long int agora = 0, agora_old = 0;
+double errL, errR, old_errL, old_errR, derrL, derrR, interrL = 0, interrR = 0, dt;
+int pot;
+double motorKP = 6000;
+double motorKI = 6000;
+double motorKD = 75;
+
+
 void speedControl()
 {
-	double err;
-	int pot;
-	double KP = 500;
+	agora_old = agora;
+	agora = micros();
+	dt = (double)(agora - agora_old)/(1000000.0);
 
-	err = (left_motor.set_speed - left_motor.filtered_speed);
-	pot = KP*err;
+	old_errR = errR;
+	errR = (left_motor.set_speed - left_motor.filtered_speed);
+	derrR = (errR - old_errR)/dt;
+	interrR += errR*dt;
+	pot = motorKP*errR + motorKI*interrR + motorKD*derrR;
 	OnFwd(LMOTOR, pot);
 
-	err = (right_motor.set_speed - right_motor.filtered_speed);
-	pot = KP*err;
+	old_errL = errL;
+	errL = (left_motor.set_speed - left_motor.filtered_speed);
+	derrL = (errL - old_errL)/dt;
+	interrL += errL*dt;
+	pot = motorKP*errL + motorKI*interrL + motorKD*derrL;
 	OnFwd(RMOTOR, pot);
 }
 
