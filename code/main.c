@@ -63,9 +63,9 @@ double bw_raw[5];
 //float KI = 20;
 
 // motor pequeno
-float KP = 125; //325;
-float KD = 2.5;
-float KI = 0.7;
+float KP = 0.2;//125; //325;
+float KD = 0.001;//2.5;
+float KI = 0.0055;//0.7;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
@@ -76,7 +76,7 @@ unsigned long long int temp = 0;
 int flag;
 float tetaIntegrat = 0;
 
-double speed;
+double speed = 0;
 
 PI_THREAD(main_thread)
 {
@@ -124,7 +124,7 @@ PI_THREAD(main_thread)
 		//lendo o gyro
 		*/
 
-/*				
+				
 		teta_linha = imu.gyro.treatedY - (-0.131567);
 
 		if(temp != imu.last_update)
@@ -142,19 +142,18 @@ PI_THREAD(main_thread)
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 
-		if (old_gyroIntegrate/(abs(old_gyroIntegrate)) != gyroIntegrate/(abs(gyroIntegrate)))
-		{
-			//tetaIntegrat = 0;
-			tetaIntegrat += gyroIntegrate;
-		}
-		else
-		{
-			tetaIntegrat += gyroIntegrate;
-		}
-		pot = (int)(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
+		
+		//tetaIntegrat = 0;
+		tetaIntegrat += gyroIntegrate;
+	 	speed = -(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
+		
+		
+		setMotorSpeed(LMOTOR, speed);
+		setMotorSpeed(RMOTOR, speed);
+
 		//pot = 0;
 		//int dz = 25;
-		int dz = 230;
+		/*int dz = 230;
 		
 		if(pot < 0)
 		{
@@ -180,8 +179,9 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		//printf("%f\n", gyroIntegrate);
+		*/
 		delay(1);
-*/
+
 /*		
 		if(js.lanalog.up)
 		{
@@ -230,10 +230,12 @@ PI_THREAD(main_thread)
 		OnFwd(RMOTOR, pot);
 		delay(10);
 */
-		speed = 1;
+/*
+		speed += 0.001;
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
-		delay(10000);
+		delay(1);
+		*/
 	}
 	main_finished = 1;
 }
@@ -259,11 +261,11 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = speed;
-			plotvar[1] = left_motor.filtered_speed;
-			plotvar[2] = right_motor.filtered_speed;
-			plotvar[3] = left_motor.displacement;
-			plotvar[4] = right_motor.displacement;
+			plotvar[0] = tetaIntegrat;
+			plotvar[1] = 0;
+			plotvar[2] = gyroIntegrate;
+			//plotvar[3] = left_motor.displacement;
+			//plotvar[4] = right_motor.displacement;
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
