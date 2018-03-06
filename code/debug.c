@@ -47,8 +47,8 @@ void init_debug()
 	printf(".                  ``` A:* B:* PWM:****  A:* B:* PWM:**** ```                  .\n");
 	printf(".                ``    Ticks: *********  Ticks: *********    ``                .\n");
 	printf(".              ``      Pos: ***********  Pos: ***********      ``              .\n");
-	printf(" .           ``        Freq: **********  Freq: **********        ``           . \n");
-	printf("  ``       `` Left IR  Speed: *********  Speed: ********* Right IR ``       ``  \n");
+	printf(" .           ``        RawSpeed: ******  RawSpeed: ******        ``           . \n");
+	printf("  ``       `` Left IR  FiltSpeed: *****  FiltSpeed: ***** Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
 	printf("         Yaw       Pitch     Roll       1:                                      \n");
 	printf("  Pos:   ******    ******    ******     2:                                      \n");
@@ -102,10 +102,10 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%09lld\n", 23, 49, debug->right_motor.posCounter);
 	printf("\033[%d;%dH%011.3f\n", 24, 29, debug->left_motor.displacement);
 	printf("\033[%d;%dH%011.3f\n", 24, 47, debug->right_motor.displacement);
-	printf("\033[%d;%dH%010ld\n", 25, 30, 0); // We're not calculating tickFreq anymore so this line is free.
-	printf("\033[%d;%dH%010ld\n", 25, 48, 0);
-	//printf("\033[%d;%dH%09.3f\n", 26, 31, debug->left_motor.speed);
-	//printf("\033[%d;%dH%09.3f\n", 26, 49, debug->right_motor.speed);
+	printf("\033[%d;%dH%+06.3f\n", 25, 30, debug->left_motor.raw_speed);
+	printf("\033[%d;%dH%+06.3f\n", 25, 48, debug->right_motor.raw_speed);
+	printf("\033[%d;%dH%+05.2f\n", 26, 31, debug->left_motor.filtered_speed);
+	printf("\033[%d;%dH%+05.2f\n", 26, 49, debug->right_motor.filtered_speed);
 	if(debug->ir.left)
 		printf("\033[%d;%dHOn \n", 27, 17);
 	else

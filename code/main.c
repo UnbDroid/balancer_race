@@ -124,7 +124,7 @@ PI_THREAD(main_thread)
 		//lendo o gyro
 		*/
 
-				
+/*				
 		teta_linha = imu.gyro.treatedY - (-0.131567);
 
 		if(temp != imu.last_update)
@@ -179,9 +179,9 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		//printf("%f\n", gyroIntegrate);
-		*/
+		
 		delay(1);
-
+*/
 /*		
 		if(js.lanalog.up)
 		{
@@ -213,29 +213,30 @@ PI_THREAD(main_thread)
 		OnFwd(RMOTOR, pot);
 		delay(200);
 */
-/*
-		if(pot > 1023)
+
+		if(speed > 2)
 		{
 			flag = 0;
-		} else if(pot < -1023) {
+		} else if(speed < 0) {
 			flag = 1;
 		}
+		flag = 1;
 		if(flag)
 		{
-			++pot;
+			speed += 0.0006;
 		} else {
-			--pot;
+			speed -= 0.0006;
 		}
-		OnFwd(LMOTOR, pot);
-		OnFwd(RMOTOR, pot);
-		delay(10);
-*/
-/*
-		speed += 0.001;
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
+		delay(10);
+
+/*
+		speed = 1.5;
+		setMotorSpeed(LMOTOR, speed);6
+		//setMotorSpeed(RMOTOR, speed);
 		delay(1);
-		*/
+*/
 	}
 	main_finished = 1;
 }
@@ -261,9 +262,11 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = tetaIntegrat;
-			plotvar[1] = 0;
-			plotvar[2] = gyroIntegrate;
+			plotvar[0] = speed;
+			plotvar[1] = left_motor.filtered_speed;
+			plotvar[2] = right_motor.filtered_speed;
+			plotvar[3] = left_motor.displacement;
+			plotvar[4] = right_motor.displacement;
 			//plotvar[3] = left_motor.displacement;
 			//plotvar[4] = right_motor.displacement;
 			fprintf(fp, "%lld ", imu.last_update);
