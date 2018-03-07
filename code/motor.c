@@ -17,6 +17,14 @@
 #define LMOTOR 0
 #define RMOTOR 1
 
+#define LMKP 6000
+#define LMKI 6000
+#define LMKD 75
+
+#define RMKP 6000
+#define RMKI 6000
+#define RMKD 75
+
 #define ENC_PIN_LEFT 18
 #define DIR_PIN_LEFT 16
 #define ENC_PIN_RIGHT 38
@@ -33,8 +41,9 @@ struct motor {
 	volatile long long int posCounter;
 	double displacement, raw_speed, filtered_speed, accel;
 	double last_pos;
-	double set_speed;
+	double set_speed, speed_err_p, speed_err_i, speed_err_d;
 	unsigned long int last_update;
+	double dt;
 };
 
 struct motor left_motor, right_motor;
@@ -236,33 +245,24 @@ void setMotorSpeed(int motor, double speed)
 	}
 }
 
-unsigned long int agora = 0, agora_old = 0;
-double errL, errR, old_errL, old_errR, derrL, derrR, interrL = 0, interrR = 0, dt;
-int pot;
-double motorKP = 6000;
-double motorKI = 6000;
-double motorKD = 75;
-
-
 void speedControl()
 {
-	agora_old = agora;
-	agora = micros();
-	dt = (double)(agora - agora_old)/(1000000.0);
+	double err;
+	
+	err = (left_motor.set_speed - left_motor.filtered_speed);
+	left_motor.speed_err_i += err*left_motor.dt;
+	left_motor.speed_err_d = (err - left_motor.speed_err_p)/left_motor.dt;
+	left_motor.speed_err_p = err;
+	left_motor.pwm = LMKP*left_motor.speed_err_p + LMKI*left_motor.speed_err_i + LMKD*left_motor.speed_err_d;
 
-	old_errR = errR;
-	errR = (left_motor.set_speed - left_motor.filtered_speed);
-	derrR = (errR - old_errR)/dt;
-	interrR += errR*dt;
-	pot = motorKP*errR + motorKI*interrR + motorKD*derrR;
-	OnFwd(LMOTOR, pot);
-
-	old_errL = errL;
-	errL = (left_motor.set_speed - left_motor.filtered_speed);
-	derrL = (errL - old_errL)/dt;
-	interrL += errL*dt;
-	pot = motorKP*errL + motorKI*interrL + motorKD*derrL;
-	OnFwd(RMOTOR, pot);
+	err = (right_motor.set_speed - right_motor.filtered_speed);
+	right_motor.speed_err_i += err*right_motor.dt;
+	right_motor.speed_err_d = (err - right_motor.speed_err_p)/right_motor.dt;
+	right_motor.speed_err_p = err;
+	right_motor.pwm = RMKP*right_motor.speed_err_p + RMKI*right_motor.speed_err_i + RMKD*right_motor.speed_err_d;
+	
+	OnFwd(LMOTOR, left_motor.pwm);
+	OnFwd(RMOTOR, right_motor.pwm);
 }
 
 void update_motors()
@@ -273,11 +273,13 @@ void update_motors()
 	now = micros();
 	left_motor.displacement = left_motor.posCounter*TICKS2METERS;
 	
+	left_motor.dt = (now - left_motor.last_update)/1000000.0;
+
 	last_speed = left_motor.filtered_speed;
-	left_motor.raw_speed = 1000000.0*(left_motor.displacement - left_motor.last_pos)/(now - left_motor.last_update);
+	left_motor.raw_speed = (left_motor.displacement - left_motor.last_pos)/(left_motor.dt);
 	left_motor.filtered_speed = ALPHA_MOTORS*left_motor.filtered_speed + (1-ALPHA_MOTORS)*left_motor.raw_speed;
 	
-	left_motor.accel = 1000000.0*(left_motor.filtered_speed - last_speed)/(now - left_motor.last_update);
+	left_motor.accel = (left_motor.filtered_speed - last_speed)/(left_motor.dt);
 
 	left_motor.last_pos = left_motor.displacement;
 	left_motor.last_update = now;
@@ -286,11 +288,13 @@ void update_motors()
 	now = micros();
 	right_motor.displacement = right_motor.posCounter*TICKS2METERS;
 	
+	right_motor.dt = (now - right_motor.last_update)/1000000.0;
+
 	last_speed = right_motor.filtered_speed;
-	right_motor.raw_speed = 1000000.0*(right_motor.displacement - right_motor.last_pos)/(now - right_motor.last_update);
+	right_motor.raw_speed = (right_motor.displacement - right_motor.last_pos)/(right_motor.dt);
 	right_motor.filtered_speed = ALPHA_MOTORS*right_motor.filtered_speed + (1-ALPHA_MOTORS)*right_motor.raw_speed;
 	
-	right_motor.accel = 1000000.0*(right_motor.filtered_speed - last_speed)/(now - right_motor.last_update);
+	right_motor.accel = (right_motor.filtered_speed - last_speed)/(right_motor.dt);
 
 	right_motor.last_pos = right_motor.displacement;
 	right_motor.last_update = now;
