@@ -21,8 +21,8 @@
 //encoder
 #define ENCODER_L 0 //interrup port 0, is the pin 2
 #define ENCODER_R 1 //interrup port 1, is the pin 3
-#define DIR_L 11
-#define  DIR_R 12
+#define DIR_L 12
+#define  DIR_R 11
 
 
 //variaveis
@@ -63,36 +63,38 @@ void setup()
         interrupts();
 }
 
-float ref = 0.2;
+float rref = 0, ref = 3;
 
 int flag = 0;
 unsigned long int tempo_loop = 0;
 void loop()
 {
-  if(tempo_loop - millis() > 1000)
-    if(flag)
-      flag = 0;
+  if(millis() - tempo_loop > 1000)
+  {
+    tempo_loop = millis();
+    if(rref == ref)
+      rref = -ref ;
     else
-      flag = 1;
-  if(flag)  
-    UpdateVel(0,ref);
-  else
-    UpdateVel(0,-ref)
+      rref = ref ;
+  }
+  
+ 
+    UpdateVel(0,rref);
 
   if(DEBUG)
   {  
-     Serial.print(ref);
+     Serial.print(rref);
      Serial.print("\t");
      Serial.print(velocidade_direita);
      Serial.print("\t");
-     Serial.println(velocidade_esquerda);
+     Serial.println(0);
   }
   //delay(1);
 }
 
 #define KP 60
 #define KI 200
-#define KD 800
+#define KD 700
 
 float errL = 0, sum_errL = 0, old_errL, derrL;
 float errR = 0, sum_errR = 0, old_errR, derrR; 
@@ -196,6 +198,7 @@ void UpdateVel(float refL,float refR) {
       // if(DEBUG)
       //   Serial.println(tempo_aux);
       controle(refL,refR);
+      //setpot(0,(int)refR);
   }
   // Chama a funcao que calcula a tensao de saida para os motores -----------------------
   //controleAdaptativoVelocidade();
@@ -232,8 +235,8 @@ void interrupt_L() {
 void interrupt_R() {
   noInterrupts();
   if(digitalRead(DIR_R))
-    encoder_posR++;
-  else
     encoder_posR--;
+  else
+    encoder_posR++;
   interrupts();
 }
