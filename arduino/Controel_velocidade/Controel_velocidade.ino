@@ -44,7 +44,7 @@ void startDriver();
 void startEncoder();
 void interrupt_L();
 void interrupt_R();
-void UpdateVel(float refL,float refR);
+int UpdateVel(float refL,float refR);
 void setpot(int potL, int potR);
 void controle(float refL, float refR);
 
@@ -53,48 +53,51 @@ void controle(float refL, float refR);
 //funões principais
 void setup()
 {
-        noInterrupts();
-        
-        startDriver();
-        startEncoder();
-        if(DEBUG)
-         Serial.begin(9600);
-        
-        interrupts();
+  noInterrupts();
+
+  startDriver();
+  startEncoder();
+  if(DEBUG)
+   Serial.begin(9600);
+
+  interrupts();
 }
 
-float rref = 0, ref = 3;
+float rref = 3, ref = 3;
 
 int flag = 0;
 unsigned long int tempo_loop = 0;
 void loop()
 {
-  if(millis() - tempo_loop > 1000)
-  {
-    tempo_loop = millis();
-    if(rref == ref)
-      rref = -ref ;
-    else
-      rref = ref ;
-  }
+  
+
+
+  // if((millis() > 3000)&&(millis() < 8000))
+  // {
+  //   rref = 100;
+  // }
+  // else
+  // {
+  //   rref = 0;
+  // }
   
  
-    UpdateVel(0,rref);
+   //UpdateVel(0,rref)
 
-  if(DEBUG)
+  if(UpdateVel(0,rref))
   {  
+    //Serial.print(tempo_loop);
+     //Serial.print(";");
      Serial.print(rref);
      Serial.print("\t");
-     Serial.print(velocidade_direita);
-     Serial.print("\t");
-     Serial.println(0);
+     Serial.println(velocidade_direita);
   }
   //delay(1);
 }
 
-#define KP 60
-#define KI 200
-#define KD 700
+#define KP 46.15
+#define KI 1056.69
+#define KD 0
 
 float errL = 0, sum_errL = 0, old_errL, derrL;
 float errR = 0, sum_errR = 0, old_errR, derrR; 
@@ -177,7 +180,7 @@ void setpot(int potL, int potR)
 }
 
 //assinatura das funnções
-void UpdateVel(float refL,float refR) {
+int UpdateVel(float refL,float refR) {
    // Calcula as velocidades das rodas a cada 20 ms ---------------------------------
    if (millis() - tempo > 20) 
    {      
@@ -198,10 +201,14 @@ void UpdateVel(float refL,float refR) {
       // if(DEBUG)
       //   Serial.println(tempo_aux);
       controle(refL,refR);
+      //setpot(refL,refR);
       //setpot(0,(int)refR);
+      tempo_loop = tempo;
+      return 1;
   }
   // Chama a funcao que calcula a tensao de saida para os motores -----------------------
   //controleAdaptativoVelocidade();
+  return 0;
 }
 
 
