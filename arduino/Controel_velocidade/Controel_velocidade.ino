@@ -58,13 +58,13 @@ void setup()
   startDriver();
   startEncoder();
   if(DEBUG)
-   Serial.begin(9600);
+   Serial.begin(2000000);
 
   interrupts();
 }
 
-float rref = 3, ref = 3;
-
+float lref = 0, rref = 0.1;
+int pwmL, pwmR;
 int flag = 0;
 unsigned long int tempo_loop = 0;
 void loop()
@@ -84,13 +84,15 @@ void loop()
  
    //UpdateVel(0,rref)
 
-  if(UpdateVel(0,rref))
+  if(UpdateVel(lref,rref))
   {  
     //Serial.print(tempo_loop);
      //Serial.print(";");
      Serial.print(rref);
      Serial.print("\t");
-     Serial.println(velocidade_direita);
+     Serial.print(velocidade_direita);
+     Serial.print("\t");
+     Serial.println(pwmR);
   }
   //delay(1);
 }
@@ -102,22 +104,32 @@ void loop()
 float errL = 0, sum_errL = 0, old_errL, derrL;
 float errR = 0, sum_errR = 0, old_errR, derrR; 
 
-int pwmL, pwmR;
+
 
 void controle(float refL, float refR)
 {
-  old_errL = errL;
   old_errR = errR;
-  errL = refL - velocidade_esquerda;
   errR = refR - velocidade_direita;
-
-  derrR = (errR - old_errR)*dt;
-  derrL = (errL - old_errL)*dt;
-
+  derrR = (errR - old_errR)/dt;
   sum_errR += errR*dt;
+
+  old_errL = errL;
+  errL = refL - velocidade_esquerda;
+  derrL = (errL - old_errL)/dt;
   sum_errL += errL*dt;
 
-  pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
+  if(refR < 0.2)
+  {
+    if(velocidade_direita <= refR)
+    {
+      pwmR = 50;
+    } else {
+      pwmR = 0;
+    }
+  } else {
+    pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
+  }
+  
   pwmL = (int)(KP*errL + KI*sum_errL + KD*derrL);
 
   setpot(pwmL,pwmR);
@@ -146,8 +158,8 @@ void setpot(int potL, int potR)
   }
   else //potL == 0
   {
-    digitalWrite(INA_L, HIGH);
-    digitalWrite(INB_L, HIGH);
+    digitalWrite(INA_L, LOW);
+    digitalWrite(INB_L, LOW);
     analogWrite(PWM_L, 0);
   }
 
@@ -172,8 +184,8 @@ void setpot(int potL, int potR)
   }
   else //potL == 0
   {
-    digitalWrite(INA_R, HIGH);
-    digitalWrite(INB_R, HIGH);
+    digitalWrite(INA_R, LOW);
+    digitalWrite(INB_R, LOW);
     analogWrite(PWM_R, 0);
   }
 
@@ -181,25 +193,30 @@ void setpot(int potL, int potR)
 
 //assinatura das funnções
 int UpdateVel(float refL,float refR) {
-   // Calcula as velocidades das rodas a cada 20 ms ---------------------------------
-   if (millis() - tempo > 20) 
-   {      
-      tempo_aux = (millis() - tempo);
-      tempo = millis();
+   // To do: 
 
-      dt = ((float)tempo_aux)/1000.0;
+   // Calcula as velocidades das rodas a cada 5 ms ---------------------------------
+   unsigned long agora;
+   agora = micros();
+   if (agora - tempo >= 5000) 
+   {      
+      tempo_aux = (agora - tempo);
+      tempo = agora;
+
+      dt = ((float)tempo_aux)/1000000.0;
 
       voltas_esquerda = encoder_posL / (800.0); // 400 pontos por volta só que pegando a subida e a descida
       voltas_direita = encoder_posR / (800.0); 
 
       //velocidade angular em revoluções/segundo
-      velocidade_esquerda = 2*PI*RAIO * 1000 * (voltas_esquerda - voltas_esquerda_anterior) / (tempo_aux);//o *1000 é para corrigir a unidade de tempo
-      velocidade_direita  = 2*PI*RAIO * 1000 * (voltas_direita - voltas_direita_anterior) / (tempo_aux);
+      velocidade_esquerda = 2*PI*RAIO * 1000000 * (voltas_esquerda - voltas_esquerda_anterior) / (tempo_aux);//o *1000 é para corrigir a unidade de tempo
+      velocidade_direita  = 2*PI*RAIO * 1000000 * (voltas_direita - voltas_direita_anterior) / (tempo_aux);
       
       voltas_esquerda_anterior = voltas_esquerda;
       voltas_direita_anterior = voltas_direita;
       // if(DEBUG)
       //   Serial.println(tempo_aux);
+      
       controle(refL,refR);
       //setpot(refL,refR);
       //setpot(0,(int)refR);
@@ -233,9 +250,9 @@ void startEncoder () {
 void interrupt_L() {
   noInterrupts();
   if(digitalRead(DIR_L))
-    encoder_posL--;
-  else
     encoder_posL++;
+  else
+    encoder_posL--;
   interrupts();
 }
 
