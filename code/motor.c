@@ -1,238 +1,43 @@
 #include <wiringPi.h>
-#include <stdio.h>
+#include <wiringSerial.h>
 #include <fcntl.h>
 #include <linux/input.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
 
-#define PWM_LEFT 12
-#define M_LEFT_A 11
-#define M_LEFT_B 13
-
-#define PWM_RIGHT 33
-#define M_RIGHT_A 29
-#define M_RIGHT_B 31
-
 #define LMOTOR 0
 #define RMOTOR 1
 
-#define LMKP 6000
-#define LMKI 6000
-#define LMKD 75
-
-#define RMKP 6000
-#define RMKI 6000
-#define RMKD 75
-
-#define ENC_PIN_LEFT 18
-#define DIR_PIN_LEFT 16
-#define ENC_PIN_RIGHT 38
-#define DIR_PIN_RIGHT 36
-
-#define WHEEL_RADIUS 0.05
-#define TICKS2METERS 0.00078539816 //WHEEL_RADIUS*3.14159265358979323846/200
-
-#define ALPHA_MOTORS 0.9
+#define ARDUINO_RST -1 // pin which will reset the Arduino board whenever the code starts
 
 struct motor {
-	int a_port, b_port;
-	int pwm;
-	volatile long long int posCounter;
-	double displacement, raw_speed, filtered_speed, accel;
-	double last_pos;
-	double set_speed, speed_err_p, speed_err_i, speed_err_d;
+	double displacement, speed;
+	double set_speed;
 	unsigned long int last_update;
-	double dt;
 };
 
 struct motor left_motor, right_motor;
-
-void encoderInterruptLeft(void)
-{
-  if(digitalRead(DIR_PIN_LEFT))
-  {
-    ++left_motor.posCounter;
-  } else {
-    --left_motor.posCounter;
-  }
-}
-
-void encoderInterruptRight(void)
-{
-  if(digitalRead(DIR_PIN_RIGHT))
-  {
-    --right_motor.posCounter;
-  } else {
-    ++right_motor.posCounter;
-  }
-}
+int arduino;
 
 void init_motors()
 {
-	pinMode(DIR_PIN_LEFT, INPUT);
-	pinMode(DIR_PIN_RIGHT, INPUT);
-	wiringPiISR(ENC_PIN_LEFT, INT_EDGE_FALLING, &encoderInterruptLeft);
-	wiringPiISR(ENC_PIN_RIGHT, INT_EDGE_FALLING, &encoderInterruptRight);
-	pinMode(PWM_LEFT, PWM_OUTPUT);
-	pinMode(PWM_RIGHT, PWM_OUTPUT);
-	pinMode(M_LEFT_A, OUTPUT);
-	pinMode(M_LEFT_B, OUTPUT);
-	pinMode(M_RIGHT_A, OUTPUT);
-	pinMode(M_RIGHT_B, OUTPUT);
-	pwmSetMode(PWM_MODE_MS);
-	pwmSetRange(1023);
-	pwmSetClock(2);
-	pwmWrite(PWM_LEFT, 0);
-	pwmWrite(PWM_RIGHT, 0);
+	int i = 0;
+	char devpath[20];
+	do {
+		snprintf(devpath, 20, "/dev/ttyUSB%d", i);
+		arduino = serialOpen(devpath, 2000000);
+	} while(!arduino);
+
 	unsigned long int now = micros();
-	left_motor.pwm = 0;
-	left_motor.posCounter = 0;
 	left_motor.displacement = 0;
-	left_motor.raw_speed = 0;
-	left_motor.filtered_speed = 0;
-	left_motor.last_pos = 0;
+	left_motor.speed = 0;
+	left_motor.set_speed = 0;
 	left_motor.last_update = now;
-	right_motor.pwm = 0;
-	right_motor.posCounter = 0;
-	right_motor.displacement = 0;
-	right_motor.raw_speed = 0;
-	right_motor.filtered_speed = 0;
-	right_motor.last_pos = 0;
-	right_motor.last_update = now;
-}
-
-void Brake(int motor)
-{
-	if(motor == LMOTOR)
-	{
-		digitalWrite(M_LEFT_A, HIGH);
-		digitalWrite(M_LEFT_B, HIGH);
-		pwmWrite(PWM_LEFT, 0);
-		left_motor.a_port = 1;
-    	left_motor.b_port = 1;
-    	left_motor.pwm = 0;
-	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, HIGH);
-		digitalWrite(M_RIGHT_B, HIGH);
-		pwmWrite(PWM_RIGHT, 0);
-		right_motor.a_port = 1;
-    	right_motor.b_port = 1;
-    	right_motor.pwm = 0;
-	}
-}
-
-void Coast(int motor)
-{
-	if(motor == LMOTOR)
-	{
-		digitalWrite(M_LEFT_A, LOW);
-		digitalWrite(M_LEFT_B, LOW);
-		pwmWrite(PWM_LEFT, 0);
-		left_motor.a_port = 0;
-    	left_motor.b_port = 0;
-    	left_motor.pwm = 0;
-	} else if (motor == RMOTOR) {
-		digitalWrite(M_RIGHT_A, LOW);
-		digitalWrite(M_RIGHT_B, LOW);
-		pwmWrite(PWM_RIGHT, 0);
-		right_motor.a_port = 0;
-    	right_motor.b_port = 0;
-    	right_motor.pwm = 0;
-	}
-}
-
-void OnFwd(int motor, int power)
-{
-	if(power >= 0)
-	{
-		if(power > 1023) power = 1023;
-		if(motor == LMOTOR)
-		{
-	    	digitalWrite(M_LEFT_A, LOW);
-			digitalWrite(M_LEFT_B, HIGH);
-	    	pwmWrite(PWM_LEFT, power);
-	    	left_motor.a_port = 0;
-	    	left_motor.b_port = 1;
-	    	left_motor.pwm = power;
-		} else if(motor == RMOTOR) {
-			digitalWrite(M_RIGHT_A, LOW);
-        	digitalWrite(M_RIGHT_B, HIGH);
-        	pwmWrite(PWM_RIGHT, power);
-        	right_motor.a_port = 0;
-	    	right_motor.b_port = 1;
-	    	right_motor.pwm = power;
-		}
-	} else {
-		power = -power;
-		if(power > 1023) power = 1023;
-		if(motor == LMOTOR)
-		{
-	    	digitalWrite(M_LEFT_A, HIGH);
-			digitalWrite(M_LEFT_B, LOW);
-	    	pwmWrite(PWM_LEFT, power);
-	    	left_motor.a_port = 1;
-	    	left_motor.b_port = 0;
-	    	left_motor.pwm = power;
-		} else if(motor == RMOTOR) {
-			digitalWrite(M_RIGHT_A, HIGH);
-        	digitalWrite(M_RIGHT_B, LOW);
-        	pwmWrite(PWM_RIGHT, power);
-        	right_motor.a_port = 1;
-	    	right_motor.b_port = 0;
-	    	right_motor.pwm = power;
-		}
-	}
-}
-
-void OnRev(int motor, int power)
-{
-	if(power > 0)
-	{
-		if(power > 1023) power = 1023;
-		if(motor == LMOTOR)
-		{
-	    	digitalWrite(M_LEFT_A, HIGH);
-			digitalWrite(M_LEFT_B, LOW);
-	    	pwmWrite(PWM_LEFT, power);
-	    	left_motor.a_port = 1;
-	    	left_motor.b_port = 0;
-	    	left_motor.pwm = power;
-		} else if(motor == RMOTOR) {
-			digitalWrite(M_RIGHT_A, HIGH);
-        	digitalWrite(M_RIGHT_B, LOW);
-        	pwmWrite(PWM_RIGHT, power);
-        	right_motor.a_port = 1;
-	    	right_motor.b_port = 0;
-	    	right_motor.pwm = power;
-		}
-	} else if(power < 0) {
-		power = -power;
-		if(power > 1023) power = 1023;
-		if(motor == LMOTOR)
-		{
-	    	digitalWrite(M_LEFT_A, LOW);
-			digitalWrite(M_LEFT_B, HIGH);
-	    	pwmWrite(PWM_LEFT, power);
-	    	left_motor.a_port = 0;
-	    	left_motor.b_port = 1;
-	    	left_motor.pwm = power;
-		} else if(motor == RMOTOR) {
-			digitalWrite(M_RIGHT_A, LOW);
-        	digitalWrite(M_RIGHT_B, HIGH);
-        	pwmWrite(PWM_RIGHT, power);
-        	right_motor.a_port = 0;
-	    	right_motor.b_port = 1;
-	    	right_motor.pwm = power;
-		}
-	} else {
-		if(motor == LMOTOR)
-		{
-			Brake(LMOTOR);
-		} else if(motor == RMOTOR) {
-			Brake(RMOTOR);
-		}
-	}
+	left_motor.displacement = 0;
+	left_motor.speed = 0;
+	left_motor.set_speed = 0;
+	left_motor.last_update = now;
 }
 
 void setMotorSpeed(int motor, double speed)
@@ -245,59 +50,56 @@ void setMotorSpeed(int motor, double speed)
 	}
 }
 
-void speedControl()
-{
-	double err;
-	
-	err = (left_motor.set_speed - left_motor.filtered_speed);
-	left_motor.speed_err_i += err*left_motor.dt;
-	left_motor.speed_err_d = (err - left_motor.speed_err_p)/left_motor.dt;
-	left_motor.speed_err_p = err;
-	left_motor.pwm = LMKP*left_motor.speed_err_p + LMKI*left_motor.speed_err_i + LMKD*left_motor.speed_err_d;
-
-	err = (right_motor.set_speed - right_motor.filtered_speed);
-	right_motor.speed_err_i += err*right_motor.dt;
-	right_motor.speed_err_d = (err - right_motor.speed_err_p)/right_motor.dt;
-	right_motor.speed_err_p = err;
-	right_motor.pwm = RMKP*right_motor.speed_err_p + RMKI*right_motor.speed_err_i + RMKD*right_motor.speed_err_d;
-	
-	OnFwd(LMOTOR, left_motor.pwm);
-	OnFwd(RMOTOR, right_motor.pwm);
-}
-
-void update_motors()
+#define MOTOR_RCV_MESS_SIZE 35
+void read_motors()
 {
 	unsigned long int now;
-	double last_speed;
+	int packet_count;
+	char rcv_msg[MOTOR_RCV_MESS_SIZE];
+	char disp[10], speed[7];
+	int i;
 
-	now = micros();
-	left_motor.displacement = left_motor.posCounter*TICKS2METERS;
-	
-	left_motor.dt = (now - left_motor.last_update)/1000000.0;
+	packet_count = serialDataAvail(arduino);
+	if(packet_count == MOTOR_RCV_MESS_SIZE)
+	{
+		now = micros();
+		left_motor.last_update = now;
+		right_motor.last_update = now;
 
-	last_speed = left_motor.filtered_speed;
-	left_motor.raw_speed = (left_motor.displacement - left_motor.last_pos)/(left_motor.dt);
-	left_motor.filtered_speed = ALPHA_MOTORS*left_motor.filtered_speed + (1-ALPHA_MOTORS)*left_motor.raw_speed;
-	
-	left_motor.accel = (left_motor.filtered_speed - last_speed)/(left_motor.dt);
+		for(i = 0; i < packet_count; ++i)
+		{
+			rcv_msg[i] = serialGetchar(arduino);
+		}
+		
+		// ldisplacement;lspeed;rdisplacement;rspeed;
+		// +0000.000;+0.000;+0000.000;+0.000;
+		strncpy(disp, &rcv_msg[0], 9);
+		disp[9] = '\0';
+		strncpy(speed, &rcv_msg[10], 6);
+		speed[6] = '\0';
 
-	left_motor.last_pos = left_motor.displacement;
-	left_motor.last_update = now;
+		left_motor.displacement = strtod(disp, NULL);
+		left_motor.speed = strtod(speed, NULL);
 
+		strncpy(disp, &rcv_msg[17], 9);
+		disp[9] = '\0';
+		strncpy(speed, &rcv_msg[27], 6);
+		speed[6] = '\0';
 
-	now = micros();
-	right_motor.displacement = right_motor.posCounter*TICKS2METERS;
-	
-	right_motor.dt = (now - right_motor.last_update)/1000000.0;
+		right_motor.displacement = strtod(disp, NULL);
+		right_motor.speed = strtod(speed, NULL);
+	} else {
+		serialFlush(arduino);
+	}
+}
 
-	last_speed = right_motor.filtered_speed;
-	right_motor.raw_speed = (right_motor.displacement - right_motor.last_pos)/(right_motor.dt);
-	right_motor.filtered_speed = ALPHA_MOTORS*right_motor.filtered_speed + (1-ALPHA_MOTORS)*right_motor.raw_speed;
-	
-	right_motor.accel = (right_motor.filtered_speed - last_speed)/(right_motor.dt);
+#define MOTOR_SND_MESS_SIZE 15
+void write_motors()
+{
+	char snd_msg[MOTOR_SND_MESS_SIZE];
 
-	right_motor.last_pos = right_motor.displacement;
-	right_motor.last_update = now;
-
-	speedControl();
+	//lspeed;rspeed;
+	//+0.000;+0.000;
+	snprintf(snd_msg, MOTOR_SND_MESS_SIZE, "%+6.3f;%+6.3f;", left_motor.set_speed, right_motor.set_speed);
+	serialPuts(arduino, snd_msg);
 }

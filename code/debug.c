@@ -92,20 +92,20 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%04d\n", 15, 55, debug->js.ranalog.right);
 	printf("\033[%d;%dH%d\n", 17, 30, debug->js.dpad.down);
 	printf("\033[%d;%dH%04d\n", 17, 51, debug->js.ranalog.down);
-	printf("\033[%d;%dH%d\n", 22, 26, debug->left_motor.a_port);
-	printf("\033[%d;%dH%d\n", 22, 30, debug->left_motor.b_port);
-	printf("\033[%d;%dH%04d\n", 22, 36, debug->left_motor.pwm);
-	printf("\033[%d;%dH%d\n", 22, 44, debug->right_motor.a_port);
-	printf("\033[%d;%dH%d\n", 22, 48, debug->right_motor.b_port);
-	printf("\033[%d;%dH%04d\n", 22, 54, debug->right_motor.pwm);
-	printf("\033[%d;%dH%09lld\n", 23, 31, debug->left_motor.posCounter);
-	printf("\033[%d;%dH%09lld\n", 23, 49, debug->right_motor.posCounter);
-	printf("\033[%d;%dH%011.3f\n", 24, 29, debug->left_motor.displacement);
-	printf("\033[%d;%dH%011.3f\n", 24, 47, debug->right_motor.displacement);
-	printf("\033[%d;%dH%+06.3f\n", 25, 30, debug->left_motor.raw_speed);
-	printf("\033[%d;%dH%+06.3f\n", 25, 48, debug->right_motor.raw_speed);
-	printf("\033[%d;%dH%+05.2f\n", 26, 31, debug->left_motor.filtered_speed);
-	printf("\033[%d;%dH%+05.2f\n", 26, 49, debug->right_motor.filtered_speed);
+	//printf("\033[%d;%dH%d\n", 22, 26, debug->left_motor.a_port);
+	//printf("\033[%d;%dH%d\n", 22, 30, debug->left_motor.b_port);
+	//printf("\033[%d;%dH%04d\n", 22, 36, debug->left_motor.pwm);
+	//printf("\033[%d;%dH%d\n", 22, 44, debug->right_motor.a_port);
+	//printf("\033[%d;%dH%d\n", 22, 48, debug->right_motor.b_port);
+	//printf("\033[%d;%dH%04d\n", 22, 54, debug->right_motor.pwm);
+	//printf("\033[%d;%dH%09lld\n", 23, 31, debug->left_motor.posCounter);
+	//printf("\033[%d;%dH%09lld\n", 23, 49, debug->right_motor.posCounter);
+	//printf("\033[%d;%dH%011.3f\n", 24, 29, debug->left_motor.displacement);
+	//printf("\033[%d;%dH%011.3f\n", 24, 47, debug->right_motor.displacement);
+	//printf("\033[%d;%dH%+06.3f\n", 25, 30, debug->left_motor.raw_speed);
+	//printf("\033[%d;%dH%+06.3f\n", 25, 48, debug->right_motor.raw_speed);
+	//printf("\033[%d;%dH%+05.2f\n", 26, 31, debug->left_motor.filtered_speed);
+	//printf("\033[%d;%dH%+05.2f\n", 26, 49, debug->right_motor.filtered_speed);
 	if(debug->ir.left)
 		printf("\033[%d;%dHOn \n", 27, 17);
 	else

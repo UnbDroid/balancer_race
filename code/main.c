@@ -253,7 +253,6 @@ PI_THREAD(main_thread)
 		setMotorSpeed(RMOTOR, speed);
 		delay(1);
 */
-		OnFwd(LMOTOR, 1023);
 	}
 	main_finished = 1;
 }
@@ -322,8 +321,9 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
-        	Coast(RMOTOR); // release motors
-        	Coast(LMOTOR); // for safety purposes
+        	setMotorSpeed(LMOTOR, 0); // release motors
+			setMotorSpeed(RMOTOR, 0); // for safety purposes
+			write_motors();
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
@@ -389,27 +389,18 @@ PI_THREAD(sensors)
 	sensors_finished = 1;
 }
 
-#define MOTORS_UPDATE_RATE 5 // defined in milliseconds
 PI_THREAD(motors)
 {
 	motors_finished = 0;
-	unsigned long long int last_update, now_time;
 	piHiPri(99);
 	while(keep_running)
 	{
-		now_time = micros();
-		if(now_time - last_update > 1000*MOTORS_UPDATE_RATE)
-		{
-			last_update = now_time;
-			update_motors();
-		} else {
-			delayMicroseconds(100);
-		}
+		read_motors();
+		write_motors();
+		delayMicroseconds(100);
 	}
 	motors_finished = 1;
 }
-
-
 
 /*
 This is the debug thread. It runs the debug screen code and is only run if the
@@ -491,8 +482,9 @@ int am_i_su()
 
 void clean_up()
 {
-	Coast(LMOTOR);
-	Coast(RMOTOR);
+	setMotorSpeed(LMOTOR, 0);
+	setMotorSpeed(RMOTOR, 0);
+	write_motors();
 	set_color(RED, 255);
 	light_rgb();
 	while(!led_finished);
