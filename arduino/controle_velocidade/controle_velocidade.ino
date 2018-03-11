@@ -6,7 +6,6 @@
 
 #define DEBUG 1//1 - ligado /// 0 - desligado
 
-#define PI 3.14159265359
 #define RAIO 0.100 // 100mm
 
 //driver
@@ -54,47 +53,30 @@ void controle(float refL, float refR);
 void setup()
 {
   noInterrupts();
-
   startDriver();
   startEncoder();
-  if(DEBUG)
-   Serial.begin(2000000);
-
+  Serial.begin(2000000);
   interrupts();
 }
 
-float lref = 0, rref = 0.1;
+#define MSG_SIZE 15
+
+float lref = 0, rref = 0;
 int pwmL, pwmR;
 int flag = 0;
-unsigned long int tempo_loop = 0;
+char msg[MSG_SIZE];
 void loop()
 {
-  
-
-
-  // if((millis() > 3000)&&(millis() < 8000))
-  // {
-  //   rref = 100;
-  // }
-  // else
-  // {
-  //   rref = 0;
-  // }
-  
- 
-   //UpdateVel(0,rref)
-
-  if(UpdateVel(lref,rref))
-  {  
-    //Serial.print(tempo_loop);
-     //Serial.print(";");
-     Serial.print(rref);
-     Serial.print("\t");
-     Serial.print(velocidade_direita);
-     Serial.print("\t");
-     Serial.println(pwmR);
-  }
-  //delay(1);
+	if(Serial.available())
+	{
+		//lref;rref;
+		//+0.000;+0.000;
+		Serial.readBytesUntil(';', msg, MSG_SIZE);
+		lref = String(msg).toFloat();
+		Serial.readBytesUntil(';', msg, MSG_SIZE);
+		rref = String(msg).toFloat();
+	}
+	UpdateVel(0,rref);
 }
 
 #define KP 46.15
@@ -103,8 +85,6 @@ void loop()
 
 float errL = 0, sum_errL = 0, old_errL, derrL;
 float errR = 0, sum_errR = 0, old_errR, derrR; 
-
-
 
 void controle(float refL, float refR)
 {
@@ -120,7 +100,7 @@ void controle(float refL, float refR)
 
   if(refR < 0.2)
   {
-    if(velocidade_direita <= refR)
+    if(velocidade_direita < refR)
     {
       pwmR = 50;
     } else {
@@ -220,7 +200,6 @@ int UpdateVel(float refL,float refR) {
       controle(refL,refR);
       //setpot(refL,refR);
       //setpot(0,(int)refR);
-      tempo_loop = tempo;
       return 1;
   }
   // Chama a funcao que calcula a tensao de saida para os motores -----------------------
