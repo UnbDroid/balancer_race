@@ -25,13 +25,14 @@
 
 
 //variaveis
-volatile long encoder_posL = 0; 
+volatile long encoder_posL = 0;
 volatile long encoder_posR = 0;
 
 unsigned long tempo_aux;
 unsigned long tempo;
 float voltas_esquerda;
 float voltas_direita;
+float ldisplacement, rdisplacement;
 float velocidade_esquerda;
 float velocidade_direita;
 float voltas_esquerda_anterior;
@@ -76,6 +77,7 @@ void loop()
 		Serial.readBytesUntil(';', msg, MSG_SIZE);
 		rref = String(msg).toFloat();
 	}
+	print_snd_msg();
 	UpdateVel(0,rref);
 }
 
@@ -84,7 +86,42 @@ void loop()
 #define KD 0
 
 float errL = 0, sum_errL = 0, old_errL, derrL;
-float errR = 0, sum_errR = 0, old_errR, derrR; 
+float errR = 0, sum_errR = 0, old_errR, derrR;
+
+void print_snd_msg()
+{
+	// ldisplacement;lspeed;rdisplacement;rspeed;
+	// +0000.000;+0.000;+0000.000;+0.000;
+	if(ldisplacement >= 0)
+	{
+		Serial.print("+" + String(ldisplacement) + ";");
+	} else {
+		Serial.print(String(ldisplacement) + ";");
+	}
+
+	if(velocidade_esquerda >= 0)
+	{
+		Serial.print("+" + String(velocidade_esquerda) + ";");
+	} else {
+		Serial.print(String(velocidade_esquerda) + ";");
+	}
+
+	if(rdisplacement >= 0)
+	{
+		Serial.print("+" + String(rdisplacement) + ";");
+	} else {
+		Serial.print(String(rdisplacement) + ";");
+	}
+
+	if(velocidade_direita >= 0)
+	{
+		Serial.print("+" + String(velocidade_direita) + ";");
+	} else {
+		Serial.print(String(velocidade_direita) + ";");
+	}
+
+	Serial.println();
+}
 
 void controle(float refL, float refR)
 {
@@ -109,7 +146,7 @@ void controle(float refL, float refR)
   } else {
     pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
   }
-  
+
   pwmL = (int)(KP*errL + KI*sum_errL + KD*derrL);
 
   setpot(pwmL,pwmR);
@@ -118,7 +155,7 @@ void controle(float refL, float refR)
 void setpot(int potL, int potR)
 {
   if(potL > 0)
-  {   
+  {
     if(potL > 255)
       potL = 255;
 
@@ -144,7 +181,7 @@ void setpot(int potL, int potR)
   }
 
   if(potR > 0)
-  {   
+  {
     if(potR > 255)
       potR = 255;
 
@@ -173,30 +210,33 @@ void setpot(int potL, int potR)
 
 //assinatura das funnções
 int UpdateVel(float refL,float refR) {
-   // To do: 
+   // To do:
 
    // Calcula as velocidades das rodas a cada 5 ms ---------------------------------
    unsigned long agora;
    agora = micros();
-   if (agora - tempo >= 5000) 
-   {      
+   if (agora - tempo >= 5000)
+   {
       tempo_aux = (agora - tempo);
       tempo = agora;
 
       dt = ((float)tempo_aux)/1000000.0;
 
       voltas_esquerda = encoder_posL / (800.0); // 400 pontos por volta só que pegando a subida e a descida
-      voltas_direita = encoder_posR / (800.0); 
+      voltas_direita = encoder_posR / (800.0);
+
+      ldisplacement = voltas_esquerda*2*PI*RAIO;
+      rdisplacement = voltas_direita*2*PI*RAIO;
 
       //velocidade angular em revoluções/segundo
       velocidade_esquerda = 2*PI*RAIO * 1000000 * (voltas_esquerda - voltas_esquerda_anterior) / (tempo_aux);//o *1000 é para corrigir a unidade de tempo
       velocidade_direita  = 2*PI*RAIO * 1000000 * (voltas_direita - voltas_direita_anterior) / (tempo_aux);
-      
+
       voltas_esquerda_anterior = voltas_esquerda;
       voltas_direita_anterior = voltas_direita;
       // if(DEBUG)
       //   Serial.println(tempo_aux);
-      
+
       controle(refL,refR);
       //setpot(refL,refR);
       //setpot(0,(int)refR);
