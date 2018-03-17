@@ -11,12 +11,16 @@
 
 #define ARDUINO_RST -1 // pin which will reset the Arduino board whenever the code starts
 
+#define MOTOR_RCV_MESS_SIZE 31
+#define MOTOR_SND_MESS_SIZE 15
+
 struct motor {
 	double displacement, speed;
 	double set_speed;
 	unsigned long int last_update;
 };
 
+char motor_sent_message[MOTOR_SND_MESS_SIZE], motor_received_message[MOTOR_RCV_MESS_SIZE];
 struct motor left_motor, right_motor;
 int arduino;
 
@@ -50,12 +54,11 @@ void setMotorSpeed(int motor, double speed)
 	}
 }
 
-#define MOTOR_RCV_MESS_SIZE 35
+
 void read_motors()
 {
 	unsigned long int now;
 	int packet_count;
-	char rcv_msg[MOTOR_RCV_MESS_SIZE];
 	char disp[10], speed[7];
 	int i;
 
@@ -68,23 +71,23 @@ void read_motors()
 
 		for(i = 0; i < packet_count; ++i)
 		{
-			rcv_msg[i] = serialGetchar(arduino);
+			motor_received_message[i] = serialGetchar(arduino);
 		}
-		
+
 		// ldisplacement;lspeed;rdisplacement;rspeed;
-		// +0000.000;+0.000;+0000.000;+0.000;
-		strncpy(disp, &rcv_msg[0], 9);
+		// +0000.00;+0.00;+0000.00;+0.00;
+		strncpy(disp, &motor_received_message[0], 8);
 		disp[9] = '\0';
-		strncpy(speed, &rcv_msg[10], 6);
-		speed[6] = '\0';
+		strncpy(speed, &motor_received_message[9], 5);
+		speed[5] = '\0';
 
 		left_motor.displacement = strtod(disp, NULL);
 		left_motor.speed = strtod(speed, NULL);
 
-		strncpy(disp, &rcv_msg[17], 9);
+		strncpy(disp, &motor_received_message[15], 8);
 		disp[9] = '\0';
-		strncpy(speed, &rcv_msg[27], 6);
-		speed[6] = '\0';
+		strncpy(speed, &motor_received_message[24], 5);
+		speed[5] = '\0';
 
 		right_motor.displacement = strtod(disp, NULL);
 		right_motor.speed = strtod(speed, NULL);
@@ -93,13 +96,10 @@ void read_motors()
 	}
 }
 
-#define MOTOR_SND_MESS_SIZE 15
 void write_motors()
 {
-	char snd_msg[MOTOR_SND_MESS_SIZE];
-
 	//lspeed;rspeed;
-	//+0.000;+0.000;
-	snprintf(snd_msg, MOTOR_SND_MESS_SIZE, "%+6.3f;%+6.3f;", left_motor.set_speed, right_motor.set_speed);
-	serialPuts(arduino, snd_msg);
+	//+0.000;+1.000;
+	snprintf(motor_sent_message, MOTOR_SND_MESS_SIZE, "%+6.3f;%+6.3f;", left_motor.set_speed, right_motor.set_speed);
+	serialPuts(arduino, motor_sent_message);
 }

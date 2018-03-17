@@ -47,8 +47,8 @@ void init_debug()
 	printf(".                  ``` A:* B:* PWM:****  A:* B:* PWM:**** ```                  .\n");
 	printf(".                ``    Ticks: *********  Ticks: *********    ``                .\n");
 	printf(".              ``      Pos: ***********  Pos: ***********      ``              .\n");
-	printf(" .           ``        RawSpeed: ******  RawSpeed: ******        ``           . \n");
-	printf("  ``       `` Left IR  FiltSpeed: *****  FiltSpeed: ***** Right IR ``       ``  \n");
+	printf(" .           ``        ReadSpeed: *****  ReadSpeed: *****        ``           . \n");
+	printf("  ``       `` Left IR  SetSpeed: ******  SetSpeed: ****** Right IR ``       ``  \n");
 	printf("    ```````     ***              LED: *********              ***     ```````    \n");
 	printf("         Yaw       Pitch     Roll       1:                                      \n");
 	printf("  Pos:   ******    ******    ******     2:                                      \n");
@@ -92,20 +92,20 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%04d\n", 15, 55, debug->js.ranalog.right);
 	printf("\033[%d;%dH%d\n", 17, 30, debug->js.dpad.down);
 	printf("\033[%d;%dH%04d\n", 17, 51, debug->js.ranalog.down);
-	//printf("\033[%d;%dH%d\n", 22, 26, debug->left_motor.a_port);
-	//printf("\033[%d;%dH%d\n", 22, 30, debug->left_motor.b_port);
-	//printf("\033[%d;%dH%04d\n", 22, 36, debug->left_motor.pwm);
-	//printf("\033[%d;%dH%d\n", 22, 44, debug->right_motor.a_port);
-	//printf("\033[%d;%dH%d\n", 22, 48, debug->right_motor.b_port);
-	//printf("\033[%d;%dH%04d\n", 22, 54, debug->right_motor.pwm);
+	// printf("\033[%d;%dH%d\n", 22, 26, debug->left_motor.a_port);
+	// printf("\033[%d;%dH%d\n", 22, 30, debug->left_motor.b_port);
+	// printf("\033[%d;%dH%04d\n", 22, 36, debug->left_motor.pwm);
+	// printf("\033[%d;%dH%d\n", 22, 44, debug->right_motor.a_port);
+	// printf("\033[%d;%dH%d\n", 22, 48, debug->right_motor.b_port);
+	// printf("\033[%d;%dH%04d\n", 22, 54, debug->right_motor.pwm);
 	//printf("\033[%d;%dH%09lld\n", 23, 31, debug->left_motor.posCounter);
 	//printf("\033[%d;%dH%09lld\n", 23, 49, debug->right_motor.posCounter);
-	//printf("\033[%d;%dH%011.3f\n", 24, 29, debug->left_motor.displacement);
-	//printf("\033[%d;%dH%011.3f\n", 24, 47, debug->right_motor.displacement);
-	//printf("\033[%d;%dH%+06.3f\n", 25, 30, debug->left_motor.raw_speed);
-	//printf("\033[%d;%dH%+06.3f\n", 25, 48, debug->right_motor.raw_speed);
-	//printf("\033[%d;%dH%+05.2f\n", 26, 31, debug->left_motor.filtered_speed);
-	//printf("\033[%d;%dH%+05.2f\n", 26, 49, debug->right_motor.filtered_speed);
+	printf("\033[%d;%dH%+011.3f\n", 24, 29, debug->left_motor.displacement);
+	printf("\033[%d;%dH%+011.3f\n", 24, 47, debug->right_motor.displacement);
+	printf("\033[%d;%dH%+05.2f\n", 25, 35, debug->left_motor.speed);
+	printf("\033[%d;%dH%+05.2f\n", 25, 53, debug->right_motor.speed);
+	printf("\033[%d;%dH%+06.3f\n", 26, 34, debug->left_motor.set_speed);
+	printf("\033[%d;%dH%+06.3f\n", 26, 52, debug->right_motor.set_speed);
 	if(debug->ir.left)
 		printf("\033[%d;%dHOn \n", 27, 17);
 	else
@@ -126,9 +126,9 @@ void update_debug(struct debug_data* debug)
 		printf("\033[%d;%dHOn \n", 27, 62);
 	else
 		printf("\033[%d;%dHOff\n", 27, 62);
-	
+
 	// Code to print Yaw-Pitch-Roll values here
-	
+
 	printf("\033[%d;%dH%07.2f\n", 29, 10, debug->imu.yaw);
 	printf("\033[%d;%dH%07.2f\n", 29, 20, debug->imu.pitch);
 	printf("\033[%d;%dH%07.2f\n", 29, 30, debug->imu.roll);
@@ -140,7 +140,7 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%07.2f\n", 33, 6, debug->imu.gyro.treatedX);
 	printf("\033[%d;%dH%07.2f\n", 33, 18, debug->imu.accel.treatedX);
 	printf("\033[%d;%dH%07.2f\n", 33, 30, debug->imu.magnet.treatedX);
-	
+
 	printf("\033[%d;%dH%07.2f\n", 34, 6, debug->imu.gyro.treatedY);
 	printf("\033[%d;%dH%07.2f\n", 34, 18, debug->imu.accel.treatedY);
 	printf("\033[%d;%dH%07.2f\n", 34, 30, debug->imu.magnet.treatedY);
@@ -160,7 +160,7 @@ void update_debug(struct debug_data* debug)
 	printf("\033[%d;%dH%06d\n", 38, 8, debug->imu.gyro.rawZ);
 	printf("\033[%d;%dH%06d\n", 38, 20, debug->imu.accel.rawZ);
 	printf("\033[%d;%dH%06d\n", 38, 32, debug->imu.magnet.rawZ);
-	
+
 	printf("\033[%d;%dH%08.6f\n", 39, 13, debug->imu.dt);
 }
 
@@ -203,7 +203,7 @@ int init_matlab()
     {
         return -1;//tratar erro depois
     }
-    
+
     if (listen(server_fd_m, 3) < 0)
     {
         return -1;//tratar erro depois
@@ -225,7 +225,7 @@ int init_supervisory()
         return -1;//tratar erro depois
     }
     // Forcefully attaching socket to the port 9001
-    
+
    // printf("0.2\n");
     if (setsockopt(server_fd_s, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
@@ -242,7 +242,7 @@ int init_supervisory()
         //printf("0.3.1\n");
         return -1;//tratar erro depois
     }
-    
+
    // printf("0.4\n");
     if (listen(server_fd_s, 3) < 0)
     {
@@ -291,7 +291,7 @@ int send_superv_message(struct debug_data* debug)
 
 	struct pollfd fd;
 	int rv;
-	
+
 	//printf("2\n");
 
 	snprintf(mess, STRSIZE_SUPERV,
@@ -304,7 +304,7 @@ int send_superv_message(struct debug_data* debug)
 	//printf("3\n");
 
 	write(new_socket_s , mess , strlen(mess)); // Optimization: replace strlen call with STRSIZE constant
-    
+
 	//printf("4\n");
 
 	fd.fd = new_socket_s;
@@ -316,7 +316,7 @@ int send_superv_message(struct debug_data* debug)
 
   	//printf("6\n");
 
-  	
+
 
   	//printf("7 - %d\n", rv);
 
@@ -328,7 +328,7 @@ int send_superv_message(struct debug_data* debug)
 	//printf("8\n");
 
 	ret = read(new_socket_s , buffer, 1024); /* there was data to read */
-    
+
     //printf("%s\n", buffer);
 
     //printf("9\n");

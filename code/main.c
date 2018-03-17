@@ -105,7 +105,7 @@ PI_THREAD(main_thread)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
-		
+
 		//filtro do geovanny
 		/*teta_raw = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)/*- (-95.416)//);
 		teta = 0;
@@ -124,7 +124,7 @@ PI_THREAD(main_thread)
 		//lendo o gyro
 		*/
 
-	/*			
+	/*
 		teta_linha = imu.gyro.treatedY - (-0.131567);
 
 		if(temp != imu.last_update)
@@ -142,25 +142,25 @@ PI_THREAD(main_thread)
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 
-		
+
 		//tetaIntegrat = 0;
 		tetaIntegrat += gyroIntegrate;
 	 	speed = -(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
-		
-		
+
+
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
 	*/
 		//pot = 0;
 		//int dz = 25;
 		int dz = 230;
-/*		
+/*
 		if(pot < 0)
 		{
 			dir = -1;
 			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
 			if(pot<=dz)//levando em conta a saturação dos motores
-				pot = 0;	
+				pot = 0;
 			OnFwd(LMOTOR, pot);
 			OnFwd(RMOTOR, pot);
 		} else if(pot > 0)
@@ -168,7 +168,7 @@ PI_THREAD(main_thread)
 			dir = 1;
 			pot = dz + ((1023.0-dz)/1023.0)*(pot);
 			if(pot<=dz)
-				pot = 0;	
+				pot = 0;
 			OnRev(LMOTOR, pot);
 			OnRev(RMOTOR, pot);
 		} else if(pot == 0)
@@ -179,10 +179,10 @@ PI_THREAD(main_thread)
 		//printf("%f   |   %d\n", teta, pot);
 		//printf("%f\n", imu.dt);
 		//printf("%f\n", gyroIntegrate);
-*/		
+*/
 		//delay(1);
 
-/*		
+/*
 		if(js.lanalog.up)
 		{
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -213,7 +213,7 @@ PI_THREAD(main_thread)
 		OnFwd(RMOTOR, pot);
 		delay(200);
 */
-
+		/*
 		if(speed > 2)
 		{
 			flag = 0;
@@ -222,14 +222,17 @@ PI_THREAD(main_thread)
 		}
 		if(flag)
 		{
-			speed += 0.001;
+			speed += 0.01;
 		} else {
-			speed -= 0.001;
+			speed -= 0.01;
 		}
+		*/
+		speed = 1;
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
-		delay(2);
-
+		delay(100);
+		print_message(motor_sent_message, 1);
+		print_message(motor_received_message, 2);
 /*
 		if(pot > 1023)
 		{
@@ -272,7 +275,7 @@ PI_THREAD(plot)
 		++i;
 	} while(exists(fname));
 	fp = fopen(fname, "w");
-	if(imu.last_update > plot_time*1000000) keep_running = 0; 
+	if(imu.last_update > plot_time*1000000) keep_running = 0;
 	while(keep_running)
 	{
 		if(imu.last_update != last_fprintf)
@@ -312,7 +315,7 @@ PI_THREAD(joystick)
 {
     joystick_finished = 0;
 	piHiPri(0);
-    
+
     set_led_state(BLUETOOTH, ON);
     init_joystick(&js, devname);
     set_led_state(BLUETOOTH, OFF);
@@ -333,7 +336,7 @@ PI_THREAD(joystick)
 	// If a D-Pad key is pressed along with START+SELECT when finishing
 	// the program, special finishing up routines are called inside the
 	// clean_up() function. They are:
-	
+
 	// DOWN+START+SELECT: shuts the Raspberry Pi Zero W down
 	if(js.dpad.down) shutdown_flag = 1;
 	// UP+START+SELECT: reboots the Raspberry Pi Zero W
@@ -367,7 +370,7 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 5 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 10 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
@@ -441,13 +444,13 @@ PI_THREAD(supervisory)
 		supervisory_finished = 0;
 		do{
 			delay(10);
-			
+
 			debug.js = js;
 			debug.left_motor = left_motor;
 			debug.right_motor = right_motor;
 			debug.ir = ir;
 			debug.imu = imu;
-			debug.led_state = led_state;		
+			debug.led_state = led_state;
 		} while(keep_running && (send_superv_message(&debug) != -1));
 	}
 	supervisory_finished = 1;
@@ -466,7 +469,7 @@ PI_THREAD(matlab)
 		debug.ir = ir;
 		debug.imu = imu;
 		debug.led_state = led_state;
-		
+
 		send_matlab_message(&debug);
 		delay(10);
 	}
@@ -496,7 +499,7 @@ void clean_up()
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program && !plot_flag) 
+	else if (!close_program && !plot_flag)
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
@@ -505,7 +508,7 @@ void clean_up()
 
 int main(int argc, char* argv[])
 {
-	if(!am_i_su()) 
+	if(!am_i_su())
 	{
 		printf("Restricted area. Super users only.\n");
 		return 0;
@@ -521,7 +524,7 @@ int main(int argc, char* argv[])
 			if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0)
 			{
 				debug.debug_flag = 1;
-			} 
+			}
 			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
 			{
 				long temp;
@@ -530,7 +533,7 @@ int main(int argc, char* argv[])
 					plot_time = temp;
 				}
 				plot_flag = 1;
-			}	
+			}
 		}
 		if(debug.debug_flag)
 		{
@@ -557,7 +560,7 @@ int main(int argc, char* argv[])
 
 	piThreadCreate(supervisory);
 	piThreadCreate(matlab);
-	
+
 	while(keep_running) delay(100);
 	clean_up();
 
