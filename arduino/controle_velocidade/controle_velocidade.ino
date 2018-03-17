@@ -9,20 +9,22 @@
 #define RAIO 0.100 // 100mm
 
 //driver
-#define PWM_L 9
-#define INA_L 4
-#define INB_L 5
+#define PWM_L 10
+#define INA_L 7
+#define INB_L 6
 
-#define PWM_R 10
-#define INA_R 6
-#define INB_R 7
+#define PWM_R 9
+#define INA_R 5
+#define INB_R 4
 
 //encoder
 #define ENCODER_L 0 //interrup port 0, is the pin 2
 #define ENCODER_R 1 //interrup port 1, is the pin 3
 #define DIR_L 12
-#define  DIR_R 11
+#define DIR_R 11
 
+#define LMOTOR 0
+#define RMOTOR 1
 
 //variaveis
 volatile long encoder_posL = 0;
@@ -68,17 +70,19 @@ int flag = 0;
 char msg[MSG_SIZE];
 void loop()
 {
-	if(Serial.available())
-	{
-		//lref;rref;
-		//+0.000;+0.000;
-		Serial.readBytesUntil(';', msg, MSG_SIZE);
-		lref = String(msg).toFloat();
-		Serial.readBytesUntil(';', msg, MSG_SIZE);
-		rref = String(msg).toFloat();
-	}
-	print_snd_msg();
-	UpdateVel(0,rref);
+
+  if(Serial.available())
+  {
+    //lref;rref;
+    //+0.000;+0.000;
+    Serial.readBytesUntil(';', msg, MSG_SIZE);
+    lref = String(msg).toFloat();
+    Serial.readBytesUntil(';', msg, MSG_SIZE);
+    rref = String(msg).toFloat();
+  }
+
+  print_snd_msg();
+  UpdateVel(lref,rref);
 }
 
 #define KP 46.15
@@ -90,37 +94,37 @@ float errR = 0, sum_errR = 0, old_errR, derrR;
 
 void print_snd_msg()
 {
-	// ldisplacement;lspeed;rdisplacement;rspeed;
-	// +0000.000;+0.000;+0000.000;+0.000;
-	if(ldisplacement >= 0)
-	{
-		Serial.print("+" + String(ldisplacement) + ";");
-	} else {
-		Serial.print(String(ldisplacement) + ";");
-	}
+  // ldisplacement;lspeed;rdisplacement;rspeed;
+  // +0000.000;+0.000;+0000.000;+0.000;
+  if(ldisplacement >= 0)
+  {
+    Serial.print("+" + String(ldisplacement) + ";");
+  } else {
+    Serial.print(String(ldisplacement) + ";");
+  }
 
-	if(velocidade_esquerda >= 0)
-	{
-		Serial.print("+" + String(velocidade_esquerda) + ";");
-	} else {
-		Serial.print(String(velocidade_esquerda) + ";");
-	}
+  if(velocidade_esquerda >= 0)
+  {
+    Serial.print("+" + String(velocidade_esquerda) + ";");
+  } else {
+    Serial.print(String(velocidade_esquerda) + ";");
+  }
 
-	if(rdisplacement >= 0)
-	{
-		Serial.print("+" + String(rdisplacement) + ";");
-	} else {
-		Serial.print(String(rdisplacement) + ";");
-	}
+  if(rdisplacement >= 0)
+  {
+    Serial.print("+" + String(rdisplacement) + ";");
+  } else {
+    Serial.print(String(rdisplacement) + ";");
+  }
 
-	if(velocidade_direita >= 0)
-	{
-		Serial.print("+" + String(velocidade_direita) + ";");
-	} else {
-		Serial.print(String(velocidade_direita) + ";");
-	}
+  if(velocidade_direita >= 0)
+  {
+    Serial.print("+" + String(velocidade_direita) + ";");
+  } else {
+    Serial.print(String(velocidade_direita) + ";");
+  }
 
-	Serial.println();
+  Serial.println();
 }
 
 void controle(float refL, float refR)
@@ -135,7 +139,7 @@ void controle(float refL, float refR)
   derrL = (errL - old_errL)/dt;
   sum_errL += errL*dt;
 
-  if(refR < 0.2)
+  if(refR > 0 && refR < 0.2)
   {
     if(velocidade_direita < refR)
     {
@@ -143,69 +147,111 @@ void controle(float refL, float refR)
     } else {
       pwmR = 0;
     }
+  } else if(refR < 0 && refR > -0.2) {
+    if(velocidade_direita > refR)
+    {
+      pwmR = -50;
+    } else {
+      pwmR = 0;
+    }
   } else {
-    pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
+      pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
   }
 
-  pwmL = (int)(KP*errL + KI*sum_errL + KD*derrL);
+  if(refL > 0 && refL < 0.2)
+  {
+    if(velocidade_esquerda < refL)
+    {
+      pwmL = 50;
+    } else {
+      pwmL = 0;
+    }
+  } else if(refL < 0 && refL > -0.2) {
+    if(velocidade_esquerda > refL)
+    {
+      pwmL = -50;
+    } else {
+      pwmL = 0;
+    }
+  } else {
+      pwmL = (int)(KP*errL + KI*sum_errL + KD*derrL);
+  }
 
-  setpot(pwmL,pwmR);
+  if(pwmL == 0 && lref == 0)
+  {
+    brake(LMOTOR);
+  } else {
+    setpot(LMOTOR, pwmL);
+  }
+
+  if(pwmR == 0 && rref == 0)
+  {
+    brake(RMOTOR);
+  } else {
+    setpot(RMOTOR, pwmR);
+  }
 }
 
-void setpot(int potL, int potR)
+void brake(int motor)
 {
-  if(potL > 0)
-  {
-    if(potL > 255)
-      potL = 255;
+  int a, b, pwm;
 
-    digitalWrite(INA_L, LOW);
-    digitalWrite(INB_L, HIGH);
-    analogWrite(PWM_L, potL);
+  if(motor == LMOTOR)
+  {
+    a = INA_L;
+    b = INB_L;
+    pwm = PWM_L;
+  } else if (motor == RMOTOR) {
+    a = INA_R;
+    b = INB_R;
+    pwm = PWM_R;
   }
-  else if(potL < 0)
-  {
-    potL = -potL;
-    if(potL > 255)
-      potL = 255;
 
-    digitalWrite(INA_L, HIGH);
-    digitalWrite(INB_L, LOW);
-    analogWrite(PWM_L, potL);
+  digitalWrite(a, HIGH);
+  digitalWrite(b, HIGH);
+  analogWrite(pwm, 0);
+}
+
+void setpot(int motor, int pot)
+{
+  int a, b, pwm;
+
+  if(motor == LMOTOR)
+  {
+    a = INA_L;
+    b = INB_L;
+    pwm = PWM_L;
+  } else if (motor == RMOTOR) {
+    a = INA_R;
+    b = INB_R;
+    pwm = PWM_R;
+  }
+
+  if(pot > 0)
+  {
+    if(pot > 255)
+      pot = 255;
+
+    digitalWrite(a, LOW);
+    digitalWrite(b, HIGH);
+    analogWrite(pwm, pot);
+  }
+  else if(pot < 0)
+  {
+    pot = -pot;
+    if(pot > 255)
+      pot = 255;
+
+    digitalWrite(a, HIGH);
+    digitalWrite(b, LOW);
+    analogWrite(pwm, pot);
   }
   else //potL == 0
   {
-    digitalWrite(INA_L, LOW);
-    digitalWrite(INB_L, LOW);
-    analogWrite(PWM_L, 0);
+    digitalWrite(a, LOW);
+    digitalWrite(b, LOW);
+    analogWrite(pwm, 0);
   }
-
-  if(potR > 0)
-  {
-    if(potR > 255)
-      potR = 255;
-
-    digitalWrite(INA_R, LOW);
-    digitalWrite(INB_R, HIGH);
-    analogWrite(PWM_R, potR);
-  }
-  else if(potR < 0)
-  {
-    potR = -potR;
-    if(potR > 255)
-      potR = 255;
-
-    digitalWrite(INA_R, HIGH);
-    digitalWrite(INB_R, LOW);
-    analogWrite(PWM_R, potR);
-  }
-  else //potL == 0
-  {
-    digitalWrite(INA_R, LOW);
-    digitalWrite(INB_R, LOW);
-    analogWrite(PWM_R, 0);
-  }
-
 }
 
 //assinatura das funnções
@@ -247,7 +293,6 @@ int UpdateVel(float refL,float refR) {
   return 0;
 }
 
-
 void startDriver() {
   pinMode(INA_L, OUTPUT);
   pinMode(INA_R, OUTPUT);
@@ -264,7 +309,6 @@ void startEncoder () {
   attachInterrupt(ENCODER_L, interrupt_L, CHANGE);
   attachInterrupt(ENCODER_R, interrupt_R, CHANGE);
 }
-
 
 void interrupt_L() {
   noInterrupts();
