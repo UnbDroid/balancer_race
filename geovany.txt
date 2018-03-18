@@ -11,3 +11,5 @@
 	de kalman por exemplo):
 		- Valor inicial de teta
 		- Drift
+
+lol muito tempo sem reunião
