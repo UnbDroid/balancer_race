@@ -394,6 +394,11 @@ PI_THREAD(sensors)
 
 PI_THREAD(motors)
 {
+	send_to_arduino("abc;efg;hij;:");
+	receive_from_arduino(received_message);
+	printf("%s\n%s\n%s\n%s\n%s\n", received_message[0], received_message[1], received_message[2], received_message[3], received_message[4]);
+
+	/*
 	motors_finished = 0;
 	piHiPri(99);
 	while(keep_running)
@@ -403,6 +408,7 @@ PI_THREAD(motors)
 		delayMicroseconds(100);
 	}
 	motors_finished = 1;
+	*/
 }
 
 /*
