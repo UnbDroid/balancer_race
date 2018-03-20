@@ -43,45 +43,19 @@ int main(){
    options.c_iflag = IGNPAR | ICRNL;   // ignore partity errors
    tcflush(file, TCIFLUSH);            // discard file information
    tcsetattr(file, TCSANOW, &options); // changes occur immmediately
-   unsigned char transmit[25] = "23.5;to te testando";  // send string
+   unsigned char transmit[20] = "Hello Raspberry Pi!;";  // send string
    if ((count = write(file, &transmit, 20))<0){         // transmit
       perror("Failed to write to the output\n");
       return -1;
    }
-   //usleep(3000000);             // give the Arduino a chance to respond
-   unsigned char receive[100] = "abc"; //declare a buffer for receiving data
-   unsigned char message[100] = "abc";
-   int end_message = 1;
-   do
-   {
-      if ((count = read(file, (void*)receive, 20)) < 0){   //receive data
-         //perror("Erro: Failed to read from the input lol\n");
-         //return -1;
-      } 
-      else if (count == 0)
-      {
-         //usleep(500);
-      } 
-      else 
-      {
-         int d = 0;
-         int c;
-         for (c = 0; c < count; c++)
-         {
-            if (receive[c] == ';')
-            {
-               end_message = 0;
-               break;
-            } else
-            {
-               message[d] = receive[c];
-               d++;
-            }
-         }
-      }
-   }while (end_message);
+   usleep(3000000);             // give the Arduino a chance to respond
+   unsigned char receive[100]; //declare a buffer for receiving data
+   if ((count = read(file, (void*)receive, 100))<0){   //receive data
+      perror("Erro: Failed to read from the input lol\n");
+      return -1;
+   }
    if (count==0) printf("There was no data available to read!\n");
-   else printf("The following was read in [%d]: %s\n",count,message);
+   else printf("The following was read in [%d]: %s\n",count,receive);
    close(file);
    return 0;
 }
