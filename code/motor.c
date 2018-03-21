@@ -77,7 +77,7 @@ void setMotorSpeed(int motor, double speed)
 int send_to_arduino(char* transmit)
 {
 	int count;
-	if ((count = write(arduino, &transmit, 100)) < 0)
+	if ((count = write(arduino, transmit, 30)) < 0)
 	{
 		perror("Failed to write to the output\n");
     	return -1;
@@ -103,15 +103,18 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 
 	for (c = 0; c < MAX_MSG; c++)
 	{
-		for (d = 0; d < MAX_CHAR_MSG; d++)
+		for (d = 0; d < MAX_CHAR_MSG - 1; d++)
 		{
-			message[c][d] = 'a';	
+			message[c][d] = 0;	
 		}
+		message[c][d+1] = '\0';
 	}
+
+	d = 0;
 
 	do
 	{
-		if ((count = read(arduino, (void*)receive, 100)) < 0)	// ERRO.
+		if ((count = read(arduino, (void*)receive, 30)) < 0)	// ERRO.
 		{
 			//perror("Erro: Failed to read from the input lol\n");
         	//return -1;
@@ -126,13 +129,12 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 			{
 				if (receive[c] == ';')
 				{
+					message[d][e] = '\0';
 					d++;
 					e = 0;
-					total_count -= 1;
 				} 
 				else if (receive[c] == ':')
 				{
-					total_count += c;
 					end = 1;
 					break;
 				}
@@ -140,9 +142,9 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 				{
 					message[d][e] = receive[c];
 					e++;
+					total_count++;
 				}
 			}
-			total_count += count;
 		}
 	} while (!end);
 

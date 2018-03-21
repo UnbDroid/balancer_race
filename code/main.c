@@ -394,11 +394,15 @@ PI_THREAD(sensors)
 
 PI_THREAD(motors)
 {
-	send_to_arduino("abc;efg;hij;:");
-	receive_from_arduino(received_message);
-	printf("%s\n%s\n%s\n%s\n%s\n", received_message[0], received_message[1], received_message[2], received_message[3], received_message[4]);
-
+	// Código feito apenas para teste da comunicação arduino.
 	/*
+	int teste_teste;
+	send_to_arduino("abc;123;50.66;teste;goiaba;:");
+	teste_teste = receive_from_arduino(received_message);
+	printf("comecei!\n");
+	printf("%s\n%s\n%s\n%s\n%s\n", received_message[0], received_message[1], received_message[2], received_message[3], received_message[4]);
+	printf("numero caracteres = %d\nterminei!\n", teste_teste);
+	*/
 	motors_finished = 0;
 	piHiPri(99);
 	while(keep_running)
@@ -408,7 +412,7 @@ PI_THREAD(motors)
 		delayMicroseconds(100);
 	}
 	motors_finished = 1;
-	*/
+	
 }
 
 /*
@@ -558,7 +562,7 @@ int main(int argc, char* argv[])
 	init_motors();
 	init_sensors();
 
-	piThreadCreate(main_thread);
+	//piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
 	if(!plot_flag) piThreadCreate(joystick);
