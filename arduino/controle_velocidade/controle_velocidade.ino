@@ -58,34 +58,43 @@ void setup()
   noInterrupts();
   startDriver();
   startEncoder();
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   Serial.begin(115200);
   interrupts();
 }
 
-#define MSG_SIZE 15
+#define MSG_SIZE 20
 
 float lref = 0, rref = 0;
 int pwmL, pwmR;
 int flag = 0;
 char msg[MSG_SIZE];
-unsigned long last_update;
+unsigned long last_send, last_recv;
 
 void loop()
 {
   if(Serial.available())
   {
+    last_recv == micros();
     //lref;rref;
     //+0.000;+0.000;
+    digitalWrite(LED_BUILTIN, LOW);
     Serial.readBytesUntil(';', msg, MSG_SIZE);
     lref = String(msg).toFloat();
     Serial.readBytesUntil(';', msg, MSG_SIZE);
     rref = String(msg).toFloat();
   }
-  if(micros() - last_update > 5000)
+  if(micros() - last_send > 5000)
   {
-    last_update = micros();
+    last_send = micros();
     print_snd_msg();
     UpdateVel(lref,rref);
+  }
+  if(micros() - last_recv < 1000000)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    reset(); // comment out if using manual input
   }
 }
 
@@ -326,4 +335,22 @@ void interrupt_R() {
   else
     encoder_posR++;
   interrupts();
+}
+
+void reset()
+{
+  encoder_posL = 0;
+  encoder_posR = 0;
+
+  tempo_aux = 0;
+  tempo = 0;
+  voltas_esquerda = 0;
+  voltas_direita = 0;
+  ldisplacement = 0;
+  rdisplacement = 0;
+  velocidade_esquerda = 0;
+  velocidade_direita = 0;
+  voltas_esquerda_anterior = 0;
+  voltas_direita_anterior = 0;
+  dt = 0;
 }
