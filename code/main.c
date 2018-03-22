@@ -227,12 +227,11 @@ PI_THREAD(main_thread)
 			speed -= 0.01;
 		}
 		*/
-		speed = 1;
+		speed = 0.7;
 		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
+		setMotorSpeed(RMOTOR, 0);
 		delay(100);
 		print_message(motor_sent_message, 1);
-		print_message(motor_received_message, 2);
 /*
 		if(pot > 1023)
 		{
@@ -404,11 +403,11 @@ PI_THREAD(motors)
 	printf("numero caracteres = %d\nterminei!\n", teste_teste);
 	*/
 	motors_finished = 0;
-	piHiPri(99);
+	piHiPri(0);
 	while(keep_running)
 	{
-		read_motors();
 		write_motors();
+		read_motors();
 		delayMicroseconds(100);
 	}
 	motors_finished = 1;
@@ -562,7 +561,7 @@ int main(int argc, char* argv[])
 	init_motors();
 	init_sensors();
 
-	//piThreadCreate(main_thread);
+	piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
 	if(!plot_flag) piThreadCreate(joystick);

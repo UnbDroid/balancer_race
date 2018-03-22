@@ -12,10 +12,9 @@
 
 #define ARDUINO_RST -1 // pin which will reset the Arduino board whenever the code starts
 
-#define MOTOR_RCV_MESS_SIZE 31
+#define MOTOR_RCV_MESS_SIZE 20
 #define MOTOR_SND_MESS_SIZE 15
 
-#define MAX_CHAR_MSG 20
 #define MAX_MSG 5
 
 struct motor {
@@ -24,19 +23,18 @@ struct motor {
 	unsigned long int last_update;
 };
 
-char motor_sent_message[MOTOR_SND_MESS_SIZE], motor_received_message[MOTOR_RCV_MESS_SIZE];
+char motor_sent_message[MOTOR_SND_MESS_SIZE], motor_received_message[MAX_MSG][MOTOR_RCV_MESS_SIZE];
 struct motor left_motor, right_motor;
 int arduino;
-unsigned char received_message[MAX_MSG][MAX_CHAR_MSG];
 
 void init_motors()
 {
 	int i = 0;
 	char devpath[20];
 	do {
-		//snprintf(devpath, 20, "/dev/ttyUSB%d", i);
-		//arduino = serialOpen(devpath, 2000000);
-		arduino = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
+		snprintf(devpath, 20, "/dev/ttyUSB%d", i%10);
+		arduino = open(devpath, O_RDWR | O_NOCTTY | O_NDELAY);
+		++i;
 	} while(!arduino);
 
 	struct termios options;       // the termios structure is vital
@@ -91,9 +89,9 @@ int send_to_arduino(char* transmit)
 // Retorno:		total_count = número de caracteres total recebido.
 // Caractere especial fim segmento mensagem = ';'.
 // Caractere especial fim mensagem = ':'.
-int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
+int receive_from_arduino(char message[MAX_MSG][MOTOR_RCV_MESS_SIZE])
 {
-	unsigned char receive[100] = "";
+	char receive[100] = "";
 	int end = 0;
 	int total_count = 0;
 	int count;
@@ -103,11 +101,10 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 
 	for (c = 0; c < MAX_MSG; c++)
 	{
-		for (d = 0; d < MAX_CHAR_MSG - 1; d++)
+		for (d = 0; d < MOTOR_RCV_MESS_SIZE; d++)
 		{
-			message[c][d] = 0;	
+			message[c][d] = '\0';
 		}
-		message[c][d+1] = '\0';
 	}
 
 	d = 0;
@@ -121,7 +118,7 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 		} 
 		else if (count == 0)	// RECEBEU NADA.
 		{
-			//usleep(100);
+			delayMicroseconds(100);
 		} 
 		else
 		{
@@ -133,7 +130,7 @@ int receive_from_arduino(unsigned char message[MAX_MSG][MAX_CHAR_MSG])
 					d++;
 					e = 0;
 				} 
-				else if (receive[c] == ':')
+				else if (receive[c] == '\n')
 				{
 					end = 1;
 					break;
@@ -159,44 +156,21 @@ void read_motors()
 	char disp[10], speed[7];
 	int i;
 
-	packet_count = serialDataAvail(arduino);
-	if(packet_count == MOTOR_RCV_MESS_SIZE)
-	{
-		now = micros();
-		left_motor.last_update = now;
-		right_motor.last_update = now;
+	receive_from_arduino(motor_received_message);
 
-		for(i = 0; i < packet_count; ++i)
-		{
-			motor_received_message[i] = serialGetchar(arduino);
-		}
+	// ldisplacement;lspeed;rdisplacement;rspeed;
+	// +0000.00;+0.00;+0000.00;+0.00;\n
+	left_motor.displacement = strtod(motor_received_message[0], NULL);
+	left_motor.speed = strtod(motor_received_message[1], NULL);
 
-		// ldisplacement;lspeed;rdisplacement;rspeed;
-		// +0000.00;+0.00;+0000.00;+0.00;
-		strncpy(disp, &motor_received_message[0], 8);
-		disp[9] = '\0';
-		strncpy(speed, &motor_received_message[9], 5);
-		speed[5] = '\0';
-
-		left_motor.displacement = strtod(disp, NULL);
-		left_motor.speed = strtod(speed, NULL);
-
-		strncpy(disp, &motor_received_message[15], 8);
-		disp[9] = '\0';
-		strncpy(speed, &motor_received_message[24], 5);
-		speed[5] = '\0';
-
-		right_motor.displacement = strtod(disp, NULL);
-		right_motor.speed = strtod(speed, NULL);
-	} else {
-		serialFlush(arduino);
-	}
+	right_motor.displacement = strtod(motor_received_message[2], NULL);
+	right_motor.speed = strtod(motor_received_message[3], NULL);
 }
 
 void write_motors()
 {
 	//lspeed;rspeed;
-	//+0.000;+1.000;
+	//+0.000;+0.000;
 	snprintf(motor_sent_message, MOTOR_SND_MESS_SIZE, "%+6.3f;%+6.3f;", left_motor.set_speed, right_motor.set_speed);
-	serialPuts(arduino, motor_sent_message);
+	send_to_arduino(motor_sent_message);
 }

@@ -18,10 +18,10 @@
 #define INB_R 4
 
 //encoder
-#define ENCODER_L 0 //interrup port 0, is the pin 2
-#define ENCODER_R 1 //interrup port 1, is the pin 3
-#define DIR_L 12
-#define DIR_R 11
+#define ENCODER_L 1 //interrup port 0, is the pin 2
+#define ENCODER_R 0 //interrup port 1, is the pin 3
+#define DIR_L 11
+#define DIR_R 12
 
 #define LMOTOR 0
 #define RMOTOR 1
@@ -58,7 +58,7 @@ void setup()
   noInterrupts();
   startDriver();
   startEncoder();
-  Serial.begin(2000000);
+  Serial.begin(115200);
   interrupts();
 }
 
@@ -99,7 +99,7 @@ float errR = 0, sum_errR = 0, old_errR, derrR;
 void print_snd_msg()
 {
   // ldisplacement;lspeed;rdisplacement;rspeed;
-  // +0000.00;+0.00;+0000.00;+0.00;
+  // +0000.00;+0.00;+0000.00;+0.00;\n
   if(ldisplacement >= 0)
   {
     Serial.print("+" + String(ldisplacement) + ";");
@@ -127,8 +127,7 @@ void print_snd_msg()
   } else {
     Serial.print(String(velocidade_direita) + ";");
   }
-
-  Serial.println();
+  Serial.print('\n');
 }
 
 void controle(float refL, float refR)
