@@ -32,7 +32,7 @@ void init_motors()
 	int i = 0;
 	char devpath[20];
 	do {
-		snprintf(devpath, 20, "/dev/ttyUSB%d", i%10);
+		snprintf(devpath, 20, "/dev/ttyUSB%d", 0);
 		arduino = open(devpath, O_RDWR | O_NOCTTY | O_NDELAY);
 		++i;
 	} while(!arduino);
@@ -171,6 +171,6 @@ void write_motors()
 {
 	//lspeed;rspeed;
 	//+0.000;+0.000;
-	snprintf(motor_sent_message, MOTOR_SND_MESS_SIZE, "%+6.3f;%+6.3f;", left_motor.set_speed, right_motor.set_speed);
+	snprintf(motor_sent_message, MOTOR_SND_MESS_SIZE, "%6.3f;%6.3f;", left_motor.set_speed, right_motor.set_speed);
 	send_to_arduino(motor_sent_message);
 }
