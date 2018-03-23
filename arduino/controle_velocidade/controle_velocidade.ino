@@ -66,7 +66,7 @@ void setup()
 
 #define MSG_SIZE 20
 
-float lref = 0, rref = 0;
+float lref = 0.5, rref = 0;
 int pwmL, pwmR;
 int flag = 0;
 char msg[MSG_SIZE];
@@ -79,19 +79,19 @@ void loop()
     last_recv == micros();
     //lref;rref;
     //+0.000;+0.000;
-    digitalWrite(LED_BUILTIN, LOW);
-    Serial.readBytesUntil(';', msg, MSG_SIZE);
-    lref = String(msg).toFloat();
-    Serial.readBytesUntil(';', msg, MSG_SIZE);
-    rref = String(msg).toFloat();
+    // digitalWrite(LED_BUILTIN, LOW);
+    // Serial.readBytesUntil(';', msg, MSG_SIZE);
+    // lref = String(msg).toFloat();
+    // Serial.readBytesUntil(';', msg, MSG_SIZE);
+    // rref = String(msg).toFloat();
   }
   if(micros() - last_send > 5000)
   {
     last_send = micros();
-    print_snd_msg();
     UpdateVel(lref,rref);
+    print_snd_msg();
   }
-  if(micros() - last_recv < 1000000)
+  if(micros() - last_recv > 1000000)
   {
     digitalWrite(LED_BUILTIN, HIGH);
     reset(); // comment out if using manual input
