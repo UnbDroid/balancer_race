@@ -64,37 +64,47 @@ void setup()
   interrupts();
 }
 
-#define MSG_SIZE 20
+#define MSG_SIZE 15
 
-float lref = 0.5, rref = 0;
+float lref = 0, rref = 0;
 int pwmL, pwmR;
 int flag = 0;
 char msg[MSG_SIZE];
 unsigned long last_send, last_recv;
 
+int i = 0;
+
 void loop()
 {
-  if(Serial.available())
-  {
-    last_recv == micros();
-    //lref;rref;
-    //+0.000;+0.000;
-    // digitalWrite(LED_BUILTIN, LOW);
-    // Serial.readBytesUntil(';', msg, MSG_SIZE);
-    // lref = String(msg).toFloat();
-    // Serial.readBytesUntil(';', msg, MSG_SIZE);
-    // rref = String(msg).toFloat();
-  }
   if(micros() - last_send > 5000)
   {
     last_send = micros();
     UpdateVel(lref,rref);
     print_snd_msg();
   }
-  if(micros() - last_recv > 1000000)
+  // if(micros() - last_recv > 1000000)
+  // {
+  //   digitalWrite(LED_BUILTIN, HIGH);
+  //   reset(); // comment out if using manual input
+  // }
+}
+void serialEvent()
+{
+  if (Serial.available() > 0)
   {
-    digitalWrite(LED_BUILTIN, HIGH);
-    reset(); // comment out if using manual input
+    last_recv == micros();
+    // lref;rref;
+    // +0.000;+0.000;
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.readBytesUntil(';', msg, MSG_SIZE);
+    lref = String(msg).toFloat();
+    Serial.readBytesUntil(';', msg, MSG_SIZE);
+    rref = String(msg).toFloat();
+  }
+  //limpando o buffer
+  while(Serial.available() > 0 )
+  {
+    char t = Serial.read();
   }
 }
 
