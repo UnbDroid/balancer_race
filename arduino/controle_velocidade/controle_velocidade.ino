@@ -114,6 +114,7 @@ void serialEvent()
 
 float errL = 0, sum_errL = 0, old_errL, derrL;
 float errR = 0, sum_errR = 0, old_errR, derrR;
+bool lbangbang = LOW, rbangbang = LOW; 
 
 void print_snd_msg()
 {
@@ -161,15 +162,19 @@ void controle(float refL, float refR)
   derrL = (errL - old_errL)/dt;
   sum_errL += errL*dt;
 
-  if(refR > 0 && refR < 0.2)
+  //controle motor direita
+  if(refR >= 0 && refR < 0.2)
   {
+    //bang bang
+    rbangbang = HIGH;
     if(velocidade_direita < refR)
     {
       pwmR = 50;
     } else {
       pwmR = 0;
     }
-  } else if(refR < 0 && refR > -0.2) {
+  } else if(refR <= 0 && refR > -0.2) {
+    rbangbang = HIGH;
     if(velocidade_direita > refR)
     {
       pwmR = -50;
@@ -177,18 +182,28 @@ void controle(float refL, float refR)
       pwmR = 0;
     }
   } else {
+      //PID
+      if(rbangbang)
+      {
+        sum_errR = 0;
+        rbangbang = LOW;
+      }
       pwmR = (int)(KP*errR + KI*sum_errR + KD*derrR);
   }
 
-  if(refL > 0 && refL < 0.2)
+  //controle motor esquerda
+  if(refL >= 0 && refL < 0.2)
   {
+    //bang bang
+    lbangbang = HIGH;
     if(velocidade_esquerda < refL)
     {
       pwmL = 50;
     } else {
       pwmL = 0;
     }
-  } else if(refL < 0 && refL > -0.2) {
+  } else if(refL <= 0 && refL > -0.2) {
+    lbangbang = HIGH;
     if(velocidade_esquerda > refL)
     {
       pwmL = -50;
@@ -196,17 +211,23 @@ void controle(float refL, float refR)
       pwmL = 0;
     }
   } else {
+      //PID
+      if(lbangbang)
+      {
+        sum_errR = 0;
+        lbangbang = LOW;
+      }
       pwmL = (int)(KP*errL + KI*sum_errL + KD*derrL);
   }
 
-  if(pwmL == 0 && lref == 0)
+  if(lref == 0)
   {
     brake(LMOTOR);
   } else {
     setpot(LMOTOR, pwmL);
   }
 
-  if(pwmR == 0 && rref == 0)
+  if(rref == 0)
   {
     brake(RMOTOR);
   } else {
