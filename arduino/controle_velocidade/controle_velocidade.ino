@@ -59,7 +59,7 @@ void setup()
   startDriver();
   startEncoder();
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
   Serial.begin(115200);
   interrupts();
 }
@@ -69,7 +69,7 @@ void setup()
 float lref = 0, rref = 0;
 int pwmL, pwmR;
 int flag = 0;
-char msg[MSG_SIZE];
+char msg1[MSG_SIZE], msg2[MSG_SIZE];
 unsigned long last_send, last_recv;
 
 int i = 0;
@@ -80,7 +80,7 @@ void loop()
   {
     last_send = micros();
     UpdateVel(lref,rref);
-    print_snd_msg();
+    //print_snd_msg();
   }
   // if(micros() - last_recv > 1000000)
   // {
@@ -95,17 +95,27 @@ void serialEvent()
     last_recv == micros();
     // lref;rref;
     // +0.000;+0.000;
-    digitalWrite(LED_BUILTIN, LOW);
-    Serial.readBytesUntil(';', msg, MSG_SIZE);
-    lref = String(msg).toFloat();
-    Serial.readBytesUntil(';', msg, MSG_SIZE);
-    rref = String(msg).toFloat();
+    digitalWrite(LED_BUILTIN, HIGH);
+    Serial.readBytesUntil(';', msg1, MSG_SIZE);
+    //lref = msg;//.toFloat();
+    Serial.readBytesUntil(';', msg2, MSG_SIZE);
+    //rref = msg;//.toFloat();
+    if(!memcmp(msg2, "*chaVe_35", 9) && !memcmp(msg1, "foda-se", 7))
+    {
+
+    }
+    else
+    {
+      digitalWrite(LED_BUILTIN, LOW);
+      while(1);
+    }
   }
   //limpando o buffer
   while(Serial.available() > 0 )
   {
     char t = Serial.read();
   }
+  Serial.print("ok;:");
 }
 
 #define KP 46.15

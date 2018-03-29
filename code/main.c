@@ -402,13 +402,26 @@ PI_THREAD(motors)
 	printf("%s\n%s\n%s\n%s\n%s\n", received_message[0], received_message[1], received_message[2], received_message[3], received_message[4]);
 	printf("numero caracteres = %d\nterminei!\n", teste_teste);
 	*/
+	int ok = 0;
+
 	motors_finished = 0;
 	piHiPri(0);
 	while(keep_running)
 	{
 		write_motors();
-		read_motors();
-		delayMicroseconds(100);
+		//read_motors();
+		printf("chegou a enviar\n");
+		do
+		{
+			receive_from_arduino(motor_received_message);
+			if(!memcmp(motor_received_message[0], "ok", 2))
+			{
+				ok = 1;
+			}
+		}
+		while(!ok);
+		ok = 0;
+		//delayMicroseconds(100);
 	}
 	motors_finished = 1;
 	
@@ -561,7 +574,7 @@ int main(int argc, char* argv[])
 	init_motors();
 	init_sensors();
 
-	piThreadCreate(main_thread);
+	//piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
 	if(!plot_flag) piThreadCreate(joystick);

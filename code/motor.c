@@ -130,7 +130,7 @@ int receive_from_arduino(char message[MAX_MSG][MOTOR_RCV_MESS_SIZE])
 					d++;
 					e = 0;
 				} 
-				else if (receive[c] == '\n')
+				else if (receive[c] == ':')
 				{
 					end = 1;
 					break;
@@ -172,5 +172,5 @@ void write_motors()
 	//lspeed;rspeed;
 	//+0.000;+0.000;
 	snprintf(motor_sent_message, MOTOR_SND_MESS_SIZE, "%6.3f;%6.3f;", left_motor.set_speed, right_motor.set_speed);
-	send_to_arduino(motor_sent_message);
+	//send_to_arduino("foda-se;*chaVe_35;");
 }
