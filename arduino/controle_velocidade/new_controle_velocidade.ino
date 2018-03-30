@@ -1,121 +1,99 @@
 
+#define MSG_MAX 30
+#define SEND_PRECISION 3
+#define BAUDRATE 2000000
+
+// Variaveis globais.
+char msg[MSG_MAX];
+boolean newMsg = false;
+float valor;
+float old_valor = 0;
 
 void setup()
 {
-  noInterrupts();         // Nao permite interrupcoes.
+	int ok = 0;
 
-  pinMode(LED_BUILTIN, OUTPUT); // LED imbutido no arduino. 
-  Serial.begin(2000000);     // Inicia comunicacao serial com baud rate 115200bps.
-  
-  interrupts();         // Volta a permitir interrupcoes.
+	noInterrupts();					// Nao permite interrupcoes.
+
+	pinMode(LED_BUILTIN, OUTPUT);		// LED imbutido no arduino. 
+	Serial.begin(BAUDRATE);				// Inicia comunicacao serial com baud rate 115200bps.
+
+	interrupts();					// Volta a permitir interrupcoes.
+
+	while(!ok)						// Espera a estabilizacao da comunicacao serial.
+	{
+		if (Serial.available() > 0)
+		{
+			msg[0] = Serial.read();
+			if(msg[0] == 'b')			// Msg esperada receber, envio e recibo de msg funcionando.
+			{
+				Serial.print("a");		// Resposta de que obteve comunicacao, 
+				ok = 1;
+			}
+		}
+		else
+		{
+			Serial.print("c");			// Msg de persistencia na espera.
+		}
+		delay(100);					// Simplesmente para nao enviar muitas msgs desnecessarias.
+	}
 }
 
-char msg[100];
-int i = 0;
 void loop()
 {
-  // Por enquanto nada.
-  while(!i)
-  {
-    if (Serial.available() > 0)
-    {
-      
-      msg[0] = Serial.read();
-      if(msg[0] == 'b')
-      {
-        Serial.print("a");
-        i = 1;
-      }
-    }
-    else 
-    {
-      Serial.print("c");
-    }
-    delay(1000);
-  }
+	if (valor != old_valor)
+	{
+		old_valor = valor;
+		Serial.print(":");
+		Serial.print(valor + 0.001, SEND_PRECISION);
+		Serial.print(";");
+	}
 }
 
-// Variaveis usadas em serialEvent().
-
-int i_msg = 0, flag = 0;
-float velocidade = 0;
-void serialEvent()
+void serialEvent()	// Obs: ocorre apenas depois de loop() ser executado.
 {
-  if (Serial.available() > 0)
-  {
-    // Obtem msg[]. Obs: pode levar mais do que um if para receber tudo.
-    do
-    {
-      msg[i_msg] = Serial.read();
-      if (msg[i_msg] == ':')      // Reseta a escrita para o inicio de msg[].
-      {
-        i_msg = -1;
-      }
-      i_msg++;
-    } while(Serial.available());
+	getValidData();			// Obtem msg sem parar o codigo, importante que se tenha uma boa frequencia de execucao de loop().
+	storeValidData();		// Armazena msg caso tenha tido uma msg completa recebida.
+}
 
-    // Checa por comandos. Obs: o que importa sao os primeiros caracteres de msg[].
-    if(!memcmp(msg, "set", 3))      // Seta o valor de velocidade desejado.
-    {
-      
-      // Apaga o comando de msg[] para evitar repetir comando.
-      msg[0] = 'a';
-      msg[1] = 'a';
-      msg[2] = 'a';
 
-      while(Serial.available() > 0)
-      {
-        msg[0] = Serial.read();
-      }
 
-      // Sinaliza para o Raspberry que recebeu comando e esta pronto.
-      Serial.print(":ok;");
+void getValidData()
+{
+	static int msgp = 0;		// pontero da msg.
+	char startChar = ':';		// char define inicio da msg.
+	char endChar = ';';			// char define fim da msg.
 
-      // Obtem msg[].
-      i_msg = 0;
-      do{
-        while (Serial.available())
-        {
-          msg[i_msg] = Serial.read();
-          if (msg[i_msg] == ':')      // Reseta a escrita para o inicio de msg[].
-          {
-            i_msg = -1;
-          }
-          if (msg[i_msg] == ';')      // Indica fim de String.
-          {
-            msg[i_msg] = '\0';
-            flag = 1;
-          }
-          i_msg++;
-        }
-      } while(!flag);
-      flag = 0;
+	while((Serial.available()) && (!newMsg))
+	{
+		msg[msgp] = Serial.read();
+		//Serial.print(msg[msgp]);			// Apenas para testes.
+		if (msg[msgp] == startChar)			// Ageita para comecar a colocar a msg no inicio de msg[].
+		{
+			msgp = -1;
+		}
+		else
+		if (msg[msgp] == endChar)			// Finaliza a obtencao da msg encerrando a string msg[].
+		{
+			msg[msgp] = '\0';
+			newMsg = true;						// Sinaliza uma nova msg recebida.
+		}
+		
+		msgp++;
+		if (msgp >= MSG_MAX)				// Evitar a escrita em memoria inacessivel.
+		{
+			msgp = MSG_MAX - 1;
+		}
+	}
+}
 
-      velocidade = String(msg).toFloat();   // Obs: Caso msg[] seja invalido o valor de velocidade sera 0.
-      digitalWrite(LED_BUILTIN, HIGH);
-      
-      /* IDE arduino.
-      Serial.print("Valor recebido: ");
-      Serial.print(velocidade, 5);
-      Serial.println("...");
-      */
-    }
-
-    if(!memcmp(msg, "get", 3))      // Fornece valores encoder.
-    {
-      // Apaga o comando de msg[] para evitar repetir comando.
-      msg[0] = 'a';
-      msg[1] = 'a';
-      msg[2] = 'a';
-
-      Serial.print(":");
-      Serial.print(velocidade, 5);
-      Serial.print(";");
-      /* IDE arduino.
-      Serial.print("Velocidade: ");
-      Serial.print(velocidade, 5);
-      Serial.println("...");
-      */
-    }
-  }
+void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso espera receber apenas um float.
+{
+	if (newMsg)
+	{
+		valor = String(msg).toFloat();		// Transforma float, 0 para entradas invalidos.
+		//Serial.println(msg);				// Apenas para testes.
+		//Serial.println(valor, 5);			// Apenas para testes.
+		newMsg = false;
+	}
 }

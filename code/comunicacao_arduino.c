@@ -1,3 +1,4 @@
+// Apenas copiei os includes de motor.c, talvez nao tenha a necessidade de tudo.
 #include <wiringPi.h>
 #include <wiringSerial.h>
 #include <fcntl.h>
@@ -6,229 +7,141 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <termios.h>   // using the termios.h library
+#include <stdbool.h>
 
-int set_velocidade(double vel);
-double get_velocidade();
-char leitura;
-unsigned long long int pos_times = 0, now_times = 0, pos_timeg = 0, now_timeg = 0;
+#define MSG_MAX 30
+#define SEND_PRECISION 3
+#define BAUDRATE 2000000
 
+// Declaracao das funcoes.
+void setupCommSerial();
+void getValidData();
+void storeValidData();
+void sendDoubleSerial(double send);
+
+// Variaveis globais.
+char msg[MSG_MAX];
+bool newMsg = false;
+double valor = 0.001;
+double old_valor = 0.001;
 int arduino;
-int i = 0;
-double velocidade = 0.00001;
 
-PI_THREAD(setT)
-{
-	while (1)
-	{
-		set_velocidade(velocidade);
-	}
-}
-
-PI_THREAD(getT)
-{
-	while (1)
-	{
-		velocidade = get_velocidade();
-		printf("velocidade: %f...\n", velocidade);
-	}
-}
+unsigned long long int time = 0, old_time = 0;		// Apenas para testes.
 
 int main()
 {
-	//double velocidade;
+	setupCommSerial();				// Setup comunicacao serial.
+	printf("Setup ok...\n");		// Apenas para testes.
+	getchar();						// Apenas para testes.
+
+	sendDoubleSerial(valor);		// Como eh o rasp que recebe a ultima confirmacao parecia melhor o rasp comecar o teste.
+	
+	while (1)
+	{
+		getValidData();					// Obtem msg sem parar o codigo, importante que se tenha uma boa frequencia de execucao do loop que esta inserido.
+		storeValidData();				// Armazena msg caso tenha tido uma msg completa recebida.
+
+		// Apartir daqui feito uma logica apenas para demonstrar
+		// a comunicacao funcionando e mostrar envio de msg.
+		if (valor != old_valor)			// Obs: o arduino que esta mudando o valor.
+		{
+			time = micros();
+			printf("time: %10lli...   ", time - old_time);
+
+			printf("valor: %.*f...\n", SEND_PRECISION, valor);
+			sendDoubleSerial(valor);			// Envia um valor double.
+			old_valor = valor;
+
+			old_time = micros();
+		}
+	}
+}
+
+
+
+void setupCommSerial()
+{
+	int ok = 0;
 
 	do
 	{
-		arduino = serialOpen("/dev/ttyUSB0", 2000000);
-	} while(!arduino || arduino == -1);
+		arduino = serialOpen("/dev/ttyUSB0", BAUDRATE);	// Inicia comunicacao serial com baud rate 115200bps.
+	} while (arduino <= 0);
 
-	if (wiringPiSetup () == -1)
-	{
-		printf("setup error");
-		return -1;
-	}
-   	
-   	printf("Conectado...\n");
+	//while (wiringPiSetup() == -1);		// Necessita de sudo.
 
-   	//velocidade = 00.001;
-
-   	while(!i)
+	do										// Espera a estabilizacao da comunicacao serial.
    	{
    		while(serialDataAvail(arduino))
    		{
-   			printf("%c...\n", leitura = serialGetchar(arduino));
-   			serialFlush(arduino);
-   			if(leitura == 'c')
+   			msg[0] = serialGetchar(arduino);
+   			//printf("%c...\n",   msg[0]);			// Apenas para testes.
+   			if(msg[0] == 'c')						// Msg de nao recebimento.
    			{
-   				serialPutchar(arduino, 'b');
+   				serialPutchar(arduino, 'b');		// Reenvia msg de confirmacao de recebimento.
    			}
    			else
-   			if(leitura == 'a')
+   			if(msg[0] == 'a')						// Msg esperada receber, envio e recibo de msg funcionando.
    			{
-   				i = 1;
+   				ok = 1;
    			}
    		}
-   	}
-   	printf("estabilizou comm...\n");
-   	getchar();
-   	
-   	wiringPiSetupPhys();
-
-   	piThreadCreate(setT);
-   	piThreadCreate(getT);
-
-   	while(1)
-   	{
-   		sleep(100000);
-   	}
-
-   	/*
-   	while(1)
-   	{
-   		pos_time = micros();				// start tempo.
-
-	   	set_velocidade(velocidade);			// função que envia valor.
-
-	   	now_time = micros();				// end tempo.
-	   	pos_time = now_time - pos_time;
-	   	printf("set time: %llu...\n", pos_time);
-
-	   	//printf("Enviou...\n");
-	   	velocidade = -1;
-
-	   	pos_time = micros();				// start tempo.
-
-	   	velocidade = get_velocidade();		// função que recebe valor.
-
-	   	now_time = micros();				// end tempo.
-	   	pos_time = now_time - pos_time;
-	   	printf("get time: %llu...\n", pos_time);
-
-	   	printf("velocidade: %f...\n", velocidade);
-	   	getchar();
-	   	velocidade += velocidade;
-   	}
-   	*/
+   	} while (!ok);
 }
 
-int set_velocidade(double vel)
+void getValidData()
 {
-	char msg[100], receive[100];
-	int count;
-	int ok = 0;
-	int i_msg = 0;
+	static int msgp = 0;		// pontero da msg.
+	char startChar = ':';		// char define inicio da msg.
+	char endChar = ';';			// char define fim da msg.
 
-	/*
-	if ((count = write(arduino, ":set", 5)) < 0)
+	while((serialDataAvail(arduino)) && (!newMsg))
 	{
-		perror("Failed to write to the output\n");
-    	return -1;
-	}
-	*/
-	//serialPrintf(arduino, ":set");
-
-	/*
-	serialPutchar (arduino, ':') ;
-	serialPutchar (arduino, 's') ;
-	serialPutchar (arduino, 'e') ;
-	serialPutchar (arduino, 't') ;
-
-	do
-	{
-		while ((count = serialDataAvail(arduino)) && (!ok))
+		msg[msgp] = serialGetchar(arduino);
+		//printf("%c\n", msg[msgp]);			// Apenas para testes.
+		if (msg[msgp] == startChar)			// Ageita para comecar a colocar a msg no inicio de msg[].
 		{
-			/*
-			if (count == -1)
-			{
-				perror("Failed to read the archive...\n");
-			}
-			
-			printf("count dentro while: %d...\n", count);
-			getchar();
-			*/
-			/*
-			msg[i_msg] = serialGetchar(arduino);
-			//printf("%c\n", msg[i_msg]);
-			if (msg[i_msg] == ':')			// Reseta a escrita para o inicio de msg[].
-			{
-				i_msg = -1;
-			}
-			if (msg[i_msg] == ';')			// Indica fim de String.
-			{
-				msg[i_msg] = '\0';
-				ok = 1;
-			}
-			i_msg++;
+			msgp = -1;
 		}
-		ok = 0;
-
-		if(!memcmp(msg, "ok", 2))
+		else
+		if (msg[msgp] == endChar)			// Finaliza a obtencao da msg encerrando a string msg[].
 		{
-			ok = 1;
+			msg[msgp] = '\0';
+			newMsg = true;						// Sinaliza uma nova msg recebida.
 		}
-	} while(!ok);
-	ok = 0;
-	*/
-	snprintf(msg, 15, ":%7f;", vel);
-	/*
-	if ((count = write(arduino, &msg, 10)) < 0)
-	{
-		perror("Failed to write to the output\n");
-    	return -1;
+		
+		msgp++;
+		if (msgp >= MSG_MAX)				// Evitar a escrita em memoria inacessivel.
+		{
+			msgp = MSG_MAX - 1;
+		}
 	}
-	*/
-	//printf("%s...\n", msg);
-	i_msg = 0;
-	while (msg[i_msg] != '\0')
-	{
-		serialPutchar (arduino, msg[i_msg]);
-		i_msg++;
-	}
-
-	return 0;
 }
 
-double get_velocidade()
+void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso espera receber apenas um float.
 {
-	char msg[100], receive[100];
-	int count;
-	int ok = 0;
-	int i_msg = 0;
-
-	/*
-	if ((count = write(arduino, ":get", 5)) < 0)
+	if (newMsg)
 	{
-		perror("Failed to write to the output\n");
-    	return -1;
+		valor = atof(msg);							// Transforma double, 0 para entradas invalidos.
+		//printf("msg: %s...\n", msg);				// Apenas para testes.
+		//printf("valor: %f...\n", velocidade);		// Apenas para testes.
+		newMsg = false;
 	}
-	*/
-	/*
-	serialPutchar (arduino, ':') ;
-	serialPutchar (arduino, 'g') ;
-	serialPutchar (arduino, 'e') ;
-	serialPutchar (arduino, 't') ;
+}
 
-	*/
-	do
+void sendDoubleSerial(double send)
+{
+	char deliver[MSG_MAX];
+	int i = 0;
+
+	snprintf(deliver, MSG_MAX, ":%.*f;", SEND_PRECISION, send);		// Prepara a msg a ser enviada.
+	while (deliver[i] != '\0')
 	{
-		while ((count = serialDataAvail(arduino) && (!ok)))
+		serialPutchar (arduino, deliver[i]);		// Envio da msg char por char ate fim da string. Obs: existe na biblioteca a funcao "serialPrintf" mas ela nao funcionou.
+		i++;
+		if (i >= MSG_MAX)							// Evitar ir alem da string.
 		{
-			msg[i_msg] = serialGetchar(arduino);
-			//printf("%c...\n", msg[i_msg]);
-			if (msg[i_msg] == ':')			// Reseta a escrita para o inicio de msg[].
-			{
-				i_msg = -1;
-			}
-			if (msg[i_msg] == ';')			// Indica fim de String.
-			{
-				msg[i_msg] = '\0';
-				ok = 1;
-			}
-			i_msg++;
+			break;
 		}
-	} while(!ok);
-	ok = 0;
-
-	return atof(msg);
+	}
 }
