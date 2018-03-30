@@ -48,7 +48,7 @@ int main()
 
 		// Apartir daqui feito uma logica apenas para demonstrar
 		// a comunicacao funcionando e mostrar envio de msg.
-		if ((lref != old_lref) && (rref != old_rref))			// Obs: o arduino que esta mudando o valor.
+		if (micros() - time > 5000)			// Obs: o arduino que esta mudando o valor.
 		{
 			old_time = time;
 			time = micros();

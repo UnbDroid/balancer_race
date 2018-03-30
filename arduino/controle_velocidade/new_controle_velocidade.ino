@@ -90,7 +90,7 @@ void setup()
 
 void loop()
 {
-	if(micros() - last_control > 5000)
+	if(micros() - last_control > 5000 )
 	{
 		last_control = micros();
 		UpdateVel(lref,rref);
@@ -162,12 +162,15 @@ void send_msg()
 	Serial.print(":");
 	Serial.print(ldisplacement);
 	Serial.print("dl;");
+
 	Serial.print(":");
 	Serial.print(velocidade_esquerda);
 	Serial.print("sr;");
+	
 	Serial.print(":");
 	Serial.print(rdisplacement);
 	Serial.print("dr;");
+	
 	Serial.print(":");
 	Serial.print(velocidade_direita);
 	Serial.print("sr;");
