@@ -17,13 +17,18 @@
 void setupCommSerial();
 void getValidData();
 void storeValidData();
-void sendDoubleSerial(double send);
+void sendDoubleSerial(double send1, double send2);
 
 // Variaveis globais.
 char msg[MSG_MAX];
 bool newMsg = false;
 double valor = 0.001;
 double old_valor = 0.001;
+double lref = 0.5, rref = 0.5;
+double old_lref, old_rref; 
+
+double ldisp, lspeed, rdisp, rspeed;
+
 int arduino;
 
 unsigned long long int time = 0, old_time = 0;		// Apenas para testes.
@@ -34,7 +39,7 @@ int main()
 	printf("Setup ok...\n");		// Apenas para testes.
 	getchar();						// Apenas para testes.
 
-	sendDoubleSerial(valor);		// Como eh o rasp que recebe a ultima confirmacao parecia melhor o rasp comecar o teste.
+	sendDoubleSerial(lref, rref);		// Como eh o rasp que recebe a ultima confirmacao parecia melhor o rasp comecar o teste.
 	
 	while (1)
 	{
@@ -43,16 +48,21 @@ int main()
 
 		// Apartir daqui feito uma logica apenas para demonstrar
 		// a comunicacao funcionando e mostrar envio de msg.
-		if (valor != old_valor)			// Obs: o arduino que esta mudando o valor.
+		if ((lref != old_lref) && (rref != old_rref))			// Obs: o arduino que esta mudando o valor.
 		{
+			old_time = time;
 			time = micros();
 			printf("time: %10lli...   ", time - old_time);
-
-			printf("valor: %.*f...\n", SEND_PRECISION, valor);
-			sendDoubleSerial(valor);			// Envia um valor double.
-			old_valor = valor;
-
-			old_time = micros();
+			// printf("lref: %.*f...   ", SEND_PRECISION, lref);
+			// printf("rref: %.*f...\n", SEND_PRECISION, rref);
+			printf("ldisp: %.*f...   ", SEND_PRECISION, ldisp);
+			printf("lspeed: %.*f...   ", SEND_PRECISION, lspeed);
+			printf("rdisp: %.*f...   ", SEND_PRECISION, rdisp);
+			printf("rspeed: %.*f...\n", SEND_PRECISION, rspeed);
+			sendDoubleSerial(lref, rref);			// Envia um valor double.		
+			// old_valor = valor;
+			old_lref = lref;
+			old_rref = rref;
 		}
 	}
 }
@@ -89,6 +99,8 @@ void setupCommSerial()
    	} while (!ok);
 }
 
+int lenght = 0;
+
 void getValidData()
 {
 	static int msgp = 0;		// pontero da msg.
@@ -107,6 +119,7 @@ void getValidData()
 		if (msg[msgp] == endChar)			// Finaliza a obtencao da msg encerrando a string msg[].
 		{
 			msg[msgp] = '\0';
+			lenght = msgp - 1;
 			newMsg = true;						// Sinaliza uma nova msg recebida.
 		}
 		
@@ -122,19 +135,46 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 {
 	if (newMsg)
 	{
-		valor = atof(msg);							// Transforma double, 0 para entradas invalidos.
+		if(msg[lenght] == 'l')
+		{
+			if(msg[lenght-1] == 'd')
+			{
+				ldisp = atof(msg);
+			} else if(msg[lenght-1] == 's'){
+				lspeed = atof(msg);
+			}
+		} else if(msg[lenght] == 'r') {
+			if(msg[lenght-1] == 'd')
+			{
+				rdisp = atof(msg);
+			} else if(msg[lenght-1] == 's'){
+				rspeed = atof(msg);
+			}
+		}
+		//valor = atof(msg);						// Transforma double, 0 para entradas invalidos.
 		//printf("msg: %s...\n", msg);				// Apenas para testes.
 		//printf("valor: %f...\n", velocidade);		// Apenas para testes.
 		newMsg = false;
 	}
 }
 
-void sendDoubleSerial(double send)
+void sendDoubleSerial(double send1, double send2)
 {
 	char deliver[MSG_MAX];
 	int i = 0;
 
-	snprintf(deliver, MSG_MAX, ":%.*f;", SEND_PRECISION, send);		// Prepara a msg a ser enviada.
+	snprintf(deliver, MSG_MAX, ":%.*fl;", SEND_PRECISION, send1);		// Prepara a msg a ser enviada.
+	while (deliver[i] != '\0')
+	{
+		serialPutchar (arduino, deliver[i]);		// Envio da msg char por char ate fim da string. Obs: existe na biblioteca a funcao "serialPrintf" mas ela nao funcionou.
+		i++;
+		if (i >= MSG_MAX)							// Evitar ir alem da string.
+		{
+			break;
+		}
+	}
+	i = 0;
+	snprintf(deliver, MSG_MAX, ":%.*fr;", SEND_PRECISION, send2);		// Prepara a msg a ser enviada.
 	while (deliver[i] != '\0')
 	{
 		serialPutchar (arduino, deliver[i]);		// Envio da msg char por char ate fim da string. Obs: existe na biblioteca a funcao "serialPrintf" mas ela nao funcionou.
