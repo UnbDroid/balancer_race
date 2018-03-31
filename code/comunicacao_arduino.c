@@ -31,15 +31,17 @@ double ldisp, lspeed, rdisp, rspeed;
 
 int arduino;
 
-unsigned long long int time = 0, old_time = 0;		// Apenas para testes.
+unsigned long long int time = 0, old_time = 0, diftime;		// Apenas para testes.
+
+bool flag = false;
 
 int main()
 {
 	setupCommSerial();				// Setup comunicacao serial.
-	printf("Setup ok...\n");		// Apenas para testes.
-	getchar();						// Apenas para testes.
+	//printf("Setup ok...\n");		// Apenas para testes.
+	//getchar();						// Apenas para testes.
 
-	sendDoubleSerial(lref, rref);		// Como eh o rasp que recebe a ultima confirmacao parecia melhor o rasp comecar o teste.
+	//sendDoubleSerial(lref, rref);		// Como eh o rasp que recebe a ultima confirmacao parecia melhor o rasp comecar o teste.
 	
 	while (1)
 	{
@@ -48,11 +50,11 @@ int main()
 
 		// Apartir daqui feito uma logica apenas para demonstrar
 		// a comunicacao funcionando e mostrar envio de msg.
-		if (micros() - time > 5000)			// Obs: o arduino que esta mudando o valor.
+		if (flag)			// Obs: o arduino que esta mudando o valor.
 		{
-			old_time = time;
-			time = micros();
-			printf("time: %10lli...   ", time - old_time);
+			//old_time = time;
+			//time = micros();
+			printf("time: %6lli...   ", diftime);
 			// printf("lref: %.*f...   ", SEND_PRECISION, lref);
 			// printf("rref: %.*f...\n", SEND_PRECISION, rref);
 			printf("ldisp: %.*f...   ", SEND_PRECISION, ldisp);
@@ -61,8 +63,10 @@ int main()
 			printf("rspeed: %.*f...\n", SEND_PRECISION, rspeed);
 			sendDoubleSerial(lref, rref);			// Envia um valor double.		
 			// old_valor = valor;
-			old_lref = lref;
-			old_rref = rref;
+			//old_lref = lref;
+			//old_rref = rref;
+
+			flag = false;
 		}
 	}
 }
@@ -135,11 +139,14 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 {
 	if (newMsg)
 	{
+		//printf("msg: %s...\n", msg);
 		if(msg[lenght] == 'l')
 		{
 			if(msg[lenght-1] == 'd')
 			{
 				ldisp = atof(msg);
+
+				old_time = micros();
 			} else if(msg[lenght-1] == 's'){
 				lspeed = atof(msg);
 			}
@@ -149,6 +156,10 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 				rdisp = atof(msg);
 			} else if(msg[lenght-1] == 's'){
 				rspeed = atof(msg);
+
+				time = micros();
+				diftime = time - old_time;
+				flag = true;
 			}
 		}
 		//valor = atof(msg);						// Transforma double, 0 para entradas invalidos.

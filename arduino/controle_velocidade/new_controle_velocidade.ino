@@ -160,19 +160,19 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 void send_msg()
 {
 	Serial.print(":");
-	Serial.print(ldisplacement);
-	Serial.print("dl;");
+	Serial.print(ldisplacement, SEND_PRECISION);
+	Serial.print("dl;:");
 
-	Serial.print(":");
-	Serial.print(velocidade_esquerda);
-	Serial.print("sr;");
+	//Serial.print(":");
+	Serial.print(velocidade_esquerda, SEND_PRECISION);
+	Serial.print("sl;:");
 	
-	Serial.print(":");
-	Serial.print(rdisplacement);
-	Serial.print("dr;");
+	//Serial.print(":");
+	Serial.print(rdisplacement, SEND_PRECISION);
+	Serial.print("dr;:");
 	
-	Serial.print(":");
-	Serial.print(velocidade_direita);
+	//Serial.print(":");
+	Serial.print(velocidade_direita, SEND_PRECISION);
 	Serial.print("sr;");
 }
 
