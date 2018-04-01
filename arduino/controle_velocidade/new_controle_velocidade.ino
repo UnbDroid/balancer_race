@@ -181,7 +181,7 @@ void controle(float refL, float refR)
   old_errR = errR;
   errR = refR - velocidade_direita;
   derrR = (errR - old_errR)/dt;
-  if((errR > 0 && pwmR < 255) || (errR < 0 && pwmR > 255))
+  if((errR > 0 && pwmR < 255) || (errR < 0 && pwmR > -255))
   {
   	sum_errR += errR*dt;
   }
@@ -190,7 +190,7 @@ void controle(float refL, float refR)
   errL = refL - velocidade_esquerda;
   derrL = (errL - old_errL)/dt;
   sum_errL += errL*dt;
-  if((errL > 0 && pwmL < 255) || (errL < 0 && pwmL > 255))
+  if((errL > 0 && pwmL < 255) || (errL < 0 && pwmL > -255))
   {
   	sum_errL += errL*dt;
   }
