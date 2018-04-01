@@ -328,7 +328,7 @@ void update_imu()
 	now_time = micros();
 	imu.dt = (now_time - imu.last_update)/1000000.0;
 	imu.last_update = now_time;
-
+	
 	// Reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);

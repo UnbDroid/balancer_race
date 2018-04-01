@@ -80,49 +80,26 @@ double speed = 0;
 
 PI_THREAD(main_thread)
 {
-	int i ;
-
 	main_finished = 0;
 	piHiPri(0);
 
-	dev_teta = 0;
-
-	//filtro do geovanny
-	//inicializando os valores do vetor de leituras
-	/*for(i = 0; i<4; i++)
-	{
-		bw_raw[i] = 0.0;
-		bw_filtered[i] = 0.0;
-	}
-	bw_raw[4] = 0;*/
-
+	/*
 	delay(30);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	//printf("%f\n", teta);
 	//gyroIntegrate = teta;
 	gyroIntegrate = 0;
+	*/
+
+		speed = 0.5;
+		setMotorSpeed(LMOTOR, speed);
+		setMotorSpeed(RMOTOR, 0);
+		write_motors();
+
 	while(keep_running)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
-
-		//filtro do geovanny
-		/*teta_raw = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)/*- (-95.416)//);
-		teta = 0;
-		for (i = 0; i < 4; ++i)
-			teta += -(A[i]*bw_filtered[i+1])+(B[i]*bw_raw[i]);
-		teta += (B[i]*bw_raw[i]);
-		for (i = 0; i < 3; ++i)
-		{
-			bw_raw[i+1] = bw_raw[i];
-			bw_filtered[i+1] = bw_filtered[i];
-		}
-		bw_raw[i+1] = bw_raw[i];
-		bw_raw[0] = teta_raw;
-		bw_filtered[0] = teta;
-		printf("%f\n", teta);
-		//lendo o gyro
-		*/
 
 	/*
 		teta_linha = imu.gyro.treatedY - (-0.131567);
@@ -151,38 +128,7 @@ PI_THREAD(main_thread)
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
 	*/
-		//pot = 0;
-		//int dz = 25;
-		int dz = 230;
-/*
-		if(pot < 0)
-		{
-			dir = -1;
-			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
-			if(pot<=dz)//levando em conta a saturação dos motores
-				pot = 0;
-			OnFwd(LMOTOR, pot);
-			OnFwd(RMOTOR, pot);
-		} else if(pot > 0)
-		{
-			dir = 1;
-			pot = dz + ((1023.0-dz)/1023.0)*(pot);
-			if(pot<=dz)
-				pot = 0;
-			OnRev(LMOTOR, pot);
-			OnRev(RMOTOR, pot);
-		} else if(pot == 0)
-		{
-			Brake(RMOTOR);
-			Brake(LMOTOR);
-		}
-		//printf("%f   |   %d\n", teta, pot);
-		//printf("%f\n", imu.dt);
-		//printf("%f\n", gyroIntegrate);
-*/
-		//delay(1);
-
-/*
+	/*
 		if(js.lanalog.up)
 		{
 			OnFwd(LMOTOR, js.lanalog.up);
@@ -201,8 +147,8 @@ PI_THREAD(main_thread)
 			Brake(RMOTOR);
 		}
 		delay(20);
-*/
-/*
+	*/
+	/*
 		if(js.LB)
 		{
 			++pot;
@@ -212,49 +158,9 @@ PI_THREAD(main_thread)
 		OnFwd(LMOTOR, pot);
 		OnFwd(RMOTOR, pot);
 		delay(200);
-*/
-		/*
-		if(speed > 2)
-		{
-			flag = 0;
-		} else if(speed < 0) {
-			flag = 1;
-		}
-		if(flag)
-		{
-			speed += 0.01;
-		} else {
-			speed -= 0.01;
-		}
-		*/
-		speed = 0.7;
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, 0);
-		delay(100);
-		print_message(motor_sent_message, 1);
-/*
-		if(pot > 1023)
-		{
-			flag = 0;
-		} else if(pot < -1023) {
-			flag = 1;
-		}
-		if(flag)
-		{
-			pot += 4;
-		} else {
-			pot -= 4;
-		}
-		OnFwd(LMOTOR, pot);
-		OnFwd(RMOTOR, pot);
-		delay(1);
-*/
-/*
-		speed = 1;
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
-		delay(1);
-*/
+	*/
+		
+		delay(5);
 	}
 	main_finished = 1;
 }
@@ -281,9 +187,11 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = left_motor.displacement;
+			//plotvar[0] = left_motor.displacement;
 			//plotvar[0] = left_motor.raw_speed;
 			//plotvar[1] = left_motor.filtered_speed;
+			plotvar[0] = left_motor.speed;
+			plotvar[1] = left_motor.set_speed;
 			//plotvar[2] = right_motor.filtered_speed;
 			//plotvar[2] = right_motor.displacement;
 			fprintf(fp, "%lld ", imu.last_update);
@@ -323,9 +231,9 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
-        	setMotorSpeed(LMOTOR, 0); // release motors
-			setMotorSpeed(RMOTOR, 0); // for safety purposes
-			write_motors();
+        	//setMotorSpeed(LMOTOR, 0); // release motors
+			//setMotorSpeed(RMOTOR, 0); // for safety purposes
+			//write_motors();
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
@@ -381,9 +289,9 @@ PI_THREAD(sensors)
 		if(now_time - last_update > 1000*SENSORS_UPDATE_RATE)
 		{
 			last_update = now_time;
-			update_ir();
+			//update_ir();
 			update_imu();
-			update_kalman();
+			//update_kalman();
 		} else {
 			delayMicroseconds(100);
 		}
@@ -393,35 +301,18 @@ PI_THREAD(sensors)
 
 PI_THREAD(motors)
 {
-	// Código feito apenas para teste da comunicação arduino.
-	/*
-	int teste_teste;
-	send_to_arduino("abc;123;50.66;teste;goiaba;:");
-	teste_teste = receive_from_arduino(received_message);
-	printf("comecei!\n");
-	printf("%s\n%s\n%s\n%s\n%s\n", received_message[0], received_message[1], received_message[2], received_message[3], received_message[4]);
-	printf("numero caracteres = %d\nterminei!\n", teste_teste);
-	*/
-	int ok = 0;
-
 	motors_finished = 0;
 	piHiPri(0);
+	
+	speed = 0.5;
+	setMotorSpeed(LMOTOR, speed);
+	setMotorSpeed(RMOTOR, 0);
+	write_motors();
+	
 	while(keep_running)
 	{
-		write_motors();
-		//read_motors();
-		printf("chegou a enviar\n");
-		do
-		{
-			receive_from_arduino(motor_received_message);
-			if(!memcmp(motor_received_message[0], "ok", 2))
-			{
-				ok = 1;
-			}
-		}
-		while(!ok);
-		ok = 0;
-		//delayMicroseconds(100);
+		getValidData();
+		storeValidData();
 	}
 	motors_finished = 1;
 	
@@ -507,6 +398,7 @@ int am_i_su()
 
 void clean_up()
 {
+	int nao_terminou = 1;
 	setMotorSpeed(LMOTOR, 0);
 	setMotorSpeed(RMOTOR, 0);
 	write_motors();
@@ -515,7 +407,19 @@ void clean_up()
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished && motors_finished));
+	do {
+		nao_terminou = !(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished && motors_finished); 
+		/*
+		printf("%d...", main_finished);
+		printf("%d...", joystick_finished);
+		printf("%d...", debug_finished);
+		printf("%d...", sensors_finished);
+		printf("%d...", supervisory_finished);
+		printf("%d...", plot_finished);
+		printf("%d...", motors_finished);
+		printf("%d...\n", nao_terminou);
+		*/
+	} while(nao_terminou);
 	set_color(WHITE, 255);
 	light_rgb();
 
