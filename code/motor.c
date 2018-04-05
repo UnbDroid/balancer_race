@@ -17,6 +17,8 @@
 #define SEND_PRECISION 3
 #define BAUDRATE 2000000
 
+#define MEDIAN_SIZE 5;
+
 // Declaracao das funcoes.
 void setupCommSerial();
 void getValidData();
@@ -31,6 +33,8 @@ struct motor {
 	double displacement, speed;
 	double set_speed;
 	unsigned long int last_update;
+	double vec_speed[MEDIAN_SIZE], vec_disp[MEDIAN_SIZE];
+	unsigned long int n_disp, n_speed;
 };
 
 struct motor left_motor, right_motor;
@@ -51,6 +55,19 @@ void init_motors()
 	left_motor.speed = 0;
 	left_motor.set_speed = 0;
 	left_motor.last_update = now;
+	left_motor.n_speed = 0;
+	left_motor.n_disp = 0;
+
+	right_motor.displacement = 0;
+	rightmotor.speed = 0;
+	rightmotor.set_speed = 0;
+	rightmotor.last_update = now;
+	rightmotor.displacement = 0;
+	rightmotor.speed = 0;
+	rightmotor.set_speed = 0;
+	right_motor.last_update = now;
+	left_motor.n_speed = 0;
+	left_motor.n_disp = 0;
 }
 
 void setupCommSerial()
@@ -60,7 +77,7 @@ void setupCommSerial()
 	do
 	{
 		arduino = serialOpen("/dev/ttyUSB0", BAUDRATE);	// Inicia comunicacao serial com baud rate 115200bps.
-		printf("no setup\n");
+		//printf("no setup\n");
 	} while (arduino <= 0);
 
 	//while (wiringPiSetup() == -1);		// Necessita de sudo.
@@ -125,15 +142,19 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 			if(msg[lenght-1] == 'd')
 			{
 				left_motor.displacement = atof(msg);
+				left_motor.n_disp++;
 			} else if(msg[lenght-1] == 's'){
 				left_motor.speed = atof(msg);
+				left_motor.n_speed++;
 			}
 		} else if(msg[lenght] == 'r') {
 			if(msg[lenght-1] == 'd')
 			{
 				right_motor.displacement = atof(msg);
+				right_motor.n_disp++;
 			} else if(msg[lenght-1] == 's'){
 				right_motor.speed = atof(msg);
+				right_motor.n_speed++;
 			}
 		}
 		//valor = atof(msg);						// Transforma double, 0 para entradas invalidos.
@@ -152,27 +173,27 @@ void write_motors()
 	while (deliver[i] != '\0')
 	{
 		serialPutchar (arduino, deliver[i]);		// Envio da msg char por char ate fim da string. Obs: existe na biblioteca a funcao "serialPrintf" mas ela nao funcionou.
-		printf("%c", deliver[i]);
+		//printf("%c", deliver[i]);
 		i++;
 		if (i >= MSG_MAX)							// Evitar ir alem da string.
 		{
 			break;
 		}
 	}
-	printf("\n");
+	//printf("\n");
 	i = 0;
 	snprintf(deliver, MSG_MAX, ":%.*fr;", SEND_PRECISION, right_motor.set_speed);		// Prepara a msg a ser enviada.
 	while (deliver[i] != '\0')
 	{
 		serialPutchar (arduino, deliver[i]);		// Envio da msg char por char ate fim da string. Obs: existe na biblioteca a funcao "serialPrintf" mas ela nao funcionou.
-		printf("%c", deliver[i]);
+		//printf("%c", deliver[i]);
 		i++;
 		if (i >= MSG_MAX)							// Evitar ir alem da string.
 		{
 			break;
 		}
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 void setMotorSpeed(int motor, double speed)

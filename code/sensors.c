@@ -134,6 +134,12 @@ struct imu {
 	int update;
 };
 
+struct complementar {
+	double pitch;
+};
+struct complementar compFilt;
+#define COMP_CONST 0.98
+
 double u[3], v[3], tempvec[3], tempmag;
 double i_n[3], j_n[3], k_n[3];
 double i_b[3], j_b[3], k_b[3];
@@ -162,6 +168,7 @@ unsigned long long int now_time;
 
 void update_imu();
 
+void init_complementar();
 void init_kalman();
 void update_kalman();
 void QuickSort(double array[], unsigned size);
@@ -319,6 +326,7 @@ void init_sensors()
 {
 	initMPU9250();
 	init_kalman();
+	init_complementar();
 	pinMode(IR_LEFT, INPUT);
 	pinMode(IR_RIGHT, INPUT);
 }
@@ -509,6 +517,17 @@ void update_imu()
 								sqrt(1-pow(rot_matrix[2][0], 2) - pow(rot_matrix[2][1], 2)));
 
 
+}
+
+void init_complementar()
+{
+	compFilt.pitch = imu.accel.treatedX;
+}
+
+void update_complementar()
+{
+	compFilt.pitch = COMP_CONST*(compFilt.pitch + imu.dt*imu.gyro.treatedX) + (1 - COMP_CONST)*(imu.accel.treatedX);
+	//printf("complementar pitch: %f...\n", compFilt.pitch*RAD2DEG);
 }
 
 void init_kalman()

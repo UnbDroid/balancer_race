@@ -63,10 +63,9 @@ double bw_raw[5];
 //float KI = 20;
 
 // motor pequeno
-float KP = 0.3;//125; //325;
-float KD = 0*0.01;//2.5;
-float KI = 0*0.0055;//0.7;
-
+float KP = 0.2;//125; //325;
+float KD = 0.02;//2.5;
+float KI = 0.007;//0.7;
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
 int pot = 0, dir;
@@ -83,37 +82,34 @@ PI_THREAD(main_thread)
 	main_finished = 0;
 	piHiPri(0);
 
-	/*
-	delay(30);
+	
+	delay(300);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
-	//printf("%f\n", teta);
+	printf("%f\n", teta);
 	//gyroIntegrate = teta;
-	gyroIntegrate = 0;
-	*/
-
-		speed = 0.5;
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, 0);
-		write_motors();
+	gyroIntegrate = teta - (-97.678610);
+	
 
 	while(keep_running)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
 
-	/*
-		teta_linha = imu.gyro.treatedY - (-0.131567);
+	
+		teta_linha = imu.gyro.treatedY - (-0.148855);//(-0.131567);
 
 		if(temp != imu.last_update)
 		{
+			/*
 			if(temp == 0)
 			{
 				//offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
+			*/
 			temp = imu.last_update;
 			old_gyroIntegrate = gyroIntegrate;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
-			teta = teta+teta_linha*imu.dt;
+			//teta = teta+teta_linha*imu.dt;
 		}
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
@@ -125,9 +121,11 @@ PI_THREAD(main_thread)
 	 	speed = -(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
 
 
+	 	//printf("%f\n", gyroIntegrate);
 		setMotorSpeed(LMOTOR, speed);
 		setMotorSpeed(RMOTOR, speed);
-	*/
+		write_motors();
+	
 	/*
 		if(js.lanalog.up)
 		{
@@ -187,11 +185,12 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			//plotvar[0] = left_motor.displacement;
+			plotvar[0] = right_motor.speed;
+			plotvar[1] = left_motor.speed;
 			//plotvar[0] = left_motor.raw_speed;
 			//plotvar[1] = left_motor.filtered_speed;
-			plotvar[0] = left_motor.speed;
-			plotvar[1] = left_motor.set_speed;
+			//plotvar[0] = left_motor.speed;
+			//plotvar[1] = left_motor.set_speed;
 			//plotvar[2] = right_motor.filtered_speed;
 			//plotvar[2] = right_motor.displacement;
 			fprintf(fp, "%lld ", imu.last_update);
@@ -291,6 +290,7 @@ PI_THREAD(sensors)
 			last_update = now_time;
 			//update_ir();
 			update_imu();
+			//update_complementar();
 			//update_kalman();
 		} else {
 			delayMicroseconds(100);
@@ -303,11 +303,6 @@ PI_THREAD(motors)
 {
 	motors_finished = 0;
 	piHiPri(0);
-	
-	speed = 0.5;
-	setMotorSpeed(LMOTOR, speed);
-	setMotorSpeed(RMOTOR, 0);
-	write_motors();
 	
 	while(keep_running)
 	{
@@ -478,7 +473,7 @@ int main(int argc, char* argv[])
 	init_motors();
 	init_sensors();
 
-	//piThreadCreate(main_thread);
+	piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
 	if(!plot_flag) piThreadCreate(joystick);
