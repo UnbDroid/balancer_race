@@ -72,6 +72,10 @@ float KPvel = 1;
 float KDvel = 10;
 float KIvel = 5;
 
+float KPome = 1;
+float KDome = 0;
+float KIome = 0;
+
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
 int pot = 0, dir;
@@ -99,6 +103,10 @@ unsigned long long int vel_time, vel_time_old, vel_dt;
 double req_tilt = 0, req_tilt_old = 0, req_tilt_linha = 0;
 double tilt_erro = 0, tilt_erro_integrate = 0, tilt_erro_linha = 0;
 
+double omega = 0, omega_integrate = 0, omega_ref_integrate = 0;
+double omega_erro = 0, omega_erro_old = 0, omega_erro_integrate = 0, omega_erro_derivate = 0;
+double speed_dir = 0;
+double omega_ref = 0;
 
 
 PI_THREAD(main_thread)
@@ -141,7 +149,20 @@ PI_THREAD(main_thread)
 
 
 
-		vel_ref = 0; // OBS: 0.01 JA EH UMA VELOCIDADE CONSIDERAVEL, CUIDADO!
+		if(js.lanalog.up > 0)
+		{
+			vel_ref = 0.0000127077*js.lanalog.up;
+		}
+		else if (js.lanalog.down > 0)
+		{
+			vel_ref = -0.0000127077*js.lanalog.down;
+		}
+		else 
+		{
+			vel_ref = 0;
+		}
+		//vel_ref = 0; // OBS: 0.01 JA EH UMA VELOCIDADE CONSIDERAVEL, CUIDADO!
+		
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
 		vel_med = (left_motor.speed + right_motor.speed)/2;
 		vel_time_old = vel_time;
@@ -160,20 +181,6 @@ PI_THREAD(main_thread)
 
 
 		//tetaIntegrat = 0;
-
-		/*
-		Lerro_vel_old = Lerro_vel;
-		Lerro_vel = left_motor.speed - speed_refL;
-		Lsoma_erro_vel += Lerro_vel;
-		Lderro_dt = (Lerro_vel - Lerro_vel_old)/left_motor.dt;
-
-		Rerro_vel_old = Rerro_vel;
-		Rerro_vel = right_motor.speed - speed_refR;
-		Rsoma_erro_vel += Rerro_vel;
-		Rderro_dt = (Rerro_vel - Rerro_vel_old)/right_motor.dt;
-		*/
-
-
 		//req_tilt = 5;
 		//printf("%f\n", gyroIntegrate);
 
@@ -186,13 +193,49 @@ PI_THREAD(main_thread)
 	 	speed = (tilt_erro*KP + tilt_erro_linha*KD + tilt_erro_integrate*KI);
 
 
+	 	if(js.ranalog.left > 0)
+		{
+			omega_ref = 0.0039100684*js.ranalog.left;
+		}
+		else if (js.ranalog.right > 0)
+		{
+			omega_ref = -0.0039100684*js.ranalog.right;
+		}
+		else 
+		{
+			omega_ref = 0;
+		}
+	 	//omega_ref = 5;
+	 	// TERCEIRO CONTROLADOR. DIRECAO.
+	 	omega = right_motor.speed - left_motor.speed;
+	 	omega_integrate = right_motor.displacement - left_motor.displacement;
+	 	omega_ref_integrate += omega_ref*vel_dt;
+
+	 	omega_erro_old = omega_erro;
+	 	omega_erro = omega_ref - omega;
+	 	omega_erro_integrate = omega_ref_integrate - omega_integrate;
+	 	omega_erro_derivate = (omega_erro - omega_erro_old)/vel_dt;
+
+	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
+
+	 	/*
+		Lerro_vel_old = Lerro_vel;
+		Lerro_vel = left_motor.speed - speed_refL;
+		Lsoma_erro_vel += Lerro_vel;
+		Lderro_dt = (Lerro_vel - Lerro_vel_old)/left_motor.dt;
+
+		Rerro_vel_old = Rerro_vel;
+		Rerro_vel = right_motor.speed - speed_refR;
+		Rsoma_erro_vel += Rerro_vel;
+		Rderro_dt = (Rerro_vel - Rerro_vel_old)/right_motor.dt;
+		*/
 
 	 	//speedL = speed - (KPV*Lerro_vel + KIV*Lsoma_erro_vel + KDV*Lderro_dt);
 	 	//speedR = speed - (KPV*Rerro_vel + KIV*Rsoma_erro_vel + KDV*Rderro_dt);
 
 	 	//printf("%f\n", gyroIntegrate);
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
+		setMotorSpeed(LMOTOR, speed - speed_dir);
+		setMotorSpeed(RMOTOR, speed + speed_dir);
 		write_motors();
 	
 	/*
