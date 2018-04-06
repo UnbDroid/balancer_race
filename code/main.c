@@ -7,9 +7,10 @@
 #include <math.h>
 #include "jstick.c"
 #include "led.c"
-#include "motor.c"
 #include "sensors.c"
+#include "motor.c"
 #include "debug.c"
+
 
 struct debug_data debug;	// struct containing all robot values
 							// for debugging purposes
@@ -66,6 +67,11 @@ double bw_raw[5];
 float KP = 0.2;//125; //325;
 float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
+
+float KPvel = 1;
+float KDvel = 10;
+float KIvel = 5;
+
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
 int pot = 0, dir;
@@ -76,6 +82,24 @@ int flag;
 float tetaIntegrat = 0;
 
 double speed = 0;
+double speedL = 0, speedR = 0;
+double speed_refL = 0;
+double speed_refR = 0;
+
+float Lerro_vel = 0, Lderro_dt = 0, Lsoma_erro_vel = 0, Lerro_vel_old;
+float Rerro_vel = 0, Rderro_dt = 0, Rsoma_erro_vel = 0, Rerro_vel_old;
+
+
+
+double vel_ref = 0;
+double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
+double vel_med = 0;
+unsigned long long int vel_time, vel_time_old, vel_dt;
+
+double req_tilt = 0, req_tilt_old = 0, req_tilt_linha = 0;
+double tilt_erro = 0, tilt_erro_integrate = 0, tilt_erro_linha = 0;
+
+
 
 PI_THREAD(main_thread)
 {
@@ -116,10 +140,55 @@ PI_THREAD(main_thread)
 		//pot = (int)(teta*KP + teta_linha*KD);
 
 
-		//tetaIntegrat = 0;
-		tetaIntegrat += gyroIntegrate;
-	 	speed = -(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
 
+		vel_ref = 0; // OBS: 0.01 JA EH UMA VELOCIDADE CONSIDERAVEL, CUIDADO!
+		// PRIMEIRO CONTROLADOR. VEL -> TILT.
+		vel_med = (left_motor.speed + right_motor.speed)/2;
+		vel_time_old = vel_time;
+		vel_time = micros();
+		vel_dt = vel_time - vel_time_old;
+
+		vel_erro_old = vel_erro;
+		vel_erro = vel_ref - vel_med;
+		vel_ref_integrate += vel_ref;
+		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
+		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
+		
+		req_tilt_old = req_tilt;
+		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
+	
+
+
+		//tetaIntegrat = 0;
+
+		/*
+		Lerro_vel_old = Lerro_vel;
+		Lerro_vel = left_motor.speed - speed_refL;
+		Lsoma_erro_vel += Lerro_vel;
+		Lderro_dt = (Lerro_vel - Lerro_vel_old)/left_motor.dt;
+
+		Rerro_vel_old = Rerro_vel;
+		Rerro_vel = right_motor.speed - speed_refR;
+		Rsoma_erro_vel += Rerro_vel;
+		Rderro_dt = (Rerro_vel - Rerro_vel_old)/right_motor.dt;
+		*/
+
+
+		//req_tilt = 5;
+		//printf("%f\n", gyroIntegrate);
+
+		// SEGUNDO CONTROLADOR. TILT -> PWM. 
+		tilt_erro = req_tilt - gyroIntegrate;
+		tilt_erro_integrate += tilt_erro;
+		req_tilt_linha = (req_tilt - req_tilt_old)/vel_dt;
+		tilt_erro_linha = req_tilt_linha - teta_linha;
+	 	
+	 	speed = (tilt_erro*KP + tilt_erro_linha*KD + tilt_erro_integrate*KI);
+
+
+
+	 	//speedL = speed - (KPV*Lerro_vel + KIV*Lsoma_erro_vel + KDV*Lderro_dt);
+	 	//speedR = speed - (KPV*Rerro_vel + KIV*Rsoma_erro_vel + KDV*Rderro_dt);
 
 	 	//printf("%f\n", gyroIntegrate);
 		setMotorSpeed(LMOTOR, speed);
@@ -185,8 +254,8 @@ PI_THREAD(plot)
 		{
 			last_fprintf = imu.last_update;
 			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = right_motor.speed;
-			plotvar[1] = left_motor.speed;
+			plotvar[0] = right_motor.displacement;
+			plotvar[1] = left_motor.displacement;
 			//plotvar[0] = left_motor.raw_speed;
 			//plotvar[1] = left_motor.filtered_speed;
 			//plotvar[0] = left_motor.speed;

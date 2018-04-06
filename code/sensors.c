@@ -34,7 +34,7 @@
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
 #define ACCEL_ALPHA 0
-#define ACCEL_MEDIAN_SIZE 5
+#define MEDIAN_SIZE 5
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -103,9 +103,12 @@ struct accel {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
-	double Xvec[ACCEL_MEDIAN_SIZE];
-	double Yvec[ACCEL_MEDIAN_SIZE];
-	double Zvec[ACCEL_MEDIAN_SIZE];
+	double Xvec[MEDIAN_SIZE];
+	double Yvec[MEDIAN_SIZE];
+	double Zvec[MEDIAN_SIZE];
+	double Xmedian;
+	double Ymedian;
+	double Zmedian;
 	double filteredX;
 	double filteredY;
 	double filteredZ;
@@ -166,12 +169,15 @@ uint8_t magZhi, magZlo;
 
 unsigned long long int now_time;
 
+double median[MEDIAN_SIZE];
+
 void update_imu();
 
 void init_complementar();
 void init_kalman();
 void update_kalman();
 void QuickSort(double array[], unsigned size);
+double getMediana(double array[MEDIAN_SIZE]);
 
 void initMPU9250()
 {
@@ -393,15 +399,15 @@ void update_imu()
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	
 	// Median and low-pass filtering for the accelerometer
-	imu.accel.Xvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
-	imu.accel.Yvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
-	imu.accel.Zvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
-	QuickSort(imu.accel.Xvec, ACCEL_MEDIAN_SIZE);
-	QuickSort(imu.accel.Yvec, ACCEL_MEDIAN_SIZE);
-	QuickSort(imu.accel.Zvec, ACCEL_MEDIAN_SIZE);
-	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xvec[ACCEL_MEDIAN_SIZE/2];
-	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Yvec[ACCEL_MEDIAN_SIZE/2];
-	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zvec[ACCEL_MEDIAN_SIZE/2];
+	imu.accel.Xvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedX;
+	imu.accel.Yvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedY;
+	imu.accel.Zvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedZ;
+	imu.accel.Xmedian = getMediana(imu.accel.Xvec);
+	imu.accel.Ymedian = getMediana(imu.accel.Yvec);
+	imu.accel.Zmedian = getMediana(imu.accel.Zvec);
+	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xmedian;
+	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Ymedian;
+	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zmedian;
 	++(imu.accel.n_measurements);
 
 	// Calculating acceleration magnitude
@@ -623,4 +629,16 @@ void QuickSortImpl(double array[], unsigned f, unsigned l)
 void QuickSort(double array[], unsigned size)
 {
     QuickSortImpl(array, 0, size-1);
+}
+
+double getMediana(double array[MEDIAN_SIZE])
+{
+	int i;
+	for (i = 0; i < MEDIAN_SIZE; i++)
+	{
+		median[i] = array[i];
+	}
+
+	QuickSort(median, MEDIAN_SIZE);
+	return median[MEDIAN_SIZE/2];
 }

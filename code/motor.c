@@ -17,24 +17,29 @@
 #define SEND_PRECISION 3
 #define BAUDRATE 2000000
 
-#define MEDIAN_SIZE 5;
+#define MEDIAN_SIZE_MOTOR 5
 
 // Declaracao das funcoes.
 void setupCommSerial();
 void getValidData();
 void storeValidData();
+double getMediana_motor(double array[MEDIAN_SIZE_MOTOR]);
 
 // Variaveis globais.
 char msg[MSG_MAX];
 bool newMsg = false;
 int arduino;
+double median_motor[MEDIAN_SIZE_MOTOR];
+unsigned long long int now_time_motorL, now_time_motorR, old_time_motorL, old_time_motorR;
 
 struct motor {
 	double displacement, speed;
 	double set_speed;
 	unsigned long int last_update;
-	double vec_speed[MEDIAN_SIZE], vec_disp[MEDIAN_SIZE];
 	unsigned long int n_disp, n_speed;
+	double vec_speed[MEDIAN_SIZE_MOTOR];
+	double vec_disp[MEDIAN_SIZE_MOTOR];
+	double dt;
 };
 
 struct motor left_motor, right_motor;
@@ -59,15 +64,15 @@ void init_motors()
 	left_motor.n_disp = 0;
 
 	right_motor.displacement = 0;
-	rightmotor.speed = 0;
-	rightmotor.set_speed = 0;
-	rightmotor.last_update = now;
-	rightmotor.displacement = 0;
-	rightmotor.speed = 0;
-	rightmotor.set_speed = 0;
+	right_motor.speed = 0;
+	right_motor.set_speed = 0;
 	right_motor.last_update = now;
-	left_motor.n_speed = 0;
-	left_motor.n_disp = 0;
+	right_motor.displacement = 0;
+	right_motor.speed = 0;
+	right_motor.set_speed = 0;
+	right_motor.last_update = now;
+	right_motor.n_speed = 0;
+	right_motor.n_disp = 0;
 }
 
 void setupCommSerial()
@@ -141,19 +146,31 @@ void storeValidData()	// Aqui que sera mudado para nossas necessidades. No caso 
 		{
 			if(msg[lenght-1] == 'd')
 			{
-				left_motor.displacement = atof(msg);
+				left_motor.vec_disp[left_motor.n_disp%MEDIAN_SIZE_MOTOR] = atof(msg);
+				left_motor.displacement = getMediana_motor(left_motor.vec_disp);
 				left_motor.n_disp++;
+				
+				old_time_motorL = now_time_motorL;
+				now_time_motorL = micros();
+				left_motor.dt = (now_time_motorL - old_time_motorL)/1000000.0;
 			} else if(msg[lenght-1] == 's'){
-				left_motor.speed = atof(msg);
+				left_motor.vec_speed[left_motor.n_speed%MEDIAN_SIZE_MOTOR] = atof(msg);
+				left_motor.speed = getMediana_motor(left_motor.vec_speed);
 				left_motor.n_speed++;
 			}
 		} else if(msg[lenght] == 'r') {
 			if(msg[lenght-1] == 'd')
 			{
-				right_motor.displacement = atof(msg);
+				right_motor.vec_disp[right_motor.n_disp%MEDIAN_SIZE_MOTOR] = atof(msg);
+				right_motor.displacement = getMediana_motor(right_motor.vec_disp);
 				right_motor.n_disp++;
+
+				old_time_motorR = now_time_motorR;
+				now_time_motorR = micros();
+				right_motor.dt = (now_time_motorR - old_time_motorR)/1000000.0;
 			} else if(msg[lenght-1] == 's'){
-				right_motor.speed = atof(msg);
+				right_motor.vec_speed[right_motor.n_speed%MEDIAN_SIZE_MOTOR] = atof(msg);
+				right_motor.speed = getMediana_motor(right_motor.vec_speed);
 				right_motor.n_speed++;
 			}
 		}
@@ -204,4 +221,52 @@ void setMotorSpeed(int motor, double speed)
 	} else if (motor == RMOTOR) {
 		right_motor.set_speed = speed;
 	}
+}
+
+
+
+// Abdullah's QuickSort implementation for usage with the Median Filter
+unsigned Partition_motor(double array[], unsigned f, unsigned l, double pivot)
+{
+    unsigned i = f-1, j = l+1;
+    while(1)
+    {
+        while(pivot < array[--j]);
+        while(array[++i] < pivot);
+        if(i<j)
+        {
+            double tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+        else
+            return j;
+    }
+}
+
+void QuickSortImpl_motor(double array[], unsigned f, unsigned l)
+{
+    while(f < l)
+    {
+        unsigned m = Partition_motor(array, f, l, array[f]);
+        QuickSortImpl_motor(array, f, m);
+        f = m+1;
+    }
+}
+
+void QuickSort_motor(double array[], unsigned size)
+{
+    QuickSortImpl_motor(array, 0, size-1);
+}
+
+double getMediana_motor(double array[MEDIAN_SIZE_MOTOR])
+{
+	int i;
+	for (i = 0; i < MEDIAN_SIZE_MOTOR; i++)
+	{
+		median_motor[i] = array[i];
+	}
+
+	QuickSort(median_motor, MEDIAN_SIZE_MOTOR);
+	return median_motor[MEDIAN_SIZE_MOTOR/2];
 }
