@@ -85,15 +85,9 @@ unsigned long long int temp = 0;
 int flag;
 float tetaIntegrat = 0;
 
+
+// VARIAVEIS USADAS NO CONTROLE.
 double speed = 0;
-double speedL = 0, speedR = 0;
-double speed_refL = 0;
-double speed_refR = 0;
-
-float Lerro_vel = 0, Lderro_dt = 0, Lsoma_erro_vel = 0, Lerro_vel_old;
-float Rerro_vel = 0, Rderro_dt = 0, Rsoma_erro_vel = 0, Rerro_vel_old;
-
-
 
 double vel_ref = 0;
 double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
@@ -109,18 +103,19 @@ double speed_dir = 0;
 double omega_ref = 0;
 
 
+
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
 
-	
+
 	delay(300);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
 	gyroIntegrate = teta - (-97.678610);
-	
+
 
 	while(keep_running)
 	{
@@ -147,8 +142,8 @@ PI_THREAD(main_thread)
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 
-
-
+		//---------------------------------------------------------------------------------------------------------------------
+		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
 			vel_ref = 0.0000127077*js.lanalog.up;
@@ -161,8 +156,8 @@ PI_THREAD(main_thread)
 		{
 			vel_ref = 0;
 		}
-		//vel_ref = 0; // OBS: 0.01 JA EH UMA VELOCIDADE CONSIDERAVEL, CUIDADO!
-		
+
+		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
 		vel_med = (left_motor.speed + right_motor.speed)/2;
 		vel_time_old = vel_time;
@@ -177,13 +172,8 @@ PI_THREAD(main_thread)
 		
 		req_tilt_old = req_tilt;
 		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
-	
-
-
-		//tetaIntegrat = 0;
-		//req_tilt = 5;
-		//printf("%f\n", gyroIntegrate);
-
+		
+		//---------------------------------------------------------------------------------------------------------------------	
 		// SEGUNDO CONTROLADOR. TILT -> PWM. 
 		tilt_erro = req_tilt - gyroIntegrate;
 		tilt_erro_integrate += tilt_erro;
@@ -192,7 +182,8 @@ PI_THREAD(main_thread)
 	 	
 	 	speed = (tilt_erro*KP + tilt_erro_linha*KD + tilt_erro_integrate*KI);
 
-
+	 	//---------------------------------------------------------------------------------------------------------------------
+	 	// COMANDO ROTACAO POR JOYSTICK.
 	 	if(js.ranalog.left > 0)
 		{
 			omega_ref = 0.0039100684*js.ranalog.left;
@@ -206,6 +197,8 @@ PI_THREAD(main_thread)
 			omega_ref = 0;
 		}
 	 	//omega_ref = 5;
+
+	 	//---------------------------------------------------------------------------------------------------------------------
 	 	// TERCEIRO CONTROLADOR. DIRECAO.
 	 	omega = right_motor.speed - left_motor.speed;
 	 	omega_integrate = right_motor.displacement - left_motor.displacement;
@@ -218,58 +211,12 @@ PI_THREAD(main_thread)
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
-	 	/*
-		Lerro_vel_old = Lerro_vel;
-		Lerro_vel = left_motor.speed - speed_refL;
-		Lsoma_erro_vel += Lerro_vel;
-		Lderro_dt = (Lerro_vel - Lerro_vel_old)/left_motor.dt;
-
-		Rerro_vel_old = Rerro_vel;
-		Rerro_vel = right_motor.speed - speed_refR;
-		Rsoma_erro_vel += Rerro_vel;
-		Rderro_dt = (Rerro_vel - Rerro_vel_old)/right_motor.dt;
-		*/
-
-	 	//speedL = speed - (KPV*Lerro_vel + KIV*Lsoma_erro_vel + KDV*Lderro_dt);
-	 	//speedR = speed - (KPV*Rerro_vel + KIV*Rsoma_erro_vel + KDV*Rderro_dt);
-
-	 	//printf("%f\n", gyroIntegrate);
-		setMotorSpeed(LMOTOR, speed - speed_dir);
+	 	//---------------------------------------------------------------------------------------------------------------------
+	 	// COMANDO PARA O ARDUINO.
+	 	setMotorSpeed(LMOTOR, speed - speed_dir);
 		setMotorSpeed(RMOTOR, speed + speed_dir);
 		write_motors();
-	
-	/*
-		if(js.lanalog.up)
-		{
-			OnFwd(LMOTOR, js.lanalog.up);
-		} else if (js.lanalog.down) {
-			OnRev(LMOTOR, js.lanalog.down);
-		} else {
-			Brake(LMOTOR);
-		}
 
-		if(js.ranalog.up)
-		{
-			OnFwd(RMOTOR, js.ranalog.up);
-		} else if (js.ranalog.down) {
-			OnRev(RMOTOR, js.ranalog.down);
-		} else {
-			Brake(RMOTOR);
-		}
-		delay(20);
-	*/
-	/*
-		if(js.LB)
-		{
-			++pot;
-		} else if (js.RB) {
-			--pot;
-		}
-		OnFwd(LMOTOR, pot);
-		OnFwd(RMOTOR, pot);
-		delay(200);
-	*/
-		
 		delay(5);
 	}
 	main_finished = 1;
@@ -296,15 +243,20 @@ PI_THREAD(plot)
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = right_motor.displacement;
-			plotvar[1] = left_motor.displacement;
-			//plotvar[0] = left_motor.raw_speed;
-			//plotvar[1] = left_motor.filtered_speed;
-			//plotvar[0] = left_motor.speed;
-			//plotvar[1] = left_motor.set_speed;
-			//plotvar[2] = right_motor.filtered_speed;
-			//plotvar[2] = right_motor.displacement;
+
+			// Velocidade.
+			plotvar[1] = vel_ref;
+			plotvar[2] = vel_med;
+			// Tilt.
+			plotvar[3] = req_tilt;
+			plotvar[4] = gyroIntegrate;
+			// Direcao.
+			plotvar[5] = omega_ref;
+			plotvar[6] = omega;
+			// Arduino.
+			plotvar[7] = speed;
+			plotvar[8] = vel_med;
+
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -588,7 +540,7 @@ int main(int argc, char* argv[])
 	piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
-	if(!plot_flag) piThreadCreate(joystick);
+	/*if(!plot_flag)*/ piThreadCreate(joystick);
 	piThreadCreate(led);
 
 	piThreadCreate(supervisory);
