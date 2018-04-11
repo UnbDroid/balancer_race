@@ -32,6 +32,8 @@ int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// program knows what to
 													// do when finishing up.
 
+int halt = 1;
+
 /*
 This is the main thread. In it, we are supposed to put everything that doesn't
 belong in the infrastructure threads below it. Generally, it is used to test
@@ -121,7 +123,6 @@ PI_THREAD(main_thread)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
-
 	
 		teta_linha = imu.gyro.treatedY - (-0.148855);//(-0.131567);
 
@@ -211,9 +212,10 @@ PI_THREAD(main_thread)
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
+		while(halt); // safety measure
 	 	//---------------------------------------------------------------------------------------------------------------------
-	 	// COMANDO PARA O ARDUINO.
-	 	setMotorSpeed(LMOTOR, speed - speed_dir);
+	 	// COMANDO PARA O ARDUINO. 
+		setMotorSpeed(LMOTOR, speed - speed_dir);
 		setMotorSpeed(RMOTOR, speed + speed_dir);
 		write_motors();
 
@@ -294,12 +296,24 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
-        	//setMotorSpeed(LMOTOR, 0); // release motors
-			//setMotorSpeed(RMOTOR, 0); // for safety purposes
-			//write_motors();
-        	set_led_state(BLUETOOTH, ON);
+        	halt = 1;
+			set_led_state(HALT, ON);
+			
+			setMotorSpeed(LMOTOR, 0);
+			setMotorSpeed(RMOTOR, 0);
+			write_motors();
+
+			set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
+		}
+		if(js.LT > 100 || js.RT > 100)
+		{
+			halt = 0;
+			set_led_state(HALT, OFF);
+		} else {
+			halt = 1;
+			set_led_state(HALT, ON);
 		}
         update_joystick(&js);
 	}
