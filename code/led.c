@@ -16,9 +16,10 @@
 
 // LED state constant values
 #define BLUETOOTH 0
-#define GREENLIGHT 1
-#define STANDBY 2
-#define NUM_STATES 3
+#define PLOT 1
+#define GREENLIGHT 2
+#define STANDBY 3
+#define NUM_STATES 4
 
 // Color constant values
 #define OFF_COLOR 0
@@ -205,6 +206,10 @@ void update_led()
 					if(i <= -50) led_state_flag = 1;
 				}
 				set_color(BLUE, i);
+				break;
+			case PLOT:
+				led_delay = 10;
+				set_color(MAGENTA, 255);
 				break;
 			default: // no state set
 				i = 0;
