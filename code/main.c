@@ -7,9 +7,10 @@
 #include <math.h>
 #include "jstick.c"
 #include "led.c"
-#include "motor.c"
 #include "sensors.c"
+#include "motor.c"
 #include "debug.c"
+
 
 struct debug_data debug;	// struct containing all robot values
 							// for debugging purposes
@@ -63,9 +64,17 @@ double bw_raw[5];
 //float KI = 20;
 
 // motor pequeno
-float KP = 0.3;//125; //325;
-float KD = 0*0.01;//2.5;
-float KI = 0*0.0055;//0.7;
+float KP = 0.2;//125; //325;
+float KD = 0.02;//2.5;
+float KI = 0.007;//0.7;
+
+float KPvel = 1;
+float KDvel = 10;
+float KIvel = 5;
+
+float KPome = 1;
+float KDome = 0;
+float KIome = 0;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
@@ -76,184 +85,139 @@ unsigned long long int temp = 0;
 int flag;
 float tetaIntegrat = 0;
 
+
+// VARIAVEIS USADAS NO CONTROLE.
 double speed = 0;
+
+double vel_ref = 0;
+double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
+double vel_med = 0;
+unsigned long long int vel_time, vel_time_old, vel_dt;
+
+double req_tilt = 0, req_tilt_old = 0, req_tilt_linha = 0;
+double tilt_erro = 0, tilt_erro_integrate = 0, tilt_erro_linha = 0;
+
+double omega = 0, omega_integrate = 0, omega_ref_integrate = 0;
+double omega_erro = 0, omega_erro_old = 0, omega_erro_integrate = 0, omega_erro_derivate = 0;
+double speed_dir = 0;
+double omega_ref = 0;
+
+
 
 PI_THREAD(main_thread)
 {
-	int i ;
-
 	main_finished = 0;
 	piHiPri(0);
 
-	dev_teta = 0;
 
-	//filtro do geovanny
-	//inicializando os valores do vetor de leituras
-	/*for(i = 0; i<4; i++)
-	{
-		bw_raw[i] = 0.0;
-		bw_filtered[i] = 0.0;
-	}
-	bw_raw[4] = 0;*/
-
-	delay(30);
+	delay(300);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
-	//printf("%f\n", teta);
+	printf("%f\n", teta);
 	//gyroIntegrate = teta;
-	gyroIntegrate = 0;
+	gyroIntegrate = teta - (-97.678610);
+
+
 	while(keep_running)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
-		
-		//filtro do geovanny
-		/*teta_raw = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX)/*- (-95.416)//);
-		teta = 0;
-		for (i = 0; i < 4; ++i)
-			teta += -(A[i]*bw_filtered[i+1])+(B[i]*bw_raw[i]);
-		teta += (B[i]*bw_raw[i]);
-		for (i = 0; i < 3; ++i)
-		{
-			bw_raw[i+1] = bw_raw[i];
-			bw_filtered[i+1] = bw_filtered[i];
-		}
-		bw_raw[i+1] = bw_raw[i];
-		bw_raw[0] = teta_raw;
-		bw_filtered[0] = teta;
-		printf("%f\n", teta);
-		//lendo o gyro
-		*/
 
-	/*			
-		teta_linha = imu.gyro.treatedY - (-0.131567);
+	
+		teta_linha = imu.gyro.treatedY - (-0.148855);//(-0.131567);
 
 		if(temp != imu.last_update)
 		{
+			/*
 			if(temp == 0)
 			{
 				//offset = (RAD2DEG*atan2(imu.accel.treatedZ,imu.accel.treatedX));
 			}
+			*/
 			temp = imu.last_update;
 			old_gyroIntegrate = gyroIntegrate;
 			gyroIntegrate = gyroIntegrate+teta_linha*imu.dt;
-			teta = teta+teta_linha*imu.dt;
+			//teta = teta+teta_linha*imu.dt;
 		}
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ ,imu.accel.filteredX)) - (-97.045494);
 		//teta = (RAD2DEG*atan2(imu.accel.treatedZ ,imu.accel.treatedX)) - (-95.916);
 		//pot = (int)(teta*KP + teta_linha*KD);
 
+		//---------------------------------------------------------------------------------------------------------------------
+		// COMANDO VELOCIDADE POR JOYSTICK.
+		if(js.lanalog.up > 0)
+		{
+			vel_ref = 0.0000127077*js.lanalog.up;
+		}
+		else if (js.lanalog.down > 0)
+		{
+			vel_ref = -0.0000127077*js.lanalog.down;
+		}
+		else 
+		{
+			vel_ref = 0;
+		}
+
+		//---------------------------------------------------------------------------------------------------------------------
+		// PRIMEIRO CONTROLADOR. VEL -> TILT.
+		vel_med = (left_motor.speed + right_motor.speed)/2;
+		vel_time_old = vel_time;
+		vel_time = micros();
+		vel_dt = vel_time - vel_time_old;
+
+		vel_erro_old = vel_erro;
+		vel_erro = vel_ref - vel_med;
+		vel_ref_integrate += vel_ref;
+		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
+		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
 		
-		//tetaIntegrat = 0;
-		tetaIntegrat += gyroIntegrate;
-	 	speed = -(gyroIntegrate*KP + teta_linha*KD + tetaIntegrat*KI);
+		req_tilt_old = req_tilt;
+		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
 		
-		
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
-	*/
-		//pot = 0;
-		//int dz = 25;
-		int dz = 230;
-/*		
-		if(pot < 0)
-		{
-			dir = -1;
-			pot = dz + ((1023.0-dz)/1023.0)*(-pot);//tirando a zona morta dos motores
-			if(pot<=dz)//levando em conta a saturação dos motores
-				pot = 0;	
-			OnFwd(LMOTOR, pot);
-			OnFwd(RMOTOR, pot);
-		} else if(pot > 0)
-		{
-			dir = 1;
-			pot = dz + ((1023.0-dz)/1023.0)*(pot);
-			if(pot<=dz)
-				pot = 0;	
-			OnRev(LMOTOR, pot);
-			OnRev(RMOTOR, pot);
-		} else if(pot == 0)
-		{
-			Brake(RMOTOR);
-			Brake(LMOTOR);
-		}
-		//printf("%f   |   %d\n", teta, pot);
-		//printf("%f\n", imu.dt);
-		//printf("%f\n", gyroIntegrate);
-*/		
-		//delay(1);
+		//---------------------------------------------------------------------------------------------------------------------	
+		// SEGUNDO CONTROLADOR. TILT -> PWM. 
+		tilt_erro = req_tilt - gyroIntegrate;
+		tilt_erro_integrate += tilt_erro;
+		req_tilt_linha = (req_tilt - req_tilt_old)/vel_dt;
+		tilt_erro_linha = req_tilt_linha - teta_linha;
+	 	
+	 	speed = (tilt_erro*KP + tilt_erro_linha*KD + tilt_erro_integrate*KI);
 
-/*		
-		if(js.lanalog.up)
+	 	//---------------------------------------------------------------------------------------------------------------------
+	 	// COMANDO ROTACAO POR JOYSTICK.
+	 	if(js.ranalog.left > 0)
 		{
-			OnFwd(LMOTOR, js.lanalog.up);
-		} else if (js.lanalog.down) {
-			OnRev(LMOTOR, js.lanalog.down);
-		} else {
-			Brake(LMOTOR);
+			omega_ref = 0.0039100684*js.ranalog.left;
 		}
+		else if (js.ranalog.right > 0)
+		{
+			omega_ref = -0.0039100684*js.ranalog.right;
+		}
+		else 
+		{
+			omega_ref = 0;
+		}
+	 	//omega_ref = 5;
 
-		if(js.ranalog.up)
-		{
-			OnFwd(RMOTOR, js.ranalog.up);
-		} else if (js.ranalog.down) {
-			OnRev(RMOTOR, js.ranalog.down);
-		} else {
-			Brake(RMOTOR);
-		}
-		delay(20);
-*/
-/*
-		if(js.LB)
-		{
-			++pot;
-		} else if (js.RB) {
-			--pot;
-		}
-		OnFwd(LMOTOR, pot);
-		OnFwd(RMOTOR, pot);
-		delay(200);
-*/
+	 	//---------------------------------------------------------------------------------------------------------------------
+	 	// TERCEIRO CONTROLADOR. DIRECAO.
+	 	omega = right_motor.speed - left_motor.speed;
+	 	omega_integrate = right_motor.displacement - left_motor.displacement;
+	 	omega_ref_integrate += omega_ref*vel_dt;
 
-		if(speed > 2)
-		{
-			flag = 0;
-		} else if(speed < 0) {
-			flag = 1;
-		}
-		if(flag)
-		{
-			speed += 0.001;
-		} else {
-			speed -= 0.001;
-		}
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
-		delay(2);
+	 	omega_erro_old = omega_erro;
+	 	omega_erro = omega_ref - omega;
+	 	omega_erro_integrate = omega_ref_integrate - omega_integrate;
+	 	omega_erro_derivate = (omega_erro - omega_erro_old)/vel_dt;
 
-/*
-		if(pot > 1023)
-		{
-			flag = 0;
-		} else if(pot < -1023) {
-			flag = 1;
-		}
-		if(flag)
-		{
-			pot += 4;
-		} else {
-			pot -= 4;
-		}
-		OnFwd(LMOTOR, pot);
-		OnFwd(RMOTOR, pot);
-		delay(1);
-*/
-/*
-		speed = 1;
-		setMotorSpeed(LMOTOR, speed);
-		setMotorSpeed(RMOTOR, speed);
-		delay(1);
-*/
-		OnFwd(LMOTOR, 1023);
+	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
+
+	 	//---------------------------------------------------------------------------------------------------------------------
+	 	// COMANDO PARA O ARDUINO.
+	 	setMotorSpeed(LMOTOR, speed - speed_dir);
+		setMotorSpeed(RMOTOR, speed + speed_dir);
+		write_motors();
+
+		delay(5);
 	}
 	main_finished = 1;
 }
@@ -273,18 +237,26 @@ PI_THREAD(plot)
 		++i;
 	} while(exists(fname));
 	fp = fopen(fname, "w");
-	if(imu.last_update > plot_time*1000000) keep_running = 0; 
+	if(imu.last_update > plot_time*1000000) keep_running = 0;
 	while(keep_running)
 	{
 		if(imu.last_update != last_fprintf)
 		{
 			last_fprintf = imu.last_update;
-			//plotvar[0] = gyroIntegrate;
-			plotvar[0] = left_motor.displacement;
-			//plotvar[0] = left_motor.raw_speed;
-			//plotvar[1] = left_motor.filtered_speed;
-			//plotvar[2] = right_motor.filtered_speed;
-			//plotvar[2] = right_motor.displacement;
+
+			// Velocidade.
+			plotvar[1] = vel_ref;
+			plotvar[2] = vel_med;
+			// Tilt.
+			plotvar[3] = req_tilt;
+			plotvar[4] = gyroIntegrate;
+			// Direcao.
+			plotvar[5] = omega_ref;
+			plotvar[6] = omega;
+			// Arduino.
+			plotvar[7] = speed;
+			plotvar[8] = vel_med;
+
 			fprintf(fp, "%lld ", imu.last_update);
 			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
 			{
@@ -313,7 +285,7 @@ PI_THREAD(joystick)
 {
     joystick_finished = 0;
 	piHiPri(0);
-    
+
     set_led_state(BLUETOOTH, ON);
     init_joystick(&js, devname);
     set_led_state(BLUETOOTH, OFF);
@@ -322,8 +294,9 @@ PI_THREAD(joystick)
     {
         if(js.disconnect)
         {
-        	Coast(RMOTOR); // release motors
-        	Coast(LMOTOR); // for safety purposes
+        	//setMotorSpeed(LMOTOR, 0); // release motors
+			//setMotorSpeed(RMOTOR, 0); // for safety purposes
+			//write_motors();
         	set_led_state(BLUETOOTH, ON);
 		    init_joystick(&js, devname);
 		    set_led_state(BLUETOOTH, OFF);
@@ -333,7 +306,7 @@ PI_THREAD(joystick)
 	// If a D-Pad key is pressed along with START+SELECT when finishing
 	// the program, special finishing up routines are called inside the
 	// clean_up() function. They are:
-	
+
 	// DOWN+START+SELECT: shuts the Raspberry Pi Zero W down
 	if(js.dpad.down) shutdown_flag = 1;
 	// UP+START+SELECT: reboots the Raspberry Pi Zero W
@@ -367,7 +340,7 @@ PI_THREAD(led)
 This is the sensors thread. It keeps the robot's sensors updated at a
 (supposedly) steady rate.
 */
-#define SENSORS_UPDATE_RATE 5 // defined in milliseconds
+#define SENSORS_UPDATE_RATE 10 // defined in milliseconds
 PI_THREAD(sensors)
 {
 	sensors_finished = 0;
@@ -379,9 +352,10 @@ PI_THREAD(sensors)
 		if(now_time - last_update > 1000*SENSORS_UPDATE_RATE)
 		{
 			last_update = now_time;
-			update_ir();
+			//update_ir();
 			update_imu();
-			update_kalman();
+			//update_complementar();
+			//update_kalman();
 		} else {
 			delayMicroseconds(100);
 		}
@@ -389,27 +363,19 @@ PI_THREAD(sensors)
 	sensors_finished = 1;
 }
 
-#define MOTORS_UPDATE_RATE 5 // defined in milliseconds
 PI_THREAD(motors)
 {
 	motors_finished = 0;
-	unsigned long long int last_update, now_time;
-	piHiPri(99);
+	piHiPri(0);
+	
 	while(keep_running)
 	{
-		now_time = micros();
-		if(now_time - last_update > 1000*MOTORS_UPDATE_RATE)
-		{
-			last_update = now_time;
-			update_motors();
-		} else {
-			delayMicroseconds(100);
-		}
+		getValidData();
+		storeValidData();
 	}
 	motors_finished = 1;
+	
 }
-
-
 
 /*
 This is the debug thread. It runs the debug screen code and is only run if the
@@ -450,13 +416,13 @@ PI_THREAD(supervisory)
 		supervisory_finished = 0;
 		do{
 			delay(10);
-			
+
 			debug.js = js;
 			debug.left_motor = left_motor;
 			debug.right_motor = right_motor;
 			debug.ir = ir;
 			debug.imu = imu;
-			debug.led_state = led_state;		
+			debug.led_state = led_state;
 		} while(keep_running && (send_superv_message(&debug) != -1));
 	}
 	supervisory_finished = 1;
@@ -475,7 +441,7 @@ PI_THREAD(matlab)
 		debug.ir = ir;
 		debug.imu = imu;
 		debug.led_state = led_state;
-		
+
 		send_matlab_message(&debug);
 		delay(10);
 	}
@@ -491,20 +457,34 @@ int am_i_su()
 
 void clean_up()
 {
-	Coast(LMOTOR);
-	Coast(RMOTOR);
+	int nao_terminou = 1;
+	setMotorSpeed(LMOTOR, 0);
+	setMotorSpeed(RMOTOR, 0);
+	write_motors();
 	set_color(RED, 255);
 	light_rgb();
 	while(!led_finished);
 	set_color(RED, 255);
 	light_rgb();
-	while(!(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished && motors_finished));
+	do {
+		nao_terminou = !(main_finished && joystick_finished && debug_finished && sensors_finished && supervisory_finished && plot_finished && motors_finished); 
+		/*
+		printf("%d...", main_finished);
+		printf("%d...", joystick_finished);
+		printf("%d...", debug_finished);
+		printf("%d...", sensors_finished);
+		printf("%d...", supervisory_finished);
+		printf("%d...", plot_finished);
+		printf("%d...", motors_finished);
+		printf("%d...\n", nao_terminou);
+		*/
+	} while(nao_terminou);
 	set_color(WHITE, 255);
 	light_rgb();
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program && !plot_flag) 
+	else if (!close_program && !plot_flag)
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
@@ -513,7 +493,7 @@ void clean_up()
 
 int main(int argc, char* argv[])
 {
-	if(!am_i_su()) 
+	if(!am_i_su())
 	{
 		printf("Restricted area. Super users only.\n");
 		return 0;
@@ -529,7 +509,7 @@ int main(int argc, char* argv[])
 			if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0)
 			{
 				debug.debug_flag = 1;
-			} 
+			}
 			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
 			{
 				long temp;
@@ -538,7 +518,7 @@ int main(int argc, char* argv[])
 					plot_time = temp;
 				}
 				plot_flag = 1;
-			}	
+			}
 		}
 		if(debug.debug_flag)
 		{
@@ -560,12 +540,12 @@ int main(int argc, char* argv[])
 	piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
-	if(!plot_flag) piThreadCreate(joystick);
+	/*if(!plot_flag)*/ piThreadCreate(joystick);
 	piThreadCreate(led);
 
 	piThreadCreate(supervisory);
 	piThreadCreate(matlab);
-	
+
 	while(keep_running) delay(100);
 	clean_up();
 

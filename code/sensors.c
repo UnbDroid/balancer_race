@@ -34,7 +34,7 @@
 #define ACCELY_BIAS 0.020262
 #define ACCELZ_BIAS 0.11054
 #define ACCEL_ALPHA 0
-#define ACCEL_MEDIAN_SIZE 5
+#define MEDIAN_SIZE 5
 
 #define PWR_MGMT_1 0x6b
 #define PWR_MGMT_2 0x6c
@@ -103,9 +103,12 @@ struct accel {
 	double treatedX;
 	double treatedY;
 	double treatedZ;
-	double Xvec[ACCEL_MEDIAN_SIZE];
-	double Yvec[ACCEL_MEDIAN_SIZE];
-	double Zvec[ACCEL_MEDIAN_SIZE];
+	double Xvec[MEDIAN_SIZE];
+	double Yvec[MEDIAN_SIZE];
+	double Zvec[MEDIAN_SIZE];
+	double Xmedian;
+	double Ymedian;
+	double Zmedian;
 	double filteredX;
 	double filteredY;
 	double filteredZ;
@@ -134,6 +137,12 @@ struct imu {
 	int update;
 };
 
+struct complementar {
+	double pitch;
+};
+struct complementar compFilt;
+#define COMP_CONST 0.98
+
 double u[3], v[3], tempvec[3], tempmag;
 double i_n[3], j_n[3], k_n[3];
 double i_b[3], j_b[3], k_b[3];
@@ -160,11 +169,15 @@ uint8_t magZhi, magZlo;
 
 unsigned long long int now_time;
 
+double median[MEDIAN_SIZE];
+
 void update_imu();
 
+void init_complementar();
 void init_kalman();
 void update_kalman();
 void QuickSort(double array[], unsigned size);
+double getMediana(double array[MEDIAN_SIZE]);
 
 void initMPU9250()
 {
@@ -319,6 +332,7 @@ void init_sensors()
 {
 	initMPU9250();
 	init_kalman();
+	init_complementar();
 	pinMode(IR_LEFT, INPUT);
 	pinMode(IR_RIGHT, INPUT);
 }
@@ -328,7 +342,7 @@ void update_imu()
 	now_time = micros();
 	imu.dt = (now_time - imu.last_update)/1000000.0;
 	imu.last_update = now_time;
-
+	
 	// Reading gyroscope
 	gyrXhi = wiringPiI2CReadReg8(MPU9250addr, 0x43);
 	gyrXlo = wiringPiI2CReadReg8(MPU9250addr, 0x44);
@@ -385,15 +399,15 @@ void update_imu()
 	imu.accel.treatedZ = (ACCEL_GAIN*(double)imu.accel.rawZ)-ACCELZ_BIAS;
 	
 	// Median and low-pass filtering for the accelerometer
-	imu.accel.Xvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedX;
-	imu.accel.Yvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedY;
-	imu.accel.Zvec[imu.accel.n_measurements%ACCEL_MEDIAN_SIZE] = imu.accel.treatedZ;
-	QuickSort(imu.accel.Xvec, ACCEL_MEDIAN_SIZE);
-	QuickSort(imu.accel.Yvec, ACCEL_MEDIAN_SIZE);
-	QuickSort(imu.accel.Zvec, ACCEL_MEDIAN_SIZE);
-	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xvec[ACCEL_MEDIAN_SIZE/2];
-	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Yvec[ACCEL_MEDIAN_SIZE/2];
-	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zvec[ACCEL_MEDIAN_SIZE/2];
+	imu.accel.Xvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedX;
+	imu.accel.Yvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedY;
+	imu.accel.Zvec[imu.accel.n_measurements%MEDIAN_SIZE] = imu.accel.treatedZ;
+	imu.accel.Xmedian = getMediana(imu.accel.Xvec);
+	imu.accel.Ymedian = getMediana(imu.accel.Yvec);
+	imu.accel.Zmedian = getMediana(imu.accel.Zvec);
+	imu.accel.filteredX = ACCEL_ALPHA*imu.accel.filteredX + (1-ACCEL_ALPHA)*imu.accel.Xmedian;
+	imu.accel.filteredY = ACCEL_ALPHA*imu.accel.filteredY + (1-ACCEL_ALPHA)*imu.accel.Ymedian;
+	imu.accel.filteredZ = ACCEL_ALPHA*imu.accel.filteredZ + (1-ACCEL_ALPHA)*imu.accel.Zmedian;
 	++(imu.accel.n_measurements);
 
 	// Calculating acceleration magnitude
@@ -511,6 +525,17 @@ void update_imu()
 
 }
 
+void init_complementar()
+{
+	compFilt.pitch = imu.accel.treatedX;
+}
+
+void update_complementar()
+{
+	compFilt.pitch = COMP_CONST*(compFilt.pitch + imu.dt*imu.gyro.treatedX) + (1 - COMP_CONST)*(imu.accel.treatedX);
+	//printf("complementar pitch: %f...\n", compFilt.pitch*RAD2DEG);
+}
+
 void init_kalman()
 {
 	kalman.R[0] = STD_DEV_TRIAD_X;
@@ -604,4 +629,16 @@ void QuickSortImpl(double array[], unsigned f, unsigned l)
 void QuickSort(double array[], unsigned size)
 {
     QuickSortImpl(array, 0, size-1);
+}
+
+double getMediana(double array[MEDIAN_SIZE])
+{
+	int i;
+	for (i = 0; i < MEDIAN_SIZE; i++)
+	{
+		median[i] = array[i];
+	}
+
+	QuickSort(median, MEDIAN_SIZE);
+	return median[MEDIAN_SIZE/2];
 }
