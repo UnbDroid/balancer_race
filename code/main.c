@@ -233,52 +233,55 @@ PI_THREAD(plot)
 	char fname[40];
 	while(keep_running)
 	{
-		while(!js.B && keep_running) delay(1);
-		while(js.B && keep_running) delay(1);
+		while(!js.B && keep_running) delay(20);
+		while(js.B && keep_running) delay(20);
 		
 		i = 0;
-		do {
-			snprintf(fname, 40, "/home/pi/datalog/plot_data_%03d", i);
-			++i;
-		} while(exists(fname));
-		fp = fopen(fname, "w");
-		
-		set_led_state(PLOT, ON);
-		while(!js.B && keep_running)
+		if (keep_running)
 		{
-			now = micros();
-			if(now - last_fprintf > SAMPLE_TIME*1000)
+			do {
+				snprintf(fname, 40, "/home/pi/datalog/plot_data_%03d", i);
+				++i;
+			} while(exists(fname));
+			fp = fopen(fname, "w");
+			
+			set_led_state(PLOT, ON);
+			while(!js.B && keep_running)
 			{
-				last_fprintf = now;
-
-				// Velocidade.
-				plotvar[1] = vel_ref;
-				plotvar[2] = vel_med;
-				// Tilt.
-				plotvar[3] = req_tilt;
-				plotvar[4] = gyroIntegrate;
-				// Direcao.
-				plotvar[5] = omega_ref;
-				plotvar[6] = omega;
-				// Arduino.
-				plotvar[7] = speed;
-				plotvar[8] = vel_med;
-
-				fprintf(fp, "%lld ", now);
-				for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+				now = micros();
+				if(now - last_fprintf > SAMPLE_TIME*1000)
 				{
-					fprintf(fp, "% f ", plotvar[i]);
-				}
-				if(plotvar[i] == plotvar[i])
-				{
-					fprintf(fp, "% f;\n", plotvar[i]);
+					last_fprintf = now;
+
+					// Velocidade.
+					plotvar[1] = vel_ref;
+					plotvar[2] = vel_med;
+					// Tilt.
+					plotvar[3] = req_tilt;
+					plotvar[4] = gyroIntegrate;
+					// Direcao.
+					plotvar[5] = omega_ref;
+					plotvar[6] = omega;
+					// Arduino.
+					plotvar[7] = speed;
+					plotvar[8] = vel_med;
+
+					fprintf(fp, "%lld ", now);
+					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+					{
+						fprintf(fp, "% f ", plotvar[i]);
+					}
+					if(plotvar[i] == plotvar[i])
+					{
+						fprintf(fp, "% f;\n", plotvar[i]);
+					}
 				}
 			}
+			fclose(fp);
+			printf("Saved data to file %s\n", fname);
+			set_led_state(PLOT, OFF);
+			while(js.B && keep_running) delay(20);
 		}
-		fclose(fp);
-		printf("Saved data to file %s\n", fname);
-		set_led_state(PLOT, OFF);
-		while(js.B && keep_running) delay(1);
 	}
 	plot_finished = 1;
 }
