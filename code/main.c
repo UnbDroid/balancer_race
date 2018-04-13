@@ -496,7 +496,7 @@ void clean_up()
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program && !plot_flag)
+	else if (!close_program)
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
