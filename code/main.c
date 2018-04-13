@@ -11,6 +11,8 @@
 #include "motor.c"
 #include "debug.c"
 
+#define GRAVIDADE 9.80665
+
 
 struct debug_data debug;	// struct containing all robot values
 							// for debugging purposes
@@ -63,15 +65,15 @@ double bw_raw[5];
 //float KI = 20;
 
 // motor pequeno
-float KP = 0.2;//125; //325;
-float KD = 0.02;//2.5;
-float KI = 0.007;//0.7;
+float KP = 0.180;//0.2;
+float KD = 0.02;//0.02;
+float KI = 0.00000005;//0.007;
 
-float KPvel = 1;
-float KDvel = 10;
-float KIvel = 5;
+float KPvel = 5.3;
+float KDvel = 100;
+float KIvel = 0.000005;
 
-float KPome = 1;
+float KPome = 0;
 float KDome = 0;
 float KIome = 0;
 
@@ -89,8 +91,10 @@ float tetaIntegrat = 0;
 double speed = 0;
 
 double vel_ref = 0;
-double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
+double vel_erro = 0, vel_erro_old = 0; 
+double vel_erro_transf_integrate = 0, vel_erro_transf_derivate = 0;
 double vel_med = 0;
+double vel_erro_transf_old = 0, vel_erro_transf = 0;
 unsigned long long int vel_time, vel_time_old, vel_dt;
 
 double req_tilt = 0, req_tilt_old = 0, req_tilt_linha = 0;
@@ -145,16 +149,18 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			vel_ref = 0.0000127077*js.lanalog.up;
+			vel_ref = 0.0009775171*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			vel_ref = -0.0000127077*js.lanalog.down;
+			vel_ref = -0.0009775171*js.lanalog.down;
 		}
 		else 
 		{
 			vel_ref = 0;
 		}
+
+		//vel_ref = 0.5;
 
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
@@ -165,17 +171,21 @@ PI_THREAD(main_thread)
 
 		vel_erro_old = vel_erro;
 		vel_erro = vel_ref - vel_med;
-		vel_ref_integrate += vel_ref;
-		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
-		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
+
+
+		vel_erro_transf_old = vel_erro_transf;
+		vel_erro_transf = vel_erro;//-atan2((vel_erro - vel_erro_old)/vel_dt,GRAVIDADE);
+
+		vel_erro_transf_integrate += vel_erro_transf*vel_dt;
+		vel_erro_transf_derivate = (vel_erro_transf - vel_erro_transf_old)/vel_dt;
 		
 		req_tilt_old = req_tilt;
-		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
-		
+		req_tilt = -(vel_erro_transf*KPvel + vel_erro_transf_integrate*KIvel + vel_erro_transf_derivate*KDvel);
+
 		//---------------------------------------------------------------------------------------------------------------------	
 		// SEGUNDO CONTROLADOR. TILT -> PWM. 
 		tilt_erro = req_tilt - gyroIntegrate;
-		tilt_erro_integrate += tilt_erro;
+		tilt_erro_integrate += tilt_erro*vel_dt;
 		req_tilt_linha = (req_tilt - req_tilt_old)/vel_dt;
 		tilt_erro_linha = req_tilt_linha - teta_linha;
 	 	
@@ -254,17 +264,17 @@ PI_THREAD(plot)
 					last_fprintf = now;
 
 					// Velocidade.
-					plotvar[1] = vel_ref;
-					plotvar[2] = vel_med;
+					plotvar[0] = vel_ref;
+					plotvar[1] = vel_med;
 					// Tilt.
-					plotvar[3] = req_tilt;
-					plotvar[4] = gyroIntegrate;
+					//plotvar[0] = req_tilt;
+					//plotvar[1] = gyroIntegrate;
 					// Direcao.
-					plotvar[5] = omega_ref;
-					plotvar[6] = omega;
+					//plotvar[0] = omega_ref;
+					//plotvar[0] = omega;
 					// Arduino.
-					plotvar[7] = speed;
-					plotvar[8] = vel_med;
+					//plotvar[0] = speed;
+					//plotvar[0] = vel_med;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
