@@ -211,7 +211,7 @@ PI_THREAD(main_thread)
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
-		while(halt); // safety measure
+		while(halt && keep_running); // safety measure
 	 	//---------------------------------------------------------------------------------------------------------------------
 	 	// COMANDO PARA O ARDUINO. 
 		setMotorSpeed(LMOTOR, speed - speed_dir);
@@ -326,6 +326,9 @@ PI_THREAD(joystick)
 		} else {
 			halt = 1;
 			set_led_state(HALT, ON);
+			setMotorSpeed(LMOTOR, 0);
+			setMotorSpeed(RMOTOR, 0);
+			write_motors();
 		}
         update_joystick(&js);
 	}
