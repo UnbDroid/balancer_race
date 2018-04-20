@@ -25,7 +25,6 @@ int debug_finished = 1, sensors_finished = 1, motors_finished = 1;
 int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 
 int plot_flag = 0;
-long plot_time = 5;
 
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
@@ -224,55 +223,68 @@ PI_THREAD(main_thread)
 	main_finished = 1;
 }
 
-#define PLOT_RATE 5
+#define SAMPLE_TIME 5
 #define NPLOTVARS 15
 double plotvar[NPLOTVARS] = {};
 PI_THREAD(plot)
 {
 	plot_finished = 0;
 	FILE *fp;
-	unsigned long long int last_fprintf = 0;
+	unsigned long long int now, last_fprintf = 0;
 	int i = 0;
 	char fname[40];
-	do {
-		snprintf(fname, 40, "/home/pi/datalog/plot_data_%03d", i);
-		++i;
-	} while(exists(fname));
-	fp = fopen(fname, "w");
-	if(imu.last_update > plot_time*1000000) keep_running = 0;
 	while(keep_running)
 	{
-		if(imu.last_update != last_fprintf)
+		while(!js.B && keep_running) delay(20);
+		while(js.B && keep_running) delay(20);
+		
+		i = 0;
+		if (keep_running)
 		{
-			last_fprintf = imu.last_update;
-
-			// Velocidade.
-			plotvar[1] = vel_ref;
-			plotvar[2] = vel_med;
-			// Tilt.
-			plotvar[3] = req_tilt;
-			plotvar[4] = gyroIntegrate;
-			// Direcao.
-			plotvar[5] = omega_ref;
-			plotvar[6] = omega;
-			// Arduino.
-			plotvar[7] = speed;
-			plotvar[8] = vel_med;
-
-			fprintf(fp, "%lld ", imu.last_update);
-			for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+			do {
+				snprintf(fname, 40, "/home/pi/datalog/plot_data_%03d", i);
+				++i;
+			} while(exists(fname));
+			fp = fopen(fname, "w");
+			
+			set_led_state(PLOT, ON);
+			while(!js.B && keep_running)
 			{
-				fprintf(fp, "% f ", plotvar[i]);
+				now = micros();
+				if(now - last_fprintf > SAMPLE_TIME*1000)
+				{
+					last_fprintf = now;
+
+					// Velocidade.
+					plotvar[1] = vel_ref;
+					plotvar[2] = vel_med;
+					// Tilt.
+					plotvar[3] = req_tilt;
+					plotvar[4] = gyroIntegrate;
+					// Direcao.
+					plotvar[5] = omega_ref;
+					plotvar[6] = omega;
+					// Arduino.
+					plotvar[7] = speed;
+					plotvar[8] = vel_med;
+
+					fprintf(fp, "%lld ", now);
+					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
+					{
+						fprintf(fp, "% f ", plotvar[i]);
+					}
+					if(plotvar[i] == plotvar[i])
+					{
+						fprintf(fp, "% f;\n", plotvar[i]);
+					}
+				}
 			}
-			if(plotvar[i] == plotvar[i])
-			{
-				fprintf(fp, "% f;\n", plotvar[i]);
-			}
+			fclose(fp);
+			printf("Saved data to file %s\n", fname);
+			set_led_state(PLOT, OFF);
+			while(js.B && keep_running) delay(20);
 		}
-		if(imu.last_update > plot_time*1000000) keep_running = 0;
 	}
-	fclose(fp);
-	printf("Saved data to file %s\n", fname);
 	plot_finished = 1;
 }
 
@@ -498,7 +510,7 @@ void clean_up()
 
 	if(shutdown_flag) system("sudo shutdown now&");
 	else if(reboot) system("sudo shutdown -r now&");
-	else if (!close_program && !plot_flag)
+	else if (!close_program)
 	{
 		if(debug.debug_flag) system("sudo /home/pi/ccdir/watcher -d&");
 		else system("sudo /home/pi/ccdir/watcher&");
@@ -526,11 +538,6 @@ int main(int argc, char* argv[])
 			}
 			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
 			{
-				long temp;
-				if(i + 1 < argc && (temp = atol(argv[i + 1])))
-				{
-					plot_time = temp;
-				}
 				plot_flag = 1;
 			}
 		}
@@ -554,7 +561,7 @@ int main(int argc, char* argv[])
 	piThreadCreate(main_thread);
 	piThreadCreate(motors);
 	piThreadCreate(sensors);
-	/*if(!plot_flag)*/ piThreadCreate(joystick);
+	piThreadCreate(joystick);
 	piThreadCreate(led);
 
 	piThreadCreate(supervisory);
