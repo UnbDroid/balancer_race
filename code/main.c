@@ -62,6 +62,8 @@ double bw_raw[5];
 //float KD = 15; //10;
 //float KI = 20;
 
+double EULER = 2.718281828459045;
+
 // motor pequeno
 float KP = 0.2;//125; //325;
 float KD = 0.02;//2.5;
@@ -101,6 +103,9 @@ double omega_erro = 0, omega_erro_old = 0, omega_erro_integrate = 0, omega_erro_
 double speed_dir = 0;
 double omega_ref = 0;
 
+unsigned long long int ref_crono = 0, ref_crono_set = 0, ref_time = 0;
+double diff = 0, ref = 0, atual = 0, ref_old = 0;
+double time_k = 34.533774; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
 
 
 PI_THREAD(main_thread)
@@ -109,11 +114,12 @@ PI_THREAD(main_thread)
 	piHiPri(0);
 
 
-	delay(300);
+	delay(1000);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
 	gyroIntegrate = teta - (-97.678610);
+	ref_crono_set = micros();
 
 
 	while(keep_running)
@@ -145,16 +151,31 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			vel_ref = 0.0000127077*js.lanalog.up;
+			ref = 0.0000127077*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			vel_ref = -0.0000127077*js.lanalog.down;
+			ref = -0.0000127077*js.lanalog.down;
 		}
 		else 
 		{
-			vel_ref = 0;
+			ref = 0;
 		}
+
+		ref_crono = micros();
+		ref_time = ref_crono - ref_crono_set;
+		
+		/*if (ref != ref_old){
+			diff = ref - vel_ref;
+			atual = vel_ref;
+			ref_crono_set = micros();
+			ref_time = 0;
+			ref_old = ref;
+		}
+		*/
+
+		//vel_ref = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
+		vel_ref = ref;
 
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
@@ -253,18 +274,8 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					// Velocidade.
-					plotvar[1] = vel_ref;
-					plotvar[2] = vel_med;
-					// Tilt.
-					plotvar[3] = req_tilt;
-					plotvar[4] = gyroIntegrate;
-					// Direcao.
-					plotvar[5] = omega_ref;
-					plotvar[6] = omega;
-					// Arduino.
-					plotvar[7] = speed;
-					plotvar[8] = vel_med;
+					plotvar[0] = vel_ref;
+					//plotvar[1] = ref;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
