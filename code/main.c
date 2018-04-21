@@ -69,9 +69,9 @@ float KP = 0.2;//125; //325;
 float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
 
-float KPvel = 1;
-float KDvel = 10;
-float KIvel = 5;
+float KPvel = 3.1;//1;//1;
+float KDvel = 0;//0;//10;
+float KIvel = 0.000000;//1.7;//5;
 
 float KPome = 1;
 float KDome = 0;
@@ -115,11 +115,11 @@ PI_THREAD(main_thread)
 	piHiPri(0);
 
 
-	delay(300);
+	delay(1000);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
-	gyroIntegrate = teta - (-97.678610);
+	gyroIntegrate = teta - (-95.499779);
 	ref_crono_set = micros();
 
 
@@ -152,11 +152,11 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			ref = 0.0000127077*js.lanalog.up;
+			ref = 0.0015640274*js.lanalog.up;//0.0000127077*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			ref = -0.0000127077*js.lanalog.down;
+			ref = -0.0015640274*js.lanalog.down;//-0.0000127077*js.lanalog.down;
 		}
 		else 
 		{
@@ -192,11 +192,13 @@ PI_THREAD(main_thread)
 
 		vel_erro_old = vel_erro;
 		vel_erro = vel_ref - vel_med;
-		vel_ref_integrate += vel_ref;
-		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
+		//vel_ref_integrate += vel_ref;
+		vel_erro_integrate += vel_erro*vel_dt;
+		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
 		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
 		
 		req_tilt_old = req_tilt;
+		
 		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
 		
 		//---------------------------------------------------------------------------------------------------------------------	
@@ -281,7 +283,9 @@ PI_THREAD(plot)
 					last_fprintf = now;
 
 					plotvar[0] = vel_ref;
-					plotvar[1] = ref;
+					plotvar[1] = vel_med;
+					plotvar[2] = vel_erro_integrate;
+					plotvar[3] = vel_erro;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
