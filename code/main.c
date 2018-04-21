@@ -105,8 +105,9 @@ double omega_ref = 0;
 
 unsigned long long int ref_crono = 0, ref_crono_set = 0, ref_time = 0;
 double diff = 0, ref = 0, atual = 0, ref_old = 0;
-double time_k = 34.533774; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
-
+double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
+double ta = 0.12;
+double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
 
 PI_THREAD(main_thread)
 {
@@ -114,7 +115,7 @@ PI_THREAD(main_thread)
 	piHiPri(0);
 
 
-	delay(1000);
+	delay(300);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
@@ -165,17 +166,22 @@ PI_THREAD(main_thread)
 		ref_crono = micros();
 		ref_time = ref_crono - ref_crono_set;
 		
-		/*if (ref != ref_old){
+		if (ref != ref_old){
 			diff = ref - vel_ref;
 			atual = vel_ref;
 			ref_crono_set = micros();
 			ref_time = 0;
+
 			ref_old = ref;
 		}
-		*/
 
+		if (((double)ref_time)/1000000 < (2*ta + scurve_extra_time)){
+			vel_ref = atual + diff*(1/(1 + pow(EULER, -time_k*(-ta + ((double)ref_time)/1000000))));
+		} else {
+			vel_ref = ref;
+		}
 		//vel_ref = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
-		vel_ref = ref;
+		//vel_ref = ref;
 
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
@@ -275,7 +281,7 @@ PI_THREAD(plot)
 					last_fprintf = now;
 
 					plotvar[0] = vel_ref;
-					//plotvar[1] = ref;
+					plotvar[1] = ref;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
