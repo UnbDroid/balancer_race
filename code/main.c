@@ -65,13 +65,13 @@ double bw_raw[5];
 double EULER = 2.718281828459045;
 
 // motor pequeno
-float KP = 0.2;//125; //325;
-float KD = 0.02;//2.5;
-float KI = 0.007;//0.7;
+float KP = 0.33;
+float KD = 0.030;//0.025;//0.02;
+float KI = 1.2;//0.7;//0.1;
 
-float KPvel = 3.1;//1;//1;
-float KDvel = 0;//0;//10;
-float KIvel = 0.000000;//1.7;//5;
+float KPvel = 0;//0.75;//1;//1;
+float KDvel = 0.001;//0;//10;
+float KIvel = 1;//0.00001;//1.7;//;
 
 float KPome = 1;
 float KDome = 0;
@@ -93,7 +93,8 @@ double speed = 0;
 double vel_ref = 0;
 double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
 double vel_med = 0;
-unsigned long long int vel_time, vel_time_old, vel_dt;
+unsigned long long int vel_time, vel_time_old;
+double vel_dt = 0;
 
 double req_tilt = 0, req_tilt_old = 0, req_tilt_linha = 0;
 double tilt_erro = 0, tilt_erro_integrate = 0, tilt_erro_linha = 0;
@@ -109,19 +110,21 @@ double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obt
 double ta = 0.12;
 double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
 
+int flag = -1;
+unsigned long long int change = 0;
+
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
 
 
-	delay(1000);
+	delay(200);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
 	gyroIntegrate = teta - (-95.499779);
 	ref_crono_set = micros();
-
 
 	while(keep_running)
 	{
@@ -150,6 +153,7 @@ PI_THREAD(main_thread)
 
 		//---------------------------------------------------------------------------------------------------------------------
 		// COMANDO VELOCIDADE POR JOYSTICK.
+		/*
 		if(js.lanalog.up > 0)
 		{
 			ref = 0.0015640274*js.lanalog.up;//0.0000127077*js.lanalog.up;
@@ -162,6 +166,7 @@ PI_THREAD(main_thread)
 		{
 			ref = 0;
 		}
+		*/
 
 		ref_crono = micros();
 		ref_time = ref_crono - ref_crono_set;
@@ -180,7 +185,7 @@ PI_THREAD(main_thread)
 		} else {
 			vel_ref = ref;
 		}
-		//vel_ref = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
+		//s-curve = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
 		//vel_ref = ref;
 
 		//---------------------------------------------------------------------------------------------------------------------
@@ -188,23 +193,50 @@ PI_THREAD(main_thread)
 		vel_med = (left_motor.speed + right_motor.speed)/2;
 		vel_time_old = vel_time;
 		vel_time = micros();
-		vel_dt = vel_time - vel_time_old;
+		vel_dt = ((double)(vel_time - vel_time_old))/1000000.0;
 
 		vel_erro_old = vel_erro;
 		vel_erro = vel_ref - vel_med;
-		//vel_ref_integrate += vel_ref;
-		vel_erro_integrate += vel_erro*vel_dt;
-		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
+		vel_ref_integrate += vel_ref*vel_dt;
+		//vel_erro_integrate += vel_erro*vel_dt;
+		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
 		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
 		
 		req_tilt_old = req_tilt;
 		
-		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
-		
+		//req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
+
+		/*
+		if (micros() - change > 1000000){
+			change = micros();
+			flag = -flag;
+		}
+		if (micros() < 3000000){
+			req_tilt = 0;
+		}
+		else{ 
+			req_tilt = flag*3;
+		}
+
+		req_tilt = 0;
+		*/
+		if(js.lanalog.up > 0)
+		{
+			req_tilt = -0.00488759*js.lanalog.up;//0.0000127077*js.lanalog.up;
+		}
+		else if (js.lanalog.down > 0)
+		{
+			req_tilt = 0.00488759*js.lanalog.down;//-0.0000127077*js.lanalog.down;
+		}
+		else 
+		{
+			req_tilt = 0;
+		}
+
 		//---------------------------------------------------------------------------------------------------------------------	
 		// SEGUNDO CONTROLADOR. TILT -> PWM. 
 		tilt_erro = req_tilt - gyroIntegrate;
-		tilt_erro_integrate += tilt_erro;
+		tilt_erro_integrate += tilt_erro*vel_dt;
 		req_tilt_linha = (req_tilt - req_tilt_old)/vel_dt;
 		tilt_erro_linha = req_tilt_linha - teta_linha;
 	 	
@@ -282,10 +314,8 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					plotvar[0] = vel_ref;
-					plotvar[1] = vel_med;
-					plotvar[2] = vel_erro_integrate;
-					plotvar[3] = vel_erro;
+					plotvar[0] = req_tilt;
+					plotvar[1] = gyroIntegrate;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
