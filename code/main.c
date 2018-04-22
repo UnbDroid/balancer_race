@@ -70,8 +70,8 @@ float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
 
 float KPvel = 3.1;//1;//1;
-float KDvel = 0;//0;//10;
-float KIvel = 0.85;//1.7;//5;
+float KDvel = 0.01;//0;//10;
+float KIvel = 1.15;//1.7;//5;
 
 float KPome = 1;
 float KDome = 0;
@@ -122,7 +122,7 @@ PI_THREAD(main_thread)
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
-	gyroIntegrate = teta - (-95.499779);
+	gyroIntegrate = teta - (-97.567947);
 	ref_crono_set = micros();
 
 	lpf_vel_med[0] = 0;
