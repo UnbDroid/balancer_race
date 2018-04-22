@@ -71,7 +71,7 @@ float KI = 0.007;//0.7;
 
 float KPvel = 3.1;//1;//1;
 float KDvel = 0;//0;//10;
-float KIvel = 0.000000;//1.7;//5;
+float KIvel = 0.85;//1.7;//5;
 
 float KPome = 1;
 float KDome = 0;
@@ -109,6 +109,9 @@ double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obt
 double ta = 0.12;
 double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
 
+double lpf_vel_med[2];
+double LPFgain = 0.02;
+
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
@@ -121,6 +124,9 @@ PI_THREAD(main_thread)
 	//gyroIntegrate = teta;
 	gyroIntegrate = teta - (-95.499779);
 	ref_crono_set = micros();
+
+	lpf_vel_med[0] = 0;
+	lpf_vel_med[1] = 0;
 
 
 	while(keep_running)
@@ -186,14 +192,16 @@ PI_THREAD(main_thread)
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
 		vel_med = (left_motor.speed + right_motor.speed)/2;
+		lpf_vel_med[0] = vel_med*LPFgain + lpf_vel_med[1]*(1-LPFgain);
+		lpf_vel_med[1] = lpf_vel_med[0];
 		vel_time_old = vel_time;
 		vel_time = micros();
 		vel_dt = vel_time - vel_time_old;
 
 		vel_erro_old = vel_erro;
-		vel_erro = vel_ref - vel_med;
+		vel_erro = vel_ref - lpf_vel_med[0];
 		//vel_ref_integrate += vel_ref;
-		vel_erro_integrate += vel_erro*vel_dt;
+		vel_erro_integrate += vel_erro*((double)vel_dt)/1000000;
 		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
 		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
 		
@@ -283,9 +291,7 @@ PI_THREAD(plot)
 					last_fprintf = now;
 
 					plotvar[0] = vel_ref;
-					plotvar[1] = vel_med;
-					plotvar[2] = vel_erro_integrate;
-					plotvar[3] = vel_erro;
+					plotvar[1] = lpf_vel_med[0];
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
