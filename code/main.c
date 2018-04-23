@@ -73,7 +73,7 @@ float KPvel = 3.1;//1;//1;
 float KDvel = 0.01;//0;//10;
 float KIvel = 1.15;//1.7;//5;
 
-float KPome = 1;
+float KPome = 2;
 float KDome = 0;
 float KIome = 0;
 
@@ -109,8 +109,18 @@ double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obt
 double ta = 0.12;
 double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
 
+unsigned long long int ref_crono_omega = 0, ref_crono_set_omega = 0, ref_time_omega = 0;
+double diff_omega = 0, atual_omega = 0, omega_ref_old = 0;
+double s_omega_ref = 0;
+double time_k_omega = 382.926654; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
+double ta_omega = 0.012;
+double scurve_extra_time_omega = 0.006; // Tempo extra do scurve pra ficar próximo da referência.
+
 double lpf_vel_med[2];
+double lpf_omega[2];
+
 double LPFgain = 0.02;
+double LPFgainOmega = 0.05;
 
 PI_THREAD(main_thread)
 {
@@ -222,11 +232,11 @@ PI_THREAD(main_thread)
 	 	// COMANDO ROTACAO POR JOYSTICK.
 	 	if(js.ranalog.left > 0)
 		{
-			omega_ref = 0.0039100684*js.ranalog.left;
+			omega_ref = 0.00097752*js.ranalog.left;
 		}
 		else if (js.ranalog.right > 0)
 		{
-			omega_ref = -0.0039100684*js.ranalog.right;
+			omega_ref = -0.00097752*js.ranalog.right;
 		}
 		else 
 		{
@@ -234,14 +244,34 @@ PI_THREAD(main_thread)
 		}
 	 	//omega_ref = 5;
 
+		ref_crono_omega = micros();
+		ref_time_omega = ref_crono_omega - ref_crono_set_omega;
+		
+		if (omega_ref != omega_ref_old){
+			diff_omega = omega_ref - s_omega_ref;
+			atual_omega = s_omega_ref;
+			ref_crono_set_omega = micros();
+			ref_time_omega = 0;
+
+			omega_ref_old = omega_ref;
+		}
+
+		if (((double)ref_time_omega)/1000000 < (2*ta_omega + scurve_extra_time_omega)){
+			s_omega_ref = atual_omega + diff_omega*(1/(1 + pow(EULER, -time_k_omega*(-ta_omega + ((double)ref_time_omega)/1000000))));
+		} else {
+			s_omega_ref = omega_ref;
+		}
+
 	 	//---------------------------------------------------------------------------------------------------------------------
 	 	// TERCEIRO CONTROLADOR. DIRECAO.
 	 	omega = right_motor.speed - left_motor.speed;
+	 	lpf_omega[0] = omega*LPFgainOmega + lpf_omega[1]*(1-LPFgainOmega);
+		lpf_omega[1] = lpf_omega[0];
 	 	omega_integrate = right_motor.displacement - left_motor.displacement;
-	 	omega_ref_integrate += omega_ref*vel_dt;
+	 	omega_ref_integrate += s_omega_ref*vel_dt;
 
 	 	omega_erro_old = omega_erro;
-	 	omega_erro = omega_ref - omega;
+	 	omega_erro = s_omega_ref - lpf_omega[0];
 	 	omega_erro_integrate = omega_ref_integrate - omega_integrate;
 	 	omega_erro_derivate = (omega_erro - omega_erro_old)/vel_dt;
 
@@ -290,8 +320,9 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					plotvar[0] = vel_ref;
-					plotvar[1] = lpf_vel_med[0];
+					plotvar[0] = speed - speed_dir;
+					plotvar[1] = s_omega_ref;
+					plotvar[2] = lpf_omega[0];
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
