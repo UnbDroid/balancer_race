@@ -73,9 +73,9 @@ float KPvel = 3.1;//1;//1;
 float KDvel = 0.01;//0;//10;
 float KIvel = 1.15;//1.7;//5;
 
-float KPome = 2;
-float KDome = 0;
-float KIome = 0;
+float KPome = 1;
+float KDome = 0.025;
+float KIome = 2;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
@@ -232,11 +232,11 @@ PI_THREAD(main_thread)
 	 	// COMANDO ROTACAO POR JOYSTICK.
 	 	if(js.ranalog.left > 0)
 		{
-			omega_ref = 0.00097752*js.ranalog.left;
+			omega_ref = 0.0016617791*js.ranalog.left;
 		}
 		else if (js.ranalog.right > 0)
 		{
-			omega_ref = -0.00097752*js.ranalog.right;
+			omega_ref = -0.0016617791*js.ranalog.right;
 		}
 		else 
 		{
@@ -268,12 +268,12 @@ PI_THREAD(main_thread)
 	 	lpf_omega[0] = omega*LPFgainOmega + lpf_omega[1]*(1-LPFgainOmega);
 		lpf_omega[1] = lpf_omega[0];
 	 	omega_integrate = right_motor.displacement - left_motor.displacement;
-	 	omega_ref_integrate += s_omega_ref*vel_dt;
+	 	omega_ref_integrate += s_omega_ref*((double)vel_dt)/1000000;
 
 	 	omega_erro_old = omega_erro;
 	 	omega_erro = s_omega_ref - lpf_omega[0];
 	 	omega_erro_integrate = omega_ref_integrate - omega_integrate;
-	 	omega_erro_derivate = (omega_erro - omega_erro_old)/vel_dt;
+	 	omega_erro_derivate = (omega_erro - omega_erro_old)/(((double)vel_dt)/1000000);
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
@@ -320,9 +320,10 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					plotvar[0] = speed - speed_dir;
-					plotvar[1] = s_omega_ref;
-					plotvar[2] = lpf_omega[0];
+					plotvar[0] = lpf_vel_med;
+					plotvar[1] = vel_ref;
+					plotvar[2] = lpf_omega;
+					plotvar[3] = vel_erro_integrate;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
