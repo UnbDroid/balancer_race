@@ -320,9 +320,9 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					plotvar[0] = lpf_vel_med;
+					plotvar[0] = lpf_vel_med[0];
 					plotvar[1] = vel_ref;
-					plotvar[2] = lpf_omega;
+					plotvar[2] = lpf_omega[0];
 					plotvar[3] = vel_erro_integrate;
 
 					fprintf(fp, "%lld ", now);
