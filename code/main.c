@@ -24,8 +24,6 @@ int main_finished = 1, led_finished = 1, joystick_finished = 1;
 int debug_finished = 1, sensors_finished = 1, motors_finished = 1;
 int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 
-int plot_flag = 0;
-
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
 													// program knows what to
@@ -572,6 +570,12 @@ int main(int argc, char* argv[])
 
 	wiringPiSetupPhys();
 
+	for(i = 0; i < NPLOTVARS; ++i)
+	{
+		plotvar[i] = sqrt(-1);
+	}
+	piThreadCreate(plot);
+
 	debug.debug_flag = 0;
 	if(argc > 1)
 	{
@@ -581,22 +585,10 @@ int main(int argc, char* argv[])
 			{
 				debug.debug_flag = 1;
 			}
-			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
-			{
-				plot_flag = 1;
-			}
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
-		}
-		if(plot_flag)
-		{
-			for(i = 0; i < NPLOTVARS; ++i)
-			{
-				plotvar[i] = sqrt(-1);
-			}
-			piThreadCreate(plot);
 		}
 	}
 
