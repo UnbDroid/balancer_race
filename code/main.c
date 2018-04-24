@@ -24,8 +24,6 @@ int main_finished = 1, led_finished = 1, joystick_finished = 1;
 int debug_finished = 1, sensors_finished = 1, motors_finished = 1;
 int matlab_finished = 1, supervisory_finished = 1, plot_finished = 1;
 
-int plot_flag = 0;
-
 int shutdown_flag = 0, reboot = 0, close_program=0;	// flags set by joystick
 													// commands so that the
 													// program knows what to
@@ -64,18 +62,20 @@ double bw_raw[5];
 //float KD = 15; //10;
 //float KI = 20;
 
+double EULER = 2.718281828459045;
+
 // motor pequeno
 float KP = 0.2;//125; //325;
 float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
 
-float KPvel = 1;
-float KDvel = 10;
-float KIvel = 5;
+float KPvel = 3.1;//1;//1;
+float KDvel = 0.01;//0;//10;
+float KIvel = 1.15;//1.7;//5;
 
 float KPome = 1;
-float KDome = 0;
-float KIome = 0;
+float KDome = 0.025;
+float KIome = 2;
 
 float teta = 0, teta_linha, teta_raw;
 float gyroIntegrate = 0, old_gyroIntegrate = 0;
@@ -103,7 +103,24 @@ double omega_erro = 0, omega_erro_old = 0, omega_erro_integrate = 0, omega_erro_
 double speed_dir = 0;
 double omega_ref = 0;
 
+unsigned long long int ref_crono = 0, ref_crono_set = 0, ref_time = 0;
+double diff = 0, ref = 0, atual = 0, ref_old = 0;
+double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
+double ta = 0.12;
+double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
 
+unsigned long long int ref_crono_omega = 0, ref_crono_set_omega = 0, ref_time_omega = 0;
+double diff_omega = 0, atual_omega = 0, omega_ref_old = 0;
+double s_omega_ref = 0;
+double time_k_omega = 382.926654; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
+double ta_omega = 0.012;
+double scurve_extra_time_omega = 0.006; // Tempo extra do scurve pra ficar próximo da referência.
+
+double lpf_vel_med[2];
+double lpf_omega[2];
+
+double LPFgain = 0.02;
+double LPFgainOmega = 0.05;
 
 PI_THREAD(main_thread)
 {
@@ -111,11 +128,15 @@ PI_THREAD(main_thread)
 	piHiPri(0);
 
 
-	delay(300);
+	delay(1000);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
 	//gyroIntegrate = teta;
-	gyroIntegrate = teta - (-97.678610);
+	gyroIntegrate = teta - (-97.567947);
+	ref_crono_set = micros();
+
+	lpf_vel_med[0] = 0;
+	lpf_vel_med[1] = 0;
 
 
 	while(keep_running)
@@ -146,31 +167,55 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			vel_ref = 0.0000127077*js.lanalog.up;
+			ref = 0.0015640274*js.lanalog.up;//0.0000127077*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			vel_ref = -0.0000127077*js.lanalog.down;
+			ref = -0.0015640274*js.lanalog.down;//-0.0000127077*js.lanalog.down;
 		}
 		else 
 		{
-			vel_ref = 0;
+			ref = 0;
 		}
+
+		ref_crono = micros();
+		ref_time = ref_crono - ref_crono_set;
+		
+		if (ref != ref_old){
+			diff = ref - vel_ref;
+			atual = vel_ref;
+			ref_crono_set = micros();
+			ref_time = 0;
+
+			ref_old = ref;
+		}
+
+		if (((double)ref_time)/1000000 < (2*ta + scurve_extra_time)){
+			vel_ref = atual + diff*(1/(1 + pow(EULER, -time_k*(-ta + ((double)ref_time)/1000000))));
+		} else {
+			vel_ref = ref;
+		}
+		//vel_ref = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
+		//vel_ref = ref;
 
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
 		vel_med = (left_motor.speed + right_motor.speed)/2;
+		lpf_vel_med[0] = vel_med*LPFgain + lpf_vel_med[1]*(1-LPFgain);
+		lpf_vel_med[1] = lpf_vel_med[0];
 		vel_time_old = vel_time;
 		vel_time = micros();
 		vel_dt = vel_time - vel_time_old;
 
 		vel_erro_old = vel_erro;
-		vel_erro = vel_ref - vel_med;
-		vel_ref_integrate += vel_ref;
-		vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
+		vel_erro = vel_ref - lpf_vel_med[0];
+		//vel_ref_integrate += vel_ref;
+		vel_erro_integrate += vel_erro*((double)vel_dt)/1000000;
+		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
 		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
 		
 		req_tilt_old = req_tilt;
+		
 		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
 		
 		//---------------------------------------------------------------------------------------------------------------------	
@@ -186,11 +231,11 @@ PI_THREAD(main_thread)
 	 	// COMANDO ROTACAO POR JOYSTICK.
 	 	if(js.ranalog.left > 0)
 		{
-			omega_ref = 0.0039100684*js.ranalog.left;
+			omega_ref = 0.0016617791*js.ranalog.left;
 		}
 		else if (js.ranalog.right > 0)
 		{
-			omega_ref = -0.0039100684*js.ranalog.right;
+			omega_ref = -0.0016617791*js.ranalog.right;
 		}
 		else 
 		{
@@ -198,16 +243,36 @@ PI_THREAD(main_thread)
 		}
 	 	//omega_ref = 5;
 
+		ref_crono_omega = micros();
+		ref_time_omega = ref_crono_omega - ref_crono_set_omega;
+		
+		if (omega_ref != omega_ref_old){
+			diff_omega = omega_ref - s_omega_ref;
+			atual_omega = s_omega_ref;
+			ref_crono_set_omega = micros();
+			ref_time_omega = 0;
+
+			omega_ref_old = omega_ref;
+		}
+
+		if (((double)ref_time_omega)/1000000 < (2*ta_omega + scurve_extra_time_omega)){
+			s_omega_ref = atual_omega + diff_omega*(1/(1 + pow(EULER, -time_k_omega*(-ta_omega + ((double)ref_time_omega)/1000000))));
+		} else {
+			s_omega_ref = omega_ref;
+		}
+
 	 	//---------------------------------------------------------------------------------------------------------------------
 	 	// TERCEIRO CONTROLADOR. DIRECAO.
 	 	omega = right_motor.speed - left_motor.speed;
+	 	lpf_omega[0] = omega*LPFgainOmega + lpf_omega[1]*(1-LPFgainOmega);
+		lpf_omega[1] = lpf_omega[0];
 	 	omega_integrate = right_motor.displacement - left_motor.displacement;
-	 	omega_ref_integrate += omega_ref*vel_dt;
+	 	omega_ref_integrate += s_omega_ref*((double)vel_dt)/1000000;
 
 	 	omega_erro_old = omega_erro;
-	 	omega_erro = omega_ref - omega;
+	 	omega_erro = s_omega_ref - lpf_omega[0];
 	 	omega_erro_integrate = omega_ref_integrate - omega_integrate;
-	 	omega_erro_derivate = (omega_erro - omega_erro_old)/vel_dt;
+	 	omega_erro_derivate = (omega_erro - omega_erro_old)/(((double)vel_dt)/1000000);
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
@@ -255,18 +320,10 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					// Velocidade.
+					plotvar[0] = lpf_vel_med[0];
 					plotvar[1] = vel_ref;
-					plotvar[2] = vel_med;
-					// Tilt.
-					plotvar[3] = req_tilt;
-					plotvar[4] = gyroIntegrate;
-					// Direcao.
-					plotvar[5] = omega_ref;
-					plotvar[6] = omega;
-					// Arduino.
-					plotvar[7] = speed;
-					plotvar[8] = vel_med;
+					plotvar[2] = lpf_omega[0];
+					plotvar[3] = vel_erro_integrate;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
@@ -530,6 +587,12 @@ int main(int argc, char* argv[])
 
 	wiringPiSetupPhys();
 
+	for(i = 0; i < NPLOTVARS; ++i)
+	{
+		plotvar[i] = sqrt(-1);
+	}
+	piThreadCreate(plot);
+
 	debug.debug_flag = 0;
 	if(argc > 1)
 	{
@@ -539,22 +602,10 @@ int main(int argc, char* argv[])
 			{
 				debug.debug_flag = 1;
 			}
-			if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--plot") == 0)
-			{
-				plot_flag = 1;
-			}
 		}
 		if(debug.debug_flag)
 		{
 			piThreadCreate(debug_thread);
-		}
-		if(plot_flag)
-		{
-			for(i = 0; i < NPLOTVARS; ++i)
-			{
-				plotvar[i] = sqrt(-1);
-			}
-			piThreadCreate(plot);
 		}
 	}
 
