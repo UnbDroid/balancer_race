@@ -68,8 +68,8 @@ float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
 
 float KPvel = 3.1;//1;//1;
-float KDvel = 0.01;//0;//10;
-float KIvel = 1.15;//1.7;//5;
+float KDvel = 0.6;//0;//10;
+float KIvel = 5;//1.15;//1.7;//5;
 
 float KPome = 1;
 float KDome = 0.025;
@@ -211,7 +211,7 @@ PI_THREAD(main_thread)
 		//vel_ref_integrate += vel_ref;
 		vel_erro_integrate += vel_erro*((double)vel_dt)/1000000;
 		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
-		vel_erro_derivate = (vel_erro - vel_erro_old)/vel_dt;
+		vel_erro_derivate = (vel_erro - vel_erro_old)/(((double)vel_dt)/1000000);
 		
 		req_tilt_old = req_tilt;
 		
@@ -320,8 +320,9 @@ PI_THREAD(plot)
 
 					plotvar[0] = lpf_vel_med[0];
 					plotvar[1] = vel_ref;
-					plotvar[2] = lpf_omega[0];
-					plotvar[3] = vel_erro_integrate;
+					plotvar[2] = vel_erro*KPvel;
+					plotvar[3] =  vel_erro_integrate*KIvel;
+					plotvar[4] =  vel_erro_derivate*KDvel;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
