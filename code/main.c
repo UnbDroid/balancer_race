@@ -67,9 +67,11 @@ float KP = 0.2;//125; //325;
 float KD = 0.02;//2.5;
 float KI = 0.007;//0.7;
 
+//PIDI²
 float KPvel = 3.1;//1;//1;
-float KDvel = 0.6;//0;//10;
+float KDvel = 0.6;//0.5;//0;//10;
 float KIvel = 5;//1.15;//1.7;//5;
+float KI2vel = 0.5;
 
 float KPome = 1;
 float KDome = 0.025;
@@ -89,7 +91,7 @@ float tetaIntegrat = 0;
 double speed = 0;
 
 double vel_ref = 0;
-double vel_erro = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
+double vel_erro = 0, vel_erro_derivativo = 0, vel_erro_old = 0, vel_erro_integrate = 0, vel_erro_integrate_integrate = 0, vel_ref_integrate = 0, vel_erro_derivate = 0;
 double vel_med = 0;
 unsigned long long int vel_time, vel_time_old, vel_dt;
 
@@ -115,8 +117,10 @@ double ta_omega = 0.012;
 double scurve_extra_time_omega = 0.006; // Tempo extra do scurve pra ficar próximo da referência.
 
 double lpf_vel_med[2];
+double lpf_vel_med_derivativo[2];
 double lpf_omega[2];
 
+double LPFgainDerivativo = 0.008;
 double LPFgain = 0.02;
 double LPFgainOmega = 0.05;
 
@@ -135,6 +139,9 @@ PI_THREAD(main_thread)
 
 	lpf_vel_med[0] = 0;
 	lpf_vel_med[1] = 0;
+
+	lpf_vel_med_derivativo[0] = 0;
+	lpf_vel_med_derivativo[1] = 0;
 
 
 	while(keep_running)
@@ -200,22 +207,32 @@ PI_THREAD(main_thread)
 		//---------------------------------------------------------------------------------------------------------------------
 		// PRIMEIRO CONTROLADOR. VEL -> TILT.
 		vel_med = (left_motor.speed + right_motor.speed)/2;
+
+
+		lpf_vel_med_derivativo[0] = vel_med*LPFgainDerivativo + lpf_vel_med_derivativo[1]*(1-LPFgainDerivativo);
+		lpf_vel_med_derivativo[1] = lpf_vel_med_derivativo[0];
+
+
 		lpf_vel_med[0] = vel_med*LPFgain + lpf_vel_med[1]*(1-LPFgain);
 		lpf_vel_med[1] = lpf_vel_med[0];
+		
+		
 		vel_time_old = vel_time;
 		vel_time = micros();
 		vel_dt = vel_time - vel_time_old;
 
-		vel_erro_old = vel_erro;
+		vel_erro_old = vel_erro_derivativo;
+		vel_erro_derivativo = vel_ref - lpf_vel_med_derivativo[0];
 		vel_erro = vel_ref - lpf_vel_med[0];
 		//vel_ref_integrate += vel_ref;
 		vel_erro_integrate += vel_erro*((double)vel_dt)/1000000;
+		vel_erro_integrate_integrate += vel_erro_integrate*((double)vel_dt)/1000000;
 		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
-		vel_erro_derivate = (vel_erro - vel_erro_old)/(((double)vel_dt)/1000000);
+		vel_erro_derivate = (vel_erro_derivativo - vel_erro_old)/(((double)vel_dt)/1000000);
 		
 		req_tilt_old = req_tilt;
 		
-		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel);
+		req_tilt = -(vel_erro*KPvel + vel_erro_integrate*KIvel + vel_erro_derivate*KDvel + vel_erro_integrate_integrate*KI2vel);
 		
 		//---------------------------------------------------------------------------------------------------------------------	
 		// SEGUNDO CONTROLADOR. TILT -> PWM. 
@@ -320,9 +337,6 @@ PI_THREAD(plot)
 
 					plotvar[0] = lpf_vel_med[0];
 					plotvar[1] = vel_ref;
-					plotvar[2] = vel_erro*KPvel;
-					plotvar[3] =  vel_erro_integrate*KIvel;
-					plotvar[4] =  vel_erro_derivate*KDvel;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
