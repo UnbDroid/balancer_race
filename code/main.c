@@ -122,12 +122,15 @@ double lpf_omega[2];
 double LPFgain = 0.02;
 double LPFgainOmega = 0.05;
 
+int main_count = 0;
+
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
+	++main_count;
 	piHiPri(0);
 
-
+	set_led_state(HALT, OFF);
 	delay(1000);
 	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
 	printf("%f\n", teta);
@@ -138,8 +141,16 @@ PI_THREAD(main_thread)
 	lpf_vel_med[0] = 0;
 	lpf_vel_med[1] = 0;
 
+	lpf_omega[0] = 0;
+	lpf_omega[1] = 0;
 
-	while(keep_running)
+	vel_erro_integrate = 0;
+	vel_ref_integrate = 0;
+	tilt_erro_integrate = 0;
+	omega_erro_integrate = 0;
+	omega_ref_integrate = 0;
+
+	while(keep_running && !halt)
 	{
 		//lendo o acell com filtro
 		//teta = (RAD2DEG*atan2(imu.accel.filteredZ,imu.accel.filteredX)/*- (-95.416)*/);
@@ -276,15 +287,17 @@ PI_THREAD(main_thread)
 
 	 	speed_dir = omega_erro*KPome + omega_erro_integrate*KIome + omega_erro_derivate*KDome;
 
-		while(halt && keep_running); // safety measure
 	 	//---------------------------------------------------------------------------------------------------------------------
 	 	// COMANDO PARA O ARDUINO. 
 		setMotorSpeed(LMOTOR, speed - speed_dir);
 		setMotorSpeed(RMOTOR, speed + speed_dir);
 		write_motors();
 
+		printf("Running %d main threads\n", main_count);
 		delay(5);
 	}
+	set_led_state(HALT, ON);
+	--main_count;
 	main_finished = 1;
 }
 
@@ -364,11 +377,10 @@ PI_THREAD(joystick)
 	// START+SELECT finishes the program
     while((!(js.select && js.start)) && (keep_running)) 
     {
-        if(js.disconnect)
+		if(js.disconnect)
         {
         	halt = 1;
-			set_led_state(HALT, ON);
-			
+			while(!main_finished);
 			setMotorSpeed(LMOTOR, 0);
 			setMotorSpeed(RMOTOR, 0);
 			write_motors();
@@ -380,13 +392,16 @@ PI_THREAD(joystick)
 		if(js.LT > 100 || js.RT > 100)
 		{
 			halt = 0;
-			set_led_state(HALT, OFF);
 		} else {
 			halt = 1;
-			set_led_state(HALT, ON);
 			setMotorSpeed(LMOTOR, 0);
 			setMotorSpeed(RMOTOR, 0);
 			write_motors();
+		}
+		if(!halt && main_finished)
+		{
+			piThreadCreate(main_thread);
+			while(main_finished);
 		}
         update_joystick(&js);
 	}
