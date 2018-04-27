@@ -122,12 +122,9 @@ double lpf_omega[2];
 double LPFgain = 0.02;
 double LPFgainOmega = 0.05;
 
-int main_count = 0;
-
 PI_THREAD(main_thread)
 {
 	main_finished = 0;
-	++main_count;
 	piHiPri(0);
 
 	set_led_state(HALT, OFF);
@@ -293,11 +290,12 @@ PI_THREAD(main_thread)
 		setMotorSpeed(RMOTOR, speed + speed_dir);
 		write_motors();
 
-		printf("Running %d main threads\n", main_count);
 		delay(5);
 	}
+	setMotorSpeed(LMOTOR, 0);
+	setMotorSpeed(RMOTOR, 0);
+	write_motors();
 	set_led_state(HALT, ON);
-	--main_count;
 	main_finished = 1;
 }
 
@@ -380,7 +378,6 @@ PI_THREAD(joystick)
 		if(js.disconnect)
         {
         	halt = 1;
-			while(!main_finished);
 			setMotorSpeed(LMOTOR, 0);
 			setMotorSpeed(RMOTOR, 0);
 			write_motors();
