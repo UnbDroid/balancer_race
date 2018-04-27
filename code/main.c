@@ -361,7 +361,8 @@ PI_THREAD(joystick)
     init_joystick(&js, devname);
     set_led_state(BLUETOOTH, OFF);
 
-    while((!(js.select && js.start)) && (keep_running)) // START+SELECT finishes the program
+	// START+SELECT finishes the program
+    while((!(js.select && js.start)) && (keep_running)) 
     {
         if(js.disconnect)
         {

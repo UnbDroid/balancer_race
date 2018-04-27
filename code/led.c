@@ -144,9 +144,10 @@ void set_color(int color, int intensity)
 			b = 0;
 			break;
 		case ORANGE:
-			r = 180;
-			g = 80;
+			r = 220;
+			g = 90;
 			b = 0;
+			break;
 		case OFF_COLOR:
 			r = 0;
 			g = 0;
