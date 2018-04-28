@@ -105,9 +105,9 @@ double omega_ref = 0;
 
 unsigned long long int ref_crono = 0, ref_crono_set = 0, ref_time = 0;
 double diff = 0, ref = 0, atual = 0, ref_old = 0;
-double time_k = 38.918203; // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
-double ta = 0.12;
-double scurve_extra_time = 0.06; // Tempo extra do scurve pra ficar próximo da referência.
+double time_k = 38.918203;//3.8918202981;// // ln(1-%a/%a)/-ta // %a = porcentagem que deseja obter apos decorrido tempo ta. ta = tempo necessario para chegar na porcentagem desejada em segundos.
+double ta = 0.12;//1.2;//
+double scurve_extra_time = 0.06;//0.5;// // Tempo extra do scurve pra ficar próximo da referência.
 
 unsigned long long int ref_crono_omega = 0, ref_crono_set_omega = 0, ref_time_omega = 0;
 double diff_omega = 0, atual_omega = 0, omega_ref_old = 0;
@@ -123,6 +123,8 @@ double lpf_omega[2];
 double LPFgainDerivativo = 0.008;
 double LPFgain = 0.02;
 double LPFgainOmega = 0.05;
+
+int scurve_out = 1, sig_init = 0;
 
 PI_THREAD(main_thread)
 {
@@ -143,6 +145,7 @@ PI_THREAD(main_thread)
 	lpf_vel_med_derivativo[0] = 0;
 	lpf_vel_med_derivativo[1] = 0;
 
+	scurve_out = 3;
 
 	while(keep_running)
 	{
@@ -173,11 +176,11 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			ref = 0.0015640274*js.lanalog.up;//0.0000127077*js.lanalog.up;
+			ref = 0.0017595308*js.lanalog.up;//0.0015640274*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			ref = -0.0015640274*js.lanalog.down;//-0.0000127077*js.lanalog.down;
+			ref = -0.0017595308*js.lanalog.down;
 		}
 		else 
 		{
@@ -198,8 +201,20 @@ PI_THREAD(main_thread)
 
 		if (((double)ref_time)/1000000 < (2*ta + scurve_extra_time)){
 			vel_ref = atual + diff*(1/(1 + pow(EULER, -time_k*(-ta + ((double)ref_time)/1000000))));
+			scurve_out = 0;
 		} else {
 			vel_ref = ref;
+			if (!scurve_out)
+			{
+				scurve_out = 1;
+
+				if (vel_ref > lpf_vel_med[0])
+				{
+					sig_init = 1;
+				} else {
+					sig_init = 0;
+				}
+			}
 		}
 		//vel_ref = 1/(1 + pow(EULER, -time_k*(-0.2 + ((double)ref_time)/1000000))); // S-CURVE FUNCIONANDO.
 		//vel_ref = ref;
@@ -226,6 +241,25 @@ PI_THREAD(main_thread)
 		vel_erro = vel_ref - lpf_vel_med[0];
 		//vel_ref_integrate += vel_ref;
 		vel_erro_integrate += vel_erro*((double)vel_dt)/1000000;
+
+		if (scurve_out)
+		{
+			if (sig_init == 1)
+			{
+				if (vel_ref <= lpf_vel_med[0])
+				{
+					vel_erro_integrate = 0;
+					sig_init = 3;
+				}
+			} else if (sig_init == 0){
+				if (vel_ref >= lpf_vel_med[0])
+				{
+					vel_erro_integrate = 0;
+					sig_init = 2;
+				}
+			}
+		}
+
 		vel_erro_integrate_integrate += vel_erro_integrate*((double)vel_dt)/1000000;
 		//vel_erro_integrate = vel_ref_integrate - (left_motor.displacement + right_motor.displacement)/2;
 		vel_erro_derivate = (vel_erro_derivativo - vel_erro_old)/(((double)vel_dt)/1000000);
@@ -335,8 +369,10 @@ PI_THREAD(plot)
 				{
 					last_fprintf = now;
 
-					plotvar[0] = lpf_vel_med[0];
-					plotvar[1] = vel_ref;
+					plotvar[0] = vel_ref;
+					plotvar[1] = lpf_vel_med[0];
+					plotvar[2] = req_tilt;
+					plotvar[3] = gyroIntegrate;
 
 					fprintf(fp, "%lld ", now);
 					for(i = 0; (i < NPLOTVARS-1 && plotvar[i+1] == plotvar[i+1]); ++i)
