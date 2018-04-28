@@ -226,11 +226,11 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			ref = 0.0017595308*js.lanalog.up;//0.0000127077*js.lanalog.up;
+			ref = 0.0019550342*js.lanalog.up;//0.0000127077*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			ref = -0.0017595308*js.lanalog.down;//-0.0000127077*js.lanalog.down;
+			ref = -0.0019550342*js.lanalog.down;//-0.0000127077*js.lanalog.down;
 		}
 		else 
 		{
