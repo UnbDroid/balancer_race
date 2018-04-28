@@ -126,14 +126,56 @@ PI_THREAD(main_thread)
 {
 	main_finished = 0;
 	piHiPri(0);
+	
+	teta = 0;
+	gyroIntegrate = 0;
+	old_gyroIntegrate = 0;
+	pot = 0;
+	temp = 0;
+	tetaIntegrat = 0;
 
-	set_led_state(HALT, OFF);
-	delay(1000);
-	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
-	printf("%f\n", teta);
-	//gyroIntegrate = teta;
-	gyroIntegrate = teta - (-97.567947);
-	ref_crono_set = micros();
+	speed = 0;
+
+	vel_ref = 0;
+	vel_erro = 0;
+	vel_erro_old = 0;
+	vel_erro_integrate = 0;
+	vel_ref_integrate = 0;
+	vel_erro_derivate = 0;
+	vel_med = 0;
+
+	req_tilt = 0;
+	req_tilt_old = 0;
+	req_tilt_linha = 0;
+	tilt_erro = 0;
+	tilt_erro_integrate = 0;
+	tilt_erro_linha = 0;
+
+	omega = 0;
+	omega_integrate = 0;
+	omega_ref_integrate = 0;
+	omega_erro = 0;
+	omega_erro_old = 0;
+	omega_erro_integrate = 0;
+	omega_erro_derivate = 0;
+	speed_dir = 0;
+	omega_ref = 0;
+
+	ref_crono = 0;
+	ref_crono_set = 0;
+	ref_time = 0;
+	diff = 0;
+	ref = 0;
+	atual = 0;
+	ref_old = 0;
+
+	ref_crono_omega = 0;
+	ref_crono_set_omega = 0;
+	ref_time_omega = 0;
+	diff_omega = 0;
+	atual_omega = 0;
+	omega_ref_old = 0;
+	s_omega_ref = 0;
 
 	lpf_vel_med[0] = 0;
 	lpf_vel_med[1] = 0;
@@ -146,6 +188,15 @@ PI_THREAD(main_thread)
 	tilt_erro_integrate = 0;
 	omega_erro_integrate = 0;
 	omega_ref_integrate = 0;
+
+	set_led_state(HALT, OFF);
+	delay(1000);
+	teta = RAD2DEG*atan2(imu.accel.filteredZ, imu.accel.filteredX);
+	printf("%f\n", teta);
+	//gyroIntegrate = teta;
+	gyroIntegrate = teta - (-97.567947);
+	ref_crono_set = micros();
+
 
 	while(keep_running && !halt)
 	{
@@ -175,11 +226,11 @@ PI_THREAD(main_thread)
 		// COMANDO VELOCIDADE POR JOYSTICK.
 		if(js.lanalog.up > 0)
 		{
-			ref = 0.0015640274*js.lanalog.up;//0.0000127077*js.lanalog.up;
+			ref = 0.0017595308*js.lanalog.up;//0.0000127077*js.lanalog.up;
 		}
 		else if (js.lanalog.down > 0)
 		{
-			ref = -0.0015640274*js.lanalog.down;//-0.0000127077*js.lanalog.down;
+			ref = -0.0017595308*js.lanalog.down;//-0.0000127077*js.lanalog.down;
 		}
 		else 
 		{
